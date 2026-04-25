@@ -80,28 +80,97 @@
       }
     }
 
+    /* ── OEM Polish ── */
+    body { background: #EFEFEF; }
+
+    /* Sharp corners throughout */
+    .card { border-radius: 0; border: 1px solid #DCDCDC; box-shadow: none; }
+    .form-input, .form-select { border-radius: 0; }
+    .btn { border-radius: 0; letter-spacing: 0.06em; text-transform: uppercase; font-size: 13px; }
+    .btn-primary { background: #111; color: #fff; font-size: 14px; font-weight: 800; letter-spacing: 0.1em; }
+    .btn-primary:hover { background: #C41230; }
+    .direction-group { border-radius: 0; }
+
+    /* Card titles — sharp, tracked */
+    .card-title {
+      font-size: 9px; font-weight: 800; letter-spacing: 0.2em;
+      color: #999; text-transform: uppercase;
+      border-bottom: 1px solid #EFEFEF;
+      padding-bottom: 12px; margin-bottom: 18px;
+    }
+
+    /* Form labels */
+    .form-label {
+      font-size: 9px; font-weight: 800;
+      letter-spacing: 0.16em; color: #666;
+    }
+
+    /* Input focus — red left accent */
+    .form-input:focus, .form-select:focus {
+      border-color: #DCDCDC;
+      border-left: 3px solid #C41230;
+      box-shadow: none;
+      padding-left: 10px;
+    }
+
+    /* Grid column headers: black bg, bold white */
+    .model-grid thead th {
+      position: static !important;
+      background: #111 !important;
+      color: #fff !important;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      border-bottom: 2px solid #000 !important;
+      padding: 10px 8px;
+    }
+
+    /* Model group section labels */
     .grid-section-label {
-      font-size: 10px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.1em; color: var(--gray-400);
-      padding: 8px 0 4px; border-top: 1px solid var(--gray-100);
+      font-size: 9px !important; font-weight: 800 !important;
+      text-transform: uppercase; letter-spacing: 0.16em;
+      color: #fff !important;
+      padding: 7px 8px !important;
+      background: #333 !important;
+      border-top: none !important;
     }
-    .grid-section-label:first-of-type { border-top: none; }
+
     .row-total-head {
-      font-size: 10px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.07em; color: var(--gray-400);
-      text-align: center; white-space: nowrap;
+      font-size: 9px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: #fff; text-align: center; white-space: nowrap;
     }
-    .success-screen { text-align: center; padding: 48px 20px; }
+
+    /* Totals bar */
+    .totals-bar { background: #111; border-radius: 0; }
+    .total-label { color: rgba(255,255,255,0.4); font-size: 9px; letter-spacing: 0.14em; }
+    .total-value { color: #fff; }
+    .total-item.highlight .total-value { color: #C41230; }
+    .total-item { border-right-color: rgba(255,255,255,0.08); }
+
+    /* Grid inputs */
+    .grid-input { border-radius: 0; }
+    .grid-input:focus { border-color: #C41230; box-shadow: none; }
+
+    /* Late warning */
+    .alert.warning {
+      background: #fff8e1; border: 1px solid #ffe082;
+      color: #7B4800; border-left: 3px solid #C41230;
+      border-radius: 0;
+    }
+
+    /* Submit area */
+    .submit-area { margin-top: 24px; }
+
+    /* Success screen */
+    .success-screen { text-align: center; padding: 56px 20px; }
     .success-icon {
-      width: 64px; height: 64px;
-      background: var(--success-bg);
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 20px;
-      font-size: 28px;
+      width: 56px; height: 56px; background: #E8F5E9;
+      border-radius: 0; display: flex; align-items: center;
+      justify-content: center; margin: 0 auto 20px; font-size: 24px;
     }
-    .success-screen h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
-    .success-screen p  { font-size: 14px; color: var(--gray-600); margin-bottom: 24px; }
+    .success-screen h2 { font-size: 18px; font-weight: 800; letter-spacing: 0.04em; margin-bottom: 8px; }
+    .success-screen p  { font-size: 13px; color: #666; margin-bottom: 28px; }
   </style>
 </head>
 <body>
@@ -127,6 +196,12 @@
 
 <!-- ── Main ─────────────────────────────────────────────── -->
 <main class="main-content" id="main-content">
+
+  <!-- Date context bar -->
+  <div style="background:#111;color:rgba(255,255,255,0.45);font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:7px 20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+    <span>Report Date: <strong style="color:#fff;" id="ctx-report-date">—</strong></span>
+    <span style="color:rgba(255,255,255,0.3);font-weight:500;letter-spacing:0.06em;text-transform:none;font-size:11px;">Submit before 10:00 AM</span>
+  </div>
 
   <!-- Alert banner (validation / late warning) -->
   <div class="alert hidden" id="alert-banner" role="alert"></div>
@@ -224,7 +299,7 @@
     <!-- Model bucket grid -->
     <div class="card" style="padding-bottom:8px;">
       <div class="card-title" style="margin-bottom:4px;">Model Bucket Activity</div>
-      <p style="font-size:12px;color:rgba(255,255,255,0.3);margin-bottom:12px;">
+      <p style="font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:12px;">
         Enter today's figures per model. Use Tab to move between cells. All values default to 0.
       </p>
 
@@ -457,8 +532,11 @@ function setDirection(val) {
 
 /* ── Date / clock ────────────────────────────────────────── */
 function setDateFields() {
-  document.getElementById('report-date').value  = formatDate(todayISO());
+  const today = todayISO();
+  document.getElementById('report-date').value  = formatDate(today);
   document.getElementById('submit-time').value  = new Date().toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: true });
+  const ctx = document.getElementById('ctx-report-date');
+  if (ctx) ctx.textContent = formatDate(today);
 }
 
 function startClock() {

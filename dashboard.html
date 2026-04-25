@@ -98,10 +98,179 @@
     .config-drawer h3 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
     .config-drawer p  { font-size: 12px; color: var(--gray-600); margin-bottom: 12px; }
 
-    /* Tighter Knox typography */
-    .card-title, .filter-label, .kpi-label, .chart-title,
-    .section-header h2, .page-tab {
-      letter-spacing: 0.1em;
+    /* ── OEM Polish ─ Dashboard ── */
+    body { background: #EFEFEF; }
+
+    /* Sharp corners */
+    .card { border-radius: 0; border: 1px solid #DCDCDC; box-shadow: none; }
+    .btn { border-radius: 0; letter-spacing: 0.06em; text-transform: uppercase; }
+    .kpi-card { border-radius: 0; }
+    .chart-wrap { border-radius: 0; border: 1px solid #DCDCDC; box-shadow: none; }
+
+    /* Card + section labels */
+    .card-title, .chart-title {
+      font-size: 9px; font-weight: 800; letter-spacing: 0.2em;
+      color: #999; border-bottom: 1px solid #EFEFEF;
+      padding-bottom: 10px; margin-bottom: 16px;
+    }
+    .kpi-label {
+      font-size: 9px; font-weight: 800; letter-spacing: 0.16em; color: #999;
+    }
+    .kpi-value { font-size: 30px; font-weight: 800; color: #111; }
+    .kpi-card.accent { border-top: 3px solid #C41230; }
+    .kpi-card.success { border-top: 3px solid #2E7D32; }
+    .kpi-card.warning { border-top: 3px solid #C84B00; }
+
+    /* All data table headers: black bg, white bold */
+    .data-table thead th {
+      background: #111;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      border-bottom: 2px solid #000;
+      padding: 10px 12px;
+    }
+    .data-table thead th:hover { color: #C41230; }
+    .data-table tbody tr:hover td { background: #FEF2F4; }
+
+    /* Filter bar */
+    .filter-label {
+      font-size: 9px; font-weight: 800; letter-spacing: 0.16em; color: #666;
+    }
+    .filter-input, .filter-select { border-radius: 0; }
+    .filter-input:focus, .filter-select:focus {
+      border-color: #DCDCDC; border-left: 3px solid #C41230; box-shadow: none;
+    }
+
+    /* Tabs */
+    .page-tab {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .page-tab.active { color: #C41230; border-bottom-color: #C41230; }
+
+    /* Demo ribbon */
+    .demo-ribbon { border-radius: 0; border-left: 3px solid #C84B00; }
+
+    /* Compliance bar */
+    .compliance-bar-wrap { border-radius: 0; }
+    .compliance-bar-fill { border-radius: 0; }
+
+    /* Section headers */
+    .section-header h2 {
+      font-size: 9px; font-weight: 800; letter-spacing: 0.18em;
+    }
+
+    /* Badges */
+    .badge { border-radius: 0; font-size: 10px; letter-spacing: 0.06em; }
+
+    /* Config drawer */
+    .config-drawer { border-radius: 0; }
+    .config-panel-btn { border-radius: 0; }
+
+    /* Delta pills */
+    .delta-pill {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 11px; font-weight: 700; padding: 2px 7px;
+      letter-spacing: 0.04em;
+    }
+    .delta-pill.up   { background: #E8F5E9; color: #2E7D32; }
+    .delta-pill.down { background: #FFEBEE; color: #C41230; }
+    .delta-pill.flat { background: #F5F5F5; color: #666; }
+
+    /* WoW / MoM strip */
+    .wow-mom-strip {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 0; margin-bottom: 16px; border: 1px solid #DCDCDC;
+    }
+    .wow-mom-item { padding: 18px 22px; border-right: 1px solid #DCDCDC; background: #fff; }
+    .wow-mom-item:last-child { border-right: none; }
+    .wow-mom-label { font-size: 9px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: #999; margin-bottom: 12px; }
+    .wow-mom-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #F5F5F5; }
+    .wow-mom-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .wow-mom-metric { font-size: 11px; color: #666; width: 100px; flex-shrink: 0; }
+    .wow-mom-val    { font-size: 16px; font-weight: 800; color: #111; width: 44px; font-variant-numeric: tabular-nums; }
+    .wow-mom-delta  { font-size: 11px; font-weight: 700; }
+    .wow-mom-delta.up   { color: #2E7D32; }
+    .wow-mom-delta.down { color: #C41230; }
+    .wow-mom-delta.flat { color: #888; }
+    .wow-mom-note { font-size: 11px; color: #bbb; margin-top: 10px; font-style: italic; }
+    .trends-section-title {
+      font-size: 9px; font-weight: 800; letter-spacing: 0.2em;
+      text-transform: uppercase; color: #999;
+      border-bottom: 1px solid #EFEFEF; padding-bottom: 10px; margin-bottom: 14px;
+    }
+    @media (max-width: 600px) { .wow-mom-strip { grid-template-columns: 1fr; } }
+
+    /* ── High-impact dashboard improvements ── */
+
+    /* Date context bar */
+    .date-context-bar {
+      background: #111;
+      color: rgba(255,255,255,0.5);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      padding: 7px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .date-context-bar strong { color: #fff; }
+    .date-context-bar .last-refresh { color: rgba(255,255,255,0.35); font-weight: 500; letter-spacing: 0.08em; text-transform: none; font-size: 11px; }
+
+    /* Hero KPI row — compliance + sold dominate */
+    .kpi-hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0;
+      margin-bottom: 12px;
+      border: 1px solid #DCDCDC;
+    }
+    .kpi-hero-item {
+      padding: 20px 24px;
+      border-right: 1px solid #DCDCDC;
+      background: #fff;
+    }
+    .kpi-hero-item:last-child { border-right: none; }
+    .kpi-hero-item.red { background: #C41230; }
+    .kpi-hero-item.red .kpi-hero-label { color: rgba(255,255,255,0.6); }
+    .kpi-hero-item.red .kpi-hero-value { color: #fff; }
+    .kpi-hero-label {
+      font-size: 9px; font-weight: 800; letter-spacing: 0.18em;
+      text-transform: uppercase; color: #999; margin-bottom: 8px;
+    }
+    .kpi-hero-value {
+      font-size: 44px; font-weight: 800; color: #111;
+      line-height: 1; font-variant-numeric: tabular-nums;
+    }
+    .kpi-hero-sub {
+      font-size: 11px; color: #888; margin-top: 6px;
+    }
+    @media (max-width: 600px) {
+      .kpi-hero { grid-template-columns: 1fr; }
+      .kpi-hero-item { border-right: none; border-bottom: 1px solid #DCDCDC; }
+    }
+
+    /* Colour-coded compliance rows */
+    .row-submitted td { background: #F1FBF2 !important; }
+    .row-submitted td:first-child { border-left: 3px solid #2E7D32; }
+    .row-late td { background: #FFFBF0 !important; }
+    .row-late td:first-child { border-left: 3px solid #C84B00; }
+    .row-missing td { background: #FFF5F6 !important; }
+    .row-missing td:first-child { border-left: 3px solid #C41230; }
+    .row-missing td { color: #aaa; }
+
+    /* Better filter card */
+    .filter-card {
+      background: #fff;
+      border: 1px solid #DCDCDC;
+      border-top: 3px solid #111;
+      padding: 14px 16px;
+      margin-bottom: 12px;
     }
   </style>
 </head>
@@ -131,6 +300,31 @@
 
 <!-- ── Main ─────────────────────────────────────────────── -->
 <main class="main-content wide" id="main-content">
+
+  <!-- Date context bar -->
+  <div class="date-context-bar">
+    <span>Reporting Date: <strong id="ctx-date">—</strong></span>
+    <span class="last-refresh">Last refreshed: <span id="ctx-refresh">—</span></span>
+  </div>
+
+  <!-- Hero KPIs -->
+  <div class="kpi-hero">
+    <div class="kpi-hero-item red">
+      <div class="kpi-hero-label">Compliance</div>
+      <div class="kpi-hero-value" id="h-compliance">—</div>
+      <div class="kpi-hero-sub" style="color:rgba(255,255,255,0.55);"><span id="h-submitted">—</span> of 30 dealers submitted</div>
+    </div>
+    <div class="kpi-hero-item">
+      <div class="kpi-hero-label">New Sold Today</div>
+      <div class="kpi-hero-value" id="h-sold">—</div>
+      <div class="kpi-hero-sub">Forecast: <span id="h-forecast">—</span> &nbsp;<span id="delta-sold" class="delta-pill"></span></div>
+    </div>
+    <div class="kpi-hero-item">
+      <div class="kpi-hero-label">Total Enquiries</div>
+      <div class="kpi-hero-value" id="h-enq">—</div>
+      <div class="kpi-hero-sub">Conv: <span id="h-conv">—</span>% &nbsp;<span id="delta-enq" class="delta-pill"></span></div>
+    </div>
+  </div>
 
   <!-- Demo ribbon -->
   <div class="demo-ribbon" id="demo-ribbon">
@@ -214,6 +408,7 @@
     <div class="page-tabs" style="padding-top:4px;">
       <div class="page-tab active" data-tab="compliance" onclick="switchTab('compliance')">Dealer Compliance</div>
       <div class="page-tab" data-tab="models"      onclick="switchTab('models')">Model Summary</div>
+      <div class="page-tab" data-tab="trends"     onclick="switchTab('trends')">WoW / MoM Trends</div>
       <div class="page-tab" data-tab="detail"      onclick="switchTab('detail')">Row Detail</div>
     </div>
 
@@ -239,6 +434,71 @@
           </thead>
           <tbody id="tbody-compliance">
             <tr><td colspan="8" class="no-data">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Trends (WoW / MoM) -->
+    <div class="tab-panel" id="tab-trends" style="padding-bottom:16px;">
+
+      <!-- WoW strip -->
+      <div class="trends-section-title" style="margin-top:16px;">Week on Week — Today vs Same Day Last Week</div>
+      <div class="wow-mom-strip" id="wow-strip">
+        <div class="wow-mom-item">
+          <div class="wow-mom-label">This Week vs Last Week</div>
+          <div class="wow-mom-row"><span class="wow-mom-metric">Enquiries</span><span class="wow-mom-val" id="wow-enq-cur">—</span><span class="wow-mom-delta" id="wow-enq-d"></span></div>
+          <div class="wow-mom-row"><span class="wow-mom-metric">Test Drives</span><span class="wow-mom-val" id="wow-td-cur">—</span><span class="wow-mom-delta" id="wow-td-d"></span></div>
+          <div class="wow-mom-row"><span class="wow-mom-metric">New Sold</span><span class="wow-mom-val" id="wow-sold-cur">—</span><span class="wow-mom-delta" id="wow-sold-d"></span></div>
+          <div class="wow-mom-row"><span class="wow-mom-metric">Forecast</span><span class="wow-mom-val" id="wow-fcst-cur">—</span><span class="wow-mom-delta" id="wow-fcst-d"></span></div>
+          <div class="wow-mom-note" id="wow-note"></div>
+        </div>
+        <div class="wow-mom-item">
+          <div class="wow-mom-label">Compliance WoW</div>
+          <div class="wow-mom-row"><span class="wow-mom-metric">This week</span><span class="wow-mom-val" id="wow-comp-cur">—</span><span class="wow-mom-delta" id="wow-comp-d"></span></div>
+          <div class="wow-mom-row"><span class="wow-mom-metric">Late submits</span><span class="wow-mom-val" id="wow-late-cur">—</span><span class="wow-mom-delta" id="wow-late-d"></span></div>
+          <div class="wow-mom-row"><span class="wow-mom-metric">Direction Up</span><span class="wow-mom-val" id="wow-up-cur">—</span><span class="wow-mom-delta" id="wow-up-d"></span></div>
+          <div class="wow-mom-note">Compared to same calendar day 7 days prior.</div>
+        </div>
+      </div>
+
+      <!-- MoM strip -->
+      <div class="trends-section-title">Month on Month — MTD vs Prior Month MTD</div>
+      <div class="wow-mom-strip" id="mom-strip">
+        <div class="wow-mom-item">
+          <div class="wow-mom-label" id="mom-label-cur">This Month MTD</div>
+          <div class="wow-mom-row"><span class="wow-mom-metric">Enquiries</span><span class="wow-mom-val" id="mom-enq-cur">—</span><span class="wow-mom-delta" id="mom-enq-d"></span></div>
+          <div class="wow-mom-row"><span class="wow-mom-metric">Test Drives</span><span class="wow-mom-val" id="mom-td-cur">—</span><span class="wow-mom-delta" id="mom-td-d"></span></div>
+          <div class="wow-mom-row"><span class="wow-mom-metric">New Sold</span><span class="wow-mom-val" id="mom-sold-cur">—</span><span class="wow-mom-delta" id="mom-sold-d"></span></div>
+          <div class="wow-mom-row"><span class="wow-mom-metric">Fleet (5+)</span><span class="wow-mom-val" id="mom-fleet-cur">—</span><span class="wow-mom-delta" id="mom-fleet-d"></span></div>
+          <div class="wow-mom-row"><span class="wow-mom-metric">Forecast</span><span class="wow-mom-val" id="mom-fcst-cur">—</span><span class="wow-mom-delta" id="mom-fcst-d"></span></div>
+          <div class="wow-mom-note" id="mom-note"></div>
+        </div>
+        <div class="wow-mom-item">
+          <div class="wow-mom-label">Conversion Rate MoM</div>
+          <div class="wow-mom-row"><span class="wow-mom-metric">Conv % (cur)</span><span class="wow-mom-val" id="mom-conv-cur">—</span><span class="wow-mom-delta" id="mom-conv-d"></span></div>
+          <div class="wow-mom-row"><span class="wow-mom-metric">Avg compliance</span><span class="wow-mom-val" id="mom-comp-cur">—</span><span class="wow-mom-delta" id="mom-comp-d"></span></div>
+          <div class="wow-mom-note">MTD = month-to-date up to today's date in each month. Requires 30+ days of data for MoM.</div>
+        </div>
+      </div>
+
+      <!-- WoW Model table -->
+      <div class="trends-section-title">Model Bucket — WoW Change</div>
+      <div style="overflow-x:auto;margin-bottom:20px;">
+        <table class="data-table" id="tbl-wow-model">
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th class="num">Enq (Now)</th>
+              <th class="num">Enq (−7d)</th>
+              <th class="num">Enq Δ</th>
+              <th class="num">Sold (Now)</th>
+              <th class="num">Sold (−7d)</th>
+              <th class="num">Sold Δ</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-wow-model">
+            <tr><td colspan="7" class="no-data">Loading…</td></tr>
           </tbody>
         </table>
       </div>
@@ -427,12 +687,18 @@ function applyFilters() {
   renderDetailTable();
   renderDirectionChart();
   renderTrendChart();
+  renderTrends();
 }
 
 /* ── KPI render ──────────────────────────────────────────── */
 function renderKPIs() {
   const rows     = filteredRows;
-  const dateRows = rows.filter(r => r.report_date === (document.getElementById('f-date').value || todayISO()));
+  const dateVal  = document.getElementById('f-date').value || todayISO();
+  const dateRows = rows.filter(r => r.report_date === dateVal);
+
+  // Update date context bar
+  set('ctx-date', formatDate(dateVal));
+  set('ctx-refresh', new Date().toLocaleTimeString('en-AU', {hour:'2-digit',minute:'2-digit',hour12:true}));
 
   // Unique dealers that submitted
   const submittedCodes = new Set(dateRows.map(r => r.dealer_code));
@@ -441,10 +707,9 @@ function renderKPIs() {
   const missing        = totalDealers - submitted;
   const lateSet        = new Set(dateRows.filter(r => r.is_late).map(r => r.dealer_code));
   const compliance     = Math.round((submitted / totalDealers) * 100);
-
-  // Submission count = number of distinct (dealer, time) combos
   const submissionIds  = new Set(dateRows.map(r => `${r.dealer_code}|${r.submitted_at}`));
 
+  // Standard KPI cards
   set('k-submissions', submissionIds.size);
   set('k-submitted',   submitted);
   set('k-missing',     missing);
@@ -455,16 +720,49 @@ function renderKPIs() {
   bar.style.width = compliance + '%';
   bar.classList.toggle('good', compliance >= 80);
 
-  // Aggregates
   const sum = key => rows.reduce((a, r) => a + (parseInt(r[key]) || 0), 0);
-  set('k-enq',      sum('enquiry'));
+  const totalEnq  = sum('enquiry');
+  const totalSold = sum('new_sold');
+  const totalFcst = sum('forecast');
+  set('k-enq',      totalEnq);
   set('k-td',       sum('test_drives'));
-  set('k-sold',     sum('new_sold'));
+  set('k-sold',     totalSold);
   set('k-fleet',    sum('fleet'));
   set('k-demo',     sum('demo_sold'));
-  set('k-forecast', sum('forecast'));
+  set('k-forecast', totalFcst);
 
-  // Missing dealer names sub-label
+  // Hero KPIs
+  set('h-compliance', compliance + '%');
+  set('h-submitted',  submitted);
+  set('h-sold',       totalSold);
+  set('h-forecast',   totalFcst);
+  set('h-enq',        totalEnq);
+  const conv = totalEnq > 0 ? Math.round((totalSold / totalEnq) * 100) : 0;
+  set('h-conv', conv);
+
+  // WoW delta pills on hero (quick inline calc)
+  function isoOffset(isoDate, days) {
+    const d = new Date(isoDate + 'T00:00:00');
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0,10);
+  }
+  const prevDay = isoOffset(dateVal, -7);
+  const prevSold = allRows.filter(r => r.report_date === prevDay).reduce((a,r) => a+(parseInt(r.new_sold)||0),0);
+  const prevEnq  = allRows.filter(r => r.report_date === prevDay).reduce((a,r) => a+(parseInt(r.enquiry)||0),0);
+  function heroDelta(cur, prev) {
+    if (prev === 0) return { text: '', cls: 'flat' };
+    const pct = Math.round(((cur - prev) / prev) * 100);
+    if (pct > 0) return { text: `▲ +${pct}% WoW`, cls: 'up' };
+    if (pct < 0) return { text: `▼ ${pct}% WoW`, cls: 'down' };
+    return { text: '— flat WoW', cls: 'flat' };
+  }
+  const dSold = heroDelta(totalSold, prevSold);
+  const dEnq  = heroDelta(totalEnq,  prevEnq);
+  const dSoldEl = document.getElementById('delta-sold');
+  const dEnqEl  = document.getElementById('delta-enq');
+  if (dSoldEl) { dSoldEl.textContent = dSold.text; dSoldEl.className = 'delta-pill ' + dSold.cls; }
+  if (dEnqEl)  { dEnqEl.textContent  = dEnq.text;  dEnqEl.className  = 'delta-pill ' + dEnq.cls; }
+
   const missingNames = DEALERS.filter(d => !submittedCodes.has(d.code)).slice(0,5).map(d => d.code).join(', ');
   document.getElementById('k-missing-names').textContent = missing > 0 ? missingNames + (missing > 5 ? ` +${missing-5}` : '') : 'All dealers in ✓';
 }
@@ -499,11 +797,15 @@ function renderComplianceTable() {
   DEALERS.forEach(d => {
     const data = byDealer[d.code];
     const tr   = document.createElement('tr');
+    // Colour-code rows
+    if (!data) tr.className = 'row-missing';
+    else if (data.late) tr.className = 'row-late';
+    else tr.className = 'row-submitted';
     tr.innerHTML = `
       <td><code style="font-size:12px;">${d.code}</code></td>
-      <td>${d.name}</td>
+      <td style="font-weight:600;">${d.name}</td>
       <td>${data ? '<span class="badge badge-green">Submitted</span>' : '<span class="badge badge-red">Missing</span>'}</td>
-      <td style="font-variant-numeric:tabular-nums;font-size:12px;">${data ? formatTime(data.time) : '—'}</td>
+      <td style="font-size:12px;font-variant-numeric:tabular-nums;">${data ? formatTime(data.time) : '—'}</td>
       <td>${data ? (data.late ? '<span class="badge badge-orange">Late</span>' : '<span class="badge badge-green">On time</span>') : '—'}</td>
       <td class="num">${data ? data.enquiry  : '—'}</td>
       <td class="num">${data ? data.new_sold : '—'}</td>
@@ -667,6 +969,162 @@ function setTrendRange(days) {
     document.getElementById(`tr${d}`).classList.toggle('active', d === days);
   });
   renderTrendChart();
+}
+
+/* ── WoW / MoM calculations ─────────────────────────── */
+function renderTrends() {
+  const dateVal = document.getElementById('f-date').value || todayISO();
+
+  // ── Helpers ──
+  function isoOffset(isoDate, days) {
+    const d = new Date(isoDate + 'T00:00:00');
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0,10);
+  }
+
+  function sumForDate(date, key) {
+    return allRows
+      .filter(r => r.report_date === date)
+      .reduce((a, r) => a + (parseInt(r[key]) || 0), 0);
+  }
+
+  function sumForMonth(yearMonth, key, upToDay) {
+    // yearMonth = 'YYYY-MM', upToDay = 'DD'
+    return allRows
+      .filter(r => r.report_date.startsWith(yearMonth) && r.report_date.slice(8,10) <= upToDay)
+      .reduce((a, r) => a + (parseInt(r[key]) || 0), 0);
+  }
+
+  function dealersForDate(date) {
+    return new Set(allRows.filter(r => r.report_date === date).map(r => r.dealer_code)).size;
+  }
+
+  function lateForDate(date) {
+    return new Set(allRows.filter(r => r.report_date === date && r.is_late).map(r => r.dealer_code)).size;
+  }
+
+  function upForDate(date) {
+    const byDealer = {};
+    allRows.filter(r => r.report_date === date).forEach(r => { byDealer[r.dealer_code] = r.direction; });
+    return Object.values(byDealer).filter(d => d === 'Up').length;
+  }
+
+  function delta(cur, prev, suffix = '') {
+    if (prev === 0 && cur === 0) return { text: '—', cls: 'flat' };
+    if (prev === 0) return { text: '▲ new', cls: 'up' };
+    const pct = Math.round(((cur - prev) / prev) * 100);
+    if (pct > 0) return { text: `▲ +${pct}%${suffix}`, cls: 'up' };
+    if (pct < 0) return { text: `▼ ${pct}%${suffix}`, cls: 'down' };
+    return { text: '— flat', cls: 'flat' };
+  }
+
+  function setDelta(id, d) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = d.text;
+    el.className = 'wow-mom-delta ' + d.cls;
+  }
+
+  // ── WoW ──
+  const prevDay = isoOffset(dateVal, -7);
+  const wowMetrics = ['enquiry','test_drives','new_sold','forecast'];
+  const wIds = ['enq','td','sold','fcst'];
+  wowMetrics.forEach((key, i) => {
+    const cur  = sumForDate(dateVal, key);
+    const prev = sumForDate(prevDay, key);
+    set('wow-' + wIds[i] + '-cur', cur);
+    setDelta('wow-' + wIds[i] + '-d', delta(cur, prev));
+  });
+
+  // Compliance WoW
+  const compCur  = dealersForDate(dateVal);
+  const compPrev = dealersForDate(prevDay);
+  set('wow-comp-cur',  compCur + '/' + DEALERS.length);
+  setDelta('wow-comp-d', delta(compCur, compPrev));
+
+  const lateCur  = lateForDate(dateVal);
+  const latePrev = lateForDate(prevDay);
+  set('wow-late-cur', lateCur);
+  setDelta('wow-late-d', delta(lateCur, latePrev));
+
+  const upCur  = upForDate(dateVal);
+  const upPrev = upForDate(prevDay);
+  set('wow-up-cur', upCur);
+  setDelta('wow-up-d', delta(upCur, upPrev));
+
+  const hasPrevDay = allRows.some(r => r.report_date === prevDay);
+  set('wow-note', hasPrevDay ? `Prev day: ${formatDate(prevDay)}` : `No data for ${formatDate(prevDay)} yet`);
+
+  // ── MoM ──
+  const [yr, mo, day] = dateVal.split('-');
+  const curYM   = `${yr}-${mo}`;
+  const prevMoNum = parseInt(mo) - 1;
+  const prevYr    = prevMoNum === 0 ? String(parseInt(yr) - 1) : yr;
+  const prevMo    = String(prevMoNum === 0 ? 12 : prevMoNum).padStart(2, '0');
+  const prevYM    = `${prevYr}-${prevMo}`;
+
+  const monthNames = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  set('mom-label-cur', `${monthNames[parseInt(mo)]} ${yr} MTD`);
+
+  const momMetrics = ['enquiry','test_drives','new_sold','fleet','forecast'];
+  const mIds = ['enq','td','sold','fleet','fcst'];
+  momMetrics.forEach((key, i) => {
+    const cur  = sumForMonth(curYM, key, day);
+    const prev = sumForMonth(prevYM, key, day);
+    set('mom-' + mIds[i] + '-cur', cur);
+    setDelta('mom-' + mIds[i] + '-d', delta(cur, prev));
+  });
+
+  // Conv % MoM
+  const curEnq  = sumForMonth(curYM,  'enquiry', day);
+  const curSold = sumForMonth(curYM,  'new_sold', day);
+  const prvEnq  = sumForMonth(prevYM, 'enquiry', day);
+  const prvSold = sumForMonth(prevYM, 'new_sold', day);
+  const convCur  = curEnq  > 0 ? Math.round((curSold  / curEnq)  * 100) : 0;
+  const convPrev = prvEnq  > 0 ? Math.round((prvSold  / prvEnq)  * 100) : 0;
+  set('mom-conv-cur', convCur + '%');
+  setDelta('mom-conv-d', delta(convCur, convPrev, 'pts'));
+
+  // Avg daily compliance MoM (unique dealers per day)
+  const curDays  = [...new Set(allRows.filter(r => r.report_date.startsWith(curYM)  && r.report_date.slice(8,10) <= day).map(r => r.report_date))];
+  const prevDays = [...new Set(allRows.filter(r => r.report_date.startsWith(prevYM) && r.report_date.slice(8,10) <= day).map(r => r.report_date))];
+  const avgComp = arr => arr.length > 0 ? Math.round(arr.reduce((a, d) => a + dealersForDate(d), 0) / arr.length) : 0;
+  const compMCur  = avgComp(curDays);
+  const compMPrev = avgComp(prevDays);
+  set('mom-comp-cur', compMCur > 0 ? compMCur + ' avg/day' : '—');
+  setDelta('mom-comp-d', delta(compMCur, compMPrev));
+
+  const hasPrevMo = allRows.some(r => r.report_date.startsWith(prevYM));
+  set('mom-note', hasPrevMo
+    ? `vs ${monthNames[parseInt(prevMo)]} ${prevYr} MTD (same day-of-month)`
+    : `No data yet for ${monthNames[parseInt(prevMo)]} ${prevYr}`);
+
+  // ── WoW model table ──
+  const tbody = document.getElementById('tbody-wow-model');
+  tbody.innerHTML = '';
+  MODEL_BUCKETS.forEach(model => {
+    const curEnq2  = allRows.filter(r => r.report_date === dateVal && r.model_bucket === model).reduce((a,r) => a+(parseInt(r.enquiry)||0),0);
+    const prevEnq2 = allRows.filter(r => r.report_date === prevDay  && r.model_bucket === model).reduce((a,r) => a+(parseInt(r.enquiry)||0),0);
+    const curSold2  = allRows.filter(r => r.report_date === dateVal && r.model_bucket === model).reduce((a,r) => a+(parseInt(r.new_sold)||0),0);
+    const prevSold2 = allRows.filter(r => r.report_date === prevDay  && r.model_bucket === model).reduce((a,r) => a+(parseInt(r.new_sold)||0),0);
+    const enqD  = delta(curEnq2, prevEnq2);
+    const soldD = delta(curSold2, prevSold2);
+    if (curEnq2 === 0 && prevEnq2 === 0 && curSold2 === 0 && prevSold2 === 0) return;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight:600;">${model}</td>
+      <td class="num">${curEnq2}</td>
+      <td class="num" style="color:#aaa;">${prevEnq2}</td>
+      <td class="num"><span class="wow-mom-delta ${enqD.cls}">${enqD.text}</span></td>
+      <td class="num">${curSold2}</td>
+      <td class="num" style="color:#aaa;">${prevSold2}</td>
+      <td class="num"><span class="wow-mom-delta ${soldD.cls}">${soldD.text}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  if (!tbody.children.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="no-data">No activity data for this period. Submit reports for at least 2 weeks to see WoW comparisons.</td></tr>';
+  }
 }
 
 function renderTrendChart() {
