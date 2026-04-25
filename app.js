@@ -9,7 +9,7 @@
 const GWM_CONFIG = {
   // Paste your deployed Google Apps Script Web App URL here.
   // Leave empty to use demo / offline mode.
-  scriptUrl: '',
+  scriptUrl: 'https://script.google.com/macros/s/AKfycbxh7-IUcOe6tGrkCqK1sYrzb4LBhPoiwwePqkEd_sab2vAUGihrEGIer2Gm5VlUFH14sA/exec',
   region: 'Southern Region',
   cutoffHour: 10,   // Submissions after 10:00am are flagged late
 };
