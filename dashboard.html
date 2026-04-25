@@ -121,14 +121,6 @@
     .kpi-card.success { border-top: 3px solid #2E7D32; }
     .kpi-card.warning { border-top: 3px solid #C84B00; }
 
-    /* Added KPI signal states — used only by the added funnel tiles */
-    .kpi-card.strong { border-top: 3px solid #2E7D32; }
-    .kpi-card.strong .kpi-value { color: #2E7D32; }
-    .kpi-card.weak { border-top: 3px solid #C41230; }
-    .kpi-card.weak .kpi-value { color: #C41230; }
-    .kpi-card.neutral { border-top: 3px solid #999; }
-    .kpi-card.neutral .kpi-value { color: #111; }
-
     /* All data table headers: black bg, white bold */
     .data-table thead th {
       background: #111;
@@ -263,6 +255,118 @@
       .kpi-hero-item { border-right: none; border-bottom: 1px solid #DCDCDC; }
     }
 
+    /* ── Model insight tabs: single-row full-width tab bar + data-led model intelligence ── */
+    .page-tabs.insight-tabs {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 0;
+      width: 100%;
+      overflow: hidden;
+      border-bottom: 1px solid #DCDCDC;
+    }
+    .page-tabs.insight-tabs .page-tab {
+      min-width: 0;
+      text-align: center;
+      justify-content: center;
+      padding: 16px 6px 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border-bottom-width: 3px;
+    }
+    @media (max-width: 900px) {
+      .page-tabs.insight-tabs .page-tab { font-size: 9px; letter-spacing: 0.04em; padding-left: 3px; padding-right: 3px; }
+    }
+    .insight-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border: 1px solid #DCDCDC;
+      margin: 14px 0 16px;
+      background: #fff;
+    }
+    .insight-tile {
+      padding: 16px 18px;
+      border-right: 1px solid #DCDCDC;
+      min-height: 92px;
+    }
+    .insight-tile:last-child { border-right: none; }
+    .insight-kicker {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #999;
+      margin-bottom: 10px;
+    }
+    .insight-main {
+      font-size: 18px;
+      font-weight: 800;
+      color: #111;
+      line-height: 1.2;
+    }
+    .insight-sub {
+      font-size: 11px;
+      color: #777;
+      margin-top: 5px;
+      line-height: 1.35;
+    }
+    .metric-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 58px;
+      padding: 3px 7px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      font-variant-numeric: tabular-nums;
+    }
+    .metric-pill.up { background: #E8F5E9; color: #2E7D32; }
+    .metric-pill.down { background: #FFEBEE; color: #C41230; }
+    .metric-pill.flat { background: #F5F5F5; color: #777; }
+    .metric-pill.new { background: #FFF3E0; color: #C84B00; }
+    .signal-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: #F5F5F5;
+      color: #555;
+      white-space: nowrap;
+    }
+    .signal-tag.rising, .signal-tag.strong, .signal-tag.broad { background: #E8F5E9; color: #2E7D32; }
+    .signal-tag.cooling, .signal-tag.gap, .signal-tag.weak { background: #FFEBEE; color: #C41230; }
+    .signal-tag.closing, .signal-tag.concentrated, .signal-tag.medium { background: #FFF3E0; color: #C84B00; }
+    .signal-tag.low, .signal-tag.quiet { background: #F5F5F5; color: #777; }
+    .mini-note {
+      font-size: 11px;
+      color: #999;
+      line-height: 1.4;
+      margin: -6px 0 12px;
+    }
+    .heatmap-grid-wrap { overflow-x: auto; }
+    .heat-cell {
+      min-width: 54px;
+      text-align: center;
+      font-weight: 800;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+    .heat-0 { background: #FAFAFA; color: #BBB; }
+    .heat-1 { background: #FFF3E0; color: #7B4800; }
+    .heat-2 { background: #FFE0B2; color: #7B4800; }
+    .heat-3 { background: #FFEBEE; color: #C41230; }
+    .heat-4 { background: #C41230; color: #FFF; }
+    @media (max-width: 700px) {
+      .insight-strip { grid-template-columns: 1fr; }
+      .insight-tile { border-right: none; border-bottom: 1px solid #DCDCDC; }
+      .insight-tile:last-child { border-bottom: none; }
+    }
+
+
     /* Colour-coded compliance rows */
     .row-submitted td { background: #F1FBF2 !important; }
     .row-submitted td:first-child { border-left: 3px solid #2E7D32; }
@@ -389,11 +493,6 @@
       <div class="kpi-card"><div class="kpi-label">Fleet (5+)</div><div class="kpi-value" id="k-fleet">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Demo Sold</div><div class="kpi-value" id="k-demo">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Forecast</div><div class="kpi-value" id="k-forecast">—</div></div>
-      <div class="kpi-card" id="k-card-enq-td"><div class="kpi-label">Enq → TD %</div><div class="kpi-value" id="k-enq-td">—</div></div>
-      <div class="kpi-card" id="k-card-td-sold"><div class="kpi-label">TD → Sold %</div><div class="kpi-value" id="k-td-sold">—</div></div>
-      <div class="kpi-card" id="k-card-enq-sold"><div class="kpi-label">Enq → Sold %</div><div class="kpi-value" id="k-enq-sold">—</div></div>
-      <div class="kpi-card" id="k-card-total-sold"><div class="kpi-label">Sold Inc Demo</div><div class="kpi-value" id="k-total-sold">—</div></div>
-      <div class="kpi-card" id="k-card-demo-mix"><div class="kpi-label">Demo Mix %</div><div class="kpi-value" id="k-demo-mix">—</div></div>
     </div>
   </div>
 
@@ -418,11 +517,14 @@
 
   <!-- Tabs -->
   <div class="card" style="padding:0 20px 0;">
-    <div class="page-tabs" style="padding-top:4px;">
+    <div class="page-tabs insight-tabs" style="padding-top:4px;">
       <div class="page-tab active" data-tab="compliance" onclick="switchTab('compliance')">Dealer Compliance</div>
-      <div class="page-tab" data-tab="models"      onclick="switchTab('models')">Model Summary</div>
-      <div class="page-tab" data-tab="trends"     onclick="switchTab('trends')">WoW / MoM Trends</div>
-      <div class="page-tab" data-tab="detail"      onclick="switchTab('detail')">Row Detail</div>
+      <div class="page-tab" data-tab="models" onclick="switchTab('models')">Model Summary</div>
+      <div class="page-tab" data-tab="momentum" onclick="switchTab('momentum')">Model Momentum</div>
+      <div class="page-tab" data-tab="funnel" onclick="switchTab('funnel')">Model Funnel</div>
+      <div class="page-tab" data-tab="heatmap" onclick="switchTab('heatmap')">Dealer Heatmap</div>
+      <div class="page-tab" data-tab="trends" onclick="switchTab('trends')">WoW / MoM Trends</div>
+      <div class="page-tab" data-tab="detail" onclick="switchTab('detail')">Row Detail</div>
     </div>
 
     <!-- Tab: Compliance -->
@@ -538,6 +640,150 @@
           </thead>
           <tbody id="tbody-models">
             <tr><td colspan="8" class="no-data">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+
+    <!-- Tab: Model momentum -->
+    <div class="tab-panel" id="tab-momentum" style="padding-bottom:16px;">
+      <div class="section-header" style="margin-bottom:10px;">
+        <h2>Model Momentum — DoD / WoW / MoM</h2>
+        <span style="font-size:12px;color:var(--gray-400);">Based only on submitted enquiry, test drive, sold, fleet, demo and forecast data.</span>
+      </div>
+      <div class="insight-strip">
+        <div class="insight-tile">
+          <div class="insight-kicker">Top Rising Model</div>
+          <div class="insight-main" id="mom-top-rising">—</div>
+          <div class="insight-sub" id="mom-top-rising-sub">Awaiting trend data</div>
+        </div>
+        <div class="insight-tile">
+          <div class="insight-kicker">Largest Cooling Signal</div>
+          <div class="insight-main" id="mom-top-cooling">—</div>
+          <div class="insight-sub" id="mom-top-cooling-sub">Awaiting trend data</div>
+        </div>
+        <div class="insight-tile">
+          <div class="insight-kicker">Highest Confidence Read</div>
+          <div class="insight-main" id="mom-confidence">—</div>
+          <div class="insight-sub" id="mom-confidence-sub">Dealer spread, not stock.</div>
+        </div>
+      </div>
+      <div class="mini-note">Signal logic: enquiries and total sold are compared against yesterday, same day last week, and prior month MTD. Total sold = new sold + demo sold + fleet units.</div>
+      <div style="overflow-x:auto;">
+        <table class="data-table" id="tbl-model-momentum">
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th class="num">Enq Today</th>
+              <th class="num">Sold Today</th>
+              <th class="num">DoD Enq</th>
+              <th class="num">WoW Enq</th>
+              <th class="num">MoM Enq</th>
+              <th class="num">WoW Sold</th>
+              <th>Signal</th>
+              <th>Confidence</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-model-momentum">
+            <tr><td colspan="9" class="no-data">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Model funnel -->
+    <div class="tab-panel" id="tab-funnel" style="padding-bottom:16px;">
+      <div class="section-header" style="margin-bottom:10px;">
+        <h2>Model Funnel — Conversion Quality</h2>
+        <span style="font-size:12px;color:var(--gray-400);">Enquiry → test drive → sold, using current filters.</span>
+      </div>
+      <div class="insight-strip">
+        <div class="insight-tile">
+          <div class="insight-kicker">Best Conversion</div>
+          <div class="insight-main" id="fun-best">—</div>
+          <div class="insight-sub" id="fun-best-sub">Awaiting submitted data</div>
+        </div>
+        <div class="insight-tile">
+          <div class="insight-kicker">Conversion Gap</div>
+          <div class="insight-main" id="fun-gap">—</div>
+          <div class="insight-sub" id="fun-gap-sub">Lead activity without sold outcome</div>
+        </div>
+        <div class="insight-tile">
+          <div class="insight-kicker">Forecast Watch</div>
+          <div class="insight-main" id="fun-forecast">—</div>
+          <div class="insight-sub" id="fun-forecast-sub">High forecast vs current sold pace</div>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="data-table" id="tbl-model-funnel">
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th class="num">Enquiries</th>
+              <th class="num">Test Drives</th>
+              <th class="num">New Sold</th>
+              <th class="num">Demo Sold</th>
+              <th class="num">Fleet</th>
+              <th class="num">Total Sold</th>
+              <th class="num">Enq → TD</th>
+              <th class="num">Enq → Sold</th>
+              <th class="num">TD → Sold</th>
+              <th>Read</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-model-funnel">
+            <tr><td colspan="11" class="no-data">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Dealer x model heatmap -->
+    <div class="tab-panel" id="tab-heatmap" style="padding-bottom:16px;">
+      <div class="section-header" style="margin-bottom:10px;">
+        <h2>Dealer x Model Heatmap</h2>
+        <span style="font-size:12px;color:var(--gray-400);">Activity concentration by dealer and model. Use metric selector to switch the heatmap.</span>
+      </div>
+      <div class="filter-card" style="border-top-color:#C41230;">
+        <div class="filter-bar" style="margin:0;">
+          <div class="filter-field">
+            <label class="filter-label">Heatmap Metric</label>
+            <select class="filter-select" id="heatmap-metric" onchange="renderDealerHeatmap()" style="width:170px;">
+              <option value="enquiry">Enquiries</option>
+              <option value="test_drives">Test Drives</option>
+              <option value="new_sold">New Sold</option>
+              <option value="total_sold">Total Sold</option>
+              <option value="forecast">Forecast</option>
+            </select>
+          </div>
+          <div class="filter-field" style="align-self:flex-end;font-size:11px;color:#999;line-height:1.4;">
+            Darker cells indicate higher submitted activity for the selected metric. No stock or pipeline assumptions are used.
+          </div>
+        </div>
+      </div>
+      <div class="insight-strip">
+        <div class="insight-tile">
+          <div class="insight-kicker">Broadest Demand</div>
+          <div class="insight-main" id="heat-broad">—</div>
+          <div class="insight-sub" id="heat-broad-sub">Most dealers with activity</div>
+        </div>
+        <div class="insight-tile">
+          <div class="insight-kicker">Most Concentrated</div>
+          <div class="insight-main" id="heat-conc">—</div>
+          <div class="insight-sub" id="heat-conc-sub">Activity driven by few dealers</div>
+        </div>
+        <div class="insight-tile">
+          <div class="insight-kicker">Quietest Submitted Model</div>
+          <div class="insight-main" id="heat-quiet">—</div>
+          <div class="insight-sub" id="heat-quiet-sub">Lowest activity where dealers submitted</div>
+        </div>
+      </div>
+      <div class="heatmap-grid-wrap">
+        <table class="data-table" id="tbl-dealer-heatmap">
+          <thead id="thead-dealer-heatmap"></thead>
+          <tbody id="tbody-dealer-heatmap">
+            <tr><td class="no-data">Loading…</td></tr>
           </tbody>
         </table>
       </div>
@@ -701,6 +947,9 @@ function applyFilters() {
   renderDirectionChart();
   renderTrendChart();
   renderTrends();
+  renderModelMomentum();
+  renderModelFunnel();
+  renderDealerHeatmap();
 }
 
 /* ── KPI render ──────────────────────────────────────────── */
@@ -743,35 +992,6 @@ function renderKPIs() {
   set('k-fleet',    sum('fleet'));
   set('k-demo',     sum('demo_sold'));
   set('k-forecast', totalFcst);
-
-  // Added funnel KPI tiles: enquiries → test drives → sold, with sold including new + demo
-  const totalTD   = sum('test_drives');
-  const totalDemo = sum('demo_sold');
-  const soldIncDemo = totalSold + totalDemo;
-
-  const enqToTd   = totalEnq > 0 ? Math.round((totalTD / totalEnq) * 100) : 0;
-  const tdToSold  = totalTD > 0 ? Math.round((soldIncDemo / totalTD) * 100) : 0;
-  const enqToSold = totalEnq > 0 ? Math.round((soldIncDemo / totalEnq) * 100) : 0;
-  const demoMix   = soldIncDemo > 0 ? Math.round((totalDemo / soldIncDemo) * 100) : 0;
-
-  set('k-enq-td',    enqToTd + '%');
-  set('k-td-sold',   tdToSold + '%');
-  set('k-enq-sold',  enqToSold + '%');
-  set('k-total-sold', soldIncDemo);
-  set('k-demo-mix',  demoMix + '%');
-
-  function setKpiState(cardId, state) {
-    const el = document.getElementById(cardId);
-    if (!el) return;
-    el.classList.remove('strong', 'weak', 'neutral');
-    el.classList.add(state);
-  }
-
-  setKpiState('k-card-enq-td',    totalEnq === 0 ? 'neutral' : (enqToTd >= 35 ? 'strong' : enqToTd < 15 ? 'weak' : 'neutral'));
-  setKpiState('k-card-td-sold',   totalTD  === 0 ? 'neutral' : (tdToSold >= 35 ? 'strong' : tdToSold < 15 ? 'weak' : 'neutral'));
-  setKpiState('k-card-enq-sold',  totalEnq === 0 ? 'neutral' : (enqToSold >= 12 ? 'strong' : enqToSold < 5 ? 'weak' : 'neutral'));
-  setKpiState('k-card-total-sold', soldIncDemo > 0 ? 'strong' : 'neutral');
-  setKpiState('k-card-demo-mix',  soldIncDemo === 0 ? 'neutral' : (demoMix <= 25 ? 'strong' : demoMix >= 50 ? 'weak' : 'neutral'));
 
   // Hero KPIs
   set('h-compliance', compliance + '%');
@@ -1167,6 +1387,278 @@ function renderTrends() {
   if (!tbody.children.length) {
     tbody.innerHTML = '<tr><td colspan="7" class="no-data">No activity data for this period. Submit reports for at least 2 weeks to see WoW comparisons.</td></tr>';
   }
+}
+
+
+/* ── Model intelligence helpers ─────────────────────────── */
+function nVal(v) { return parseInt(v, 10) || 0; }
+function activityTotal(r) { return nVal(r.enquiry) + nVal(r.test_drives) + nVal(r.new_sold) + nVal(r.fleet) + nVal(r.demo_sold) + nVal(r.forecast); }
+function totalSoldRow(r) { return nVal(r.new_sold) + nVal(r.demo_sold) + nVal(r.fleet); }
+function pctText(cur, prev) {
+  if (prev === 0 && cur === 0) return { text: '—', cls: 'flat', pct: 0 };
+  if (prev === 0) return { text: '▲ new', cls: 'new', pct: 999 };
+  const pct = Math.round(((cur - prev) / prev) * 100);
+  if (pct > 0) return { text: `▲ +${pct}%`, cls: 'up', pct };
+  if (pct < 0) return { text: `▼ ${pct}%`, cls: 'down', pct };
+  return { text: '— flat', cls: 'flat', pct: 0 };
+}
+function rateText(num, den) { return den > 0 ? Math.round((num / den) * 100) + '%' : '—'; }
+function isoShift(isoDate, days) {
+  const d = new Date(isoDate + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0,10);
+}
+function prevMonthYM(dateVal) {
+  const [yr, mo] = dateVal.split('-');
+  const prevMoNum = parseInt(mo, 10) - 1;
+  const prevYr = prevMoNum === 0 ? String(parseInt(yr, 10) - 1) : yr;
+  const prevMo = String(prevMoNum === 0 ? 12 : prevMoNum).padStart(2, '0');
+  return `${prevYr}-${prevMo}`;
+}
+function rowsForDateWithCurrentFilters(dateVal) {
+  const fDealer = document.getElementById('f-dealer').value;
+  const fRegion = document.getElementById('f-region').value;
+  const fModel  = document.getElementById('f-model').value;
+  return allRows.filter(r => {
+    if (r.report_date !== dateVal) return false;
+    if (fDealer && r.dealer_code !== fDealer) return false;
+    if (fRegion && r.region !== fRegion) return false;
+    if (fModel  && r.model_bucket !== fModel) return false;
+    return true;
+  });
+}
+function rowsForMonthToDateWithCurrentFilters(yearMonth, upToDay) {
+  const fDealer = document.getElementById('f-dealer').value;
+  const fRegion = document.getElementById('f-region').value;
+  const fModel  = document.getElementById('f-model').value;
+  return allRows.filter(r => {
+    if (!r.report_date || !r.report_date.startsWith(yearMonth)) return false;
+    if (r.report_date.slice(8,10) > upToDay) return false;
+    if (fDealer && r.dealer_code !== fDealer) return false;
+    if (fRegion && r.region !== fRegion) return false;
+    if (fModel  && r.model_bucket !== fModel) return false;
+    return true;
+  });
+}
+function modelAgg(rows) {
+  const agg = {};
+  MODEL_BUCKETS.forEach(m => {
+    agg[m] = { enquiry:0, test_drives:0, new_sold:0, fleet:0, demo_sold:0, forecast:0, total_sold:0, activeDealers:new Set(), submittedDealers:new Set() };
+  });
+  rows.forEach(r => {
+    const m = r.model_bucket;
+    if (!agg[m]) return;
+    agg[m].enquiry += nVal(r.enquiry);
+    agg[m].test_drives += nVal(r.test_drives);
+    agg[m].new_sold += nVal(r.new_sold);
+    agg[m].fleet += nVal(r.fleet);
+    agg[m].demo_sold += nVal(r.demo_sold);
+    agg[m].forecast += nVal(r.forecast);
+    agg[m].total_sold += totalSoldRow(r);
+    agg[m].submittedDealers.add(r.dealer_code);
+    if (activityTotal(r) > 0) agg[m].activeDealers.add(r.dealer_code);
+  });
+  return agg;
+}
+function confidenceFromDealers(count) {
+  if (count >= 10) return { label: 'High', cls: 'strong', text: `${count} dealers` };
+  if (count >= 4) return { label: 'Medium', cls: 'medium', text: `${count} dealers` };
+  if (count >= 1) return { label: 'Low', cls: 'low', text: `${count} dealer${count === 1 ? '' : 's'}` };
+  return { label: 'No read', cls: 'quiet', text: '0 dealers' };
+}
+function modelSignal(cur, prev) {
+  const enq = pctText(cur.enquiry, prev.enquiry).pct;
+  const sold = pctText(cur.total_sold, prev.total_sold).pct;
+  if (cur.enquiry === 0 && cur.total_sold === 0) return { label: 'Low Activity', cls: 'quiet' };
+  if (enq >= 15 && sold >= 15) return { label: 'Rising', cls: 'rising' };
+  if (enq >= 15 && sold <= 0) return { label: 'Conversion Gap', cls: 'gap' };
+  if (enq <= -15 && sold <= -15) return { label: 'Cooling', cls: 'cooling' };
+  if (enq < 0 && sold > 0) return { label: 'Closing Strong', cls: 'closing' };
+  if (cur.enquiry > 0 && cur.test_drives === 0) return { label: 'Follow-up Watch', cls: 'medium' };
+  return { label: 'Stable', cls: 'low' };
+}
+function setInsight(id, main, sub) {
+  set(id, main || '—');
+  set(id + '-sub', sub || '');
+}
+
+/* ── New tab: Model Momentum ────────────────────────────── */
+function renderModelMomentum() {
+  const dateVal = document.getElementById('f-date').value || todayISO();
+  const yesterday = isoShift(dateVal, -1);
+  const prevWeek = isoShift(dateVal, -7);
+  const [yr, mo, day] = dateVal.split('-');
+  const curYM = `${yr}-${mo}`;
+  const prevYM = prevMonthYM(dateVal);
+
+  const cur = modelAgg(rowsForDateWithCurrentFilters(dateVal));
+  const prevD = modelAgg(rowsForDateWithCurrentFilters(yesterday));
+  const prevW = modelAgg(rowsForDateWithCurrentFilters(prevWeek));
+  const curM = modelAgg(rowsForMonthToDateWithCurrentFilters(curYM, day));
+  const prevM = modelAgg(rowsForMonthToDateWithCurrentFilters(prevYM, day));
+
+  const rows = MODEL_BUCKETS.map(model => {
+    const c = cur[model], d = prevD[model], w = prevW[model], cm = curM[model], pm = prevM[model];
+    const dod = pctText(c.enquiry, d.enquiry);
+    const wow = pctText(c.enquiry, w.enquiry);
+    const mom = pctText(cm.enquiry, pm.enquiry);
+    const soldWow = pctText(c.total_sold, w.total_sold);
+    const sig = modelSignal(c, w);
+    const conf = confidenceFromDealers(c.activeDealers.size);
+    const score = (wow.pct === 999 ? 100 : wow.pct) + (soldWow.pct === 999 ? 100 : soldWow.pct);
+    return { model, c, dod, wow, mom, soldWow, sig, conf, score };
+  }).filter(x => x.c.enquiry || x.c.total_sold || x.wow.pct || x.mom.pct || x.soldWow.pct || x.conf.label !== 'No read');
+
+  rows.sort((a,b) => (b.c.enquiry + b.c.total_sold + Math.max(b.score, -999)) - (a.c.enquiry + a.c.total_sold + Math.max(a.score, -999)));
+
+  const tbody = document.getElementById('tbody-model-momentum');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="no-data">No model activity for the current filter. Trends will appear once dealer submissions are received.</td></tr>';
+    setInsight('mom-top-rising', '—', 'No activity submitted');
+    setInsight('mom-top-cooling', '—', 'No activity submitted');
+    setInsight('mom-confidence', '—', 'No activity submitted');
+    return;
+  }
+
+  rows.forEach(x => {
+    const tr = document.createElement('tr');
+    const faded = x.c.enquiry === 0 && x.c.total_sold === 0;
+    if (faded) tr.style.opacity = '0.55';
+    tr.innerHTML = `
+      <td style="font-weight:700;">${x.model}</td>
+      <td class="num">${x.c.enquiry}</td>
+      <td class="num">${x.c.total_sold}</td>
+      <td class="num"><span class="metric-pill ${x.dod.cls}">${x.dod.text}</span></td>
+      <td class="num"><span class="metric-pill ${x.wow.cls}">${x.wow.text}</span></td>
+      <td class="num"><span class="metric-pill ${x.mom.cls}">${x.mom.text}</span></td>
+      <td class="num"><span class="metric-pill ${x.soldWow.cls}">${x.soldWow.text}</span></td>
+      <td><span class="signal-tag ${x.sig.cls}">${x.sig.label}</span></td>
+      <td><span class="signal-tag ${x.conf.cls}">${x.conf.label}</span><span style="font-size:11px;color:#999;margin-left:6px;">${x.conf.text}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const rising = [...rows].filter(x => x.score > 0).sort((a,b) => b.score - a.score)[0];
+  const cooling = [...rows].filter(x => x.score < 0).sort((a,b) => a.score - b.score)[0];
+  const broad = [...rows].sort((a,b) => b.c.activeDealers.size - a.c.activeDealers.size)[0];
+  setInsight('mom-top-rising', rising ? rising.model : '—', rising ? `WoW enquiry ${rising.wow.text}; WoW sold ${rising.soldWow.text}` : 'No rising model signal yet');
+  setInsight('mom-top-cooling', cooling ? cooling.model : '—', cooling ? `WoW enquiry ${cooling.wow.text}; WoW sold ${cooling.soldWow.text}` : 'No cooling model signal yet');
+  setInsight('mom-confidence', broad ? broad.model : '—', broad ? `${broad.c.activeDealers.size} dealers reporting activity today` : 'No dealer spread yet');
+}
+
+/* ── New tab: Model Funnel ──────────────────────────────── */
+function renderModelFunnel() {
+  const agg = modelAgg(filteredRows);
+  const rows = MODEL_BUCKETS.map(model => {
+    const a = agg[model];
+    const enqTd = a.enquiry > 0 ? Math.round((a.test_drives / a.enquiry) * 100) : 0;
+    const enqSold = a.enquiry > 0 ? Math.round((a.total_sold / a.enquiry) * 100) : 0;
+    const tdSold = a.test_drives > 0 ? Math.round((a.total_sold / a.test_drives) * 100) : 0;
+    let read = { label: 'Low Activity', cls: 'quiet' };
+    if (a.enquiry > 0 && enqSold >= 25) read = { label: 'Strong', cls: 'strong' };
+    else if (a.enquiry >= 5 && enqSold < 10) read = { label: 'Weak', cls: 'weak' };
+    else if (a.enquiry >= 5 && a.test_drives === 0) read = { label: 'Follow-up Gap', cls: 'gap' };
+    else if (a.test_drives >= 3 && tdSold < 15) read = { label: 'Closing Gap', cls: 'gap' };
+    else if (a.total_sold > 0) read = { label: 'Converting', cls: 'closing' };
+    return { model, a, enqTd, enqSold, tdSold, read };
+  }).filter(x => Object.values({e:x.a.enquiry,t:x.a.test_drives,n:x.a.new_sold,f:x.a.fleet,d:x.a.demo_sold,fc:x.a.forecast}).some(v => v > 0));
+
+  rows.sort((a,b) => (b.a.total_sold - a.a.total_sold) || (b.a.enquiry - a.a.enquiry));
+
+  const tbody = document.getElementById('tbody-model-funnel');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="11" class="no-data">No submitted model activity for this filter.</td></tr>';
+    setInsight('fun-best', '—', 'No activity submitted');
+    setInsight('fun-gap', '—', 'No activity submitted');
+    setInsight('fun-forecast', '—', 'No activity submitted');
+    return;
+  }
+
+  rows.forEach(x => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight:700;">${x.model}</td>
+      <td class="num">${x.a.enquiry}</td>
+      <td class="num">${x.a.test_drives}</td>
+      <td class="num">${x.a.new_sold}</td>
+      <td class="num">${x.a.demo_sold}</td>
+      <td class="num">${x.a.fleet}</td>
+      <td class="num" style="font-weight:800;">${x.a.total_sold}</td>
+      <td class="num">${rateText(x.a.test_drives, x.a.enquiry)}</td>
+      <td class="num">${rateText(x.a.total_sold, x.a.enquiry)}</td>
+      <td class="num">${rateText(x.a.total_sold, x.a.test_drives)}</td>
+      <td><span class="signal-tag ${x.read.cls}">${x.read.label}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const best = [...rows].filter(x => x.a.enquiry > 0).sort((a,b) => b.enqSold - a.enqSold)[0];
+  const gap = [...rows].filter(x => x.a.enquiry >= 5).sort((a,b) => (b.a.enquiry - b.a.total_sold) - (a.a.enquiry - a.a.total_sold))[0];
+  const fWatch = [...rows].filter(x => x.a.forecast > 0).sort((a,b) => (b.a.forecast - b.a.total_sold) - (a.a.forecast - a.a.total_sold))[0];
+  setInsight('fun-best', best ? best.model : '—', best ? `${best.enqSold}% enquiry to sold conversion from ${best.a.enquiry} enquiries` : 'No conversion read yet');
+  setInsight('fun-gap', gap ? gap.model : '—', gap ? `${gap.a.enquiry} enquiries vs ${gap.a.total_sold} total sold` : 'No conversion gap detected');
+  setInsight('fun-forecast', fWatch ? fWatch.model : '—', fWatch ? `${fWatch.a.forecast} forecast vs ${fWatch.a.total_sold} total sold in current filter` : 'No forecast data submitted');
+}
+
+/* ── New tab: Dealer x Model Heatmap ────────────────────── */
+function renderDealerHeatmap() {
+  const metricSel = document.getElementById('heatmap-metric');
+  const metric = metricSel ? metricSel.value : 'enquiry';
+  const labelMap = { enquiry:'Enquiries', test_drives:'Test Drives', new_sold:'New Sold', total_sold:'Total Sold', forecast:'Forecast' };
+  const activeModels = MODEL_BUCKETS.filter(model => filteredRows.some(r => r.model_bucket === model && (metric === 'total_sold' ? totalSoldRow(r) : nVal(r[metric])) > 0));
+  const models = activeModels.length ? activeModels : MODEL_BUCKETS.slice(0, 10);
+  const dealers = DEALERS.filter(d => !document.getElementById('f-dealer').value || d.code === document.getElementById('f-dealer').value);
+
+  const values = {};
+  let maxVal = 0;
+  dealers.forEach(d => {
+    values[d.code] = {};
+    models.forEach(m => values[d.code][m] = 0);
+  });
+  filteredRows.forEach(r => {
+    if (!values[r.dealer_code] || values[r.dealer_code][r.model_bucket] === undefined) return;
+    const v = metric === 'total_sold' ? totalSoldRow(r) : nVal(r[metric]);
+    values[r.dealer_code][r.model_bucket] += v;
+    if (values[r.dealer_code][r.model_bucket] > maxVal) maxVal = values[r.dealer_code][r.model_bucket];
+  });
+
+  const thead = document.getElementById('thead-dealer-heatmap');
+  const tbody = document.getElementById('tbody-dealer-heatmap');
+  if (!thead || !tbody) return;
+  thead.innerHTML = `<tr><th style="min-width:160px;">Dealer</th>${models.map(m => `<th class="num" title="${m}">${m}</th>`).join('')}</tr>`;
+  tbody.innerHTML = '';
+
+  dealers.forEach(d => {
+    const rowTotal = models.reduce((a,m) => a + values[d.code][m], 0);
+    const tr = document.createElement('tr');
+    if (rowTotal === 0) tr.style.opacity = '0.45';
+    tr.innerHTML = `<td style="font-weight:700;"><code style="font-size:11px;">${d.code}</code> ${d.name}</td>` + models.map(m => {
+      const v = values[d.code][m];
+      let level = 0;
+      if (v > 0 && maxVal > 0) level = Math.min(4, Math.max(1, Math.ceil((v / maxVal) * 4)));
+      return `<td class="heat-cell heat-${level}">${v || '—'}</td>`;
+    }).join('');
+    tbody.appendChild(tr);
+  });
+
+  const modelStats = models.map(m => {
+    const dealerVals = dealers.map(d => values[d.code][m]);
+    const total = dealerVals.reduce((a,b) => a + b, 0);
+    const active = dealerVals.filter(v => v > 0).length;
+    const top = dealerVals.length ? Math.max(...dealerVals) : 0;
+    const concentration = total > 0 ? Math.round((top / total) * 100) : 0;
+    return { model:m, total, active, concentration };
+  });
+  const broad = [...modelStats].sort((a,b) => b.active - a.active || b.total - a.total)[0];
+  const conc = [...modelStats].filter(x => x.total > 0).sort((a,b) => b.concentration - a.concentration)[0];
+  const quiet = [...modelStats].filter(x => x.total > 0).sort((a,b) => a.total - b.total)[0];
+  setInsight('heat-broad', broad && broad.total > 0 ? broad.model : '—', broad && broad.total > 0 ? `${broad.active} dealers submitted ${labelMap[metric].toLowerCase()}` : 'No submitted activity');
+  setInsight('heat-conc', conc ? conc.model : '—', conc ? `${conc.concentration}% of ${labelMap[metric].toLowerCase()} from top dealer` : 'No concentration read');
+  setInsight('heat-quiet', quiet ? quiet.model : '—', quiet ? `${quiet.total} total ${labelMap[metric].toLowerCase()} in current filter` : 'No quiet-model read');
 }
 
 function renderTrendChart() {
