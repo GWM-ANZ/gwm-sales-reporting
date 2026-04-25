@@ -121,6 +121,14 @@
     .kpi-card.success { border-top: 3px solid #2E7D32; }
     .kpi-card.warning { border-top: 3px solid #C84B00; }
 
+    /* Added KPI signal states — used only by the added funnel tiles */
+    .kpi-card.strong { border-top: 3px solid #2E7D32; }
+    .kpi-card.strong .kpi-value { color: #2E7D32; }
+    .kpi-card.weak { border-top: 3px solid #C41230; }
+    .kpi-card.weak .kpi-value { color: #C41230; }
+    .kpi-card.neutral { border-top: 3px solid #999; }
+    .kpi-card.neutral .kpi-value { color: #111; }
+
     /* All data table headers: black bg, white bold */
     .data-table thead th {
       background: #111;
@@ -381,6 +389,11 @@
       <div class="kpi-card"><div class="kpi-label">Fleet (5+)</div><div class="kpi-value" id="k-fleet">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Demo Sold</div><div class="kpi-value" id="k-demo">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Forecast</div><div class="kpi-value" id="k-forecast">—</div></div>
+      <div class="kpi-card" id="k-card-enq-td"><div class="kpi-label">Enq → TD %</div><div class="kpi-value" id="k-enq-td">—</div></div>
+      <div class="kpi-card" id="k-card-td-sold"><div class="kpi-label">TD → Sold %</div><div class="kpi-value" id="k-td-sold">—</div></div>
+      <div class="kpi-card" id="k-card-enq-sold"><div class="kpi-label">Enq → Sold %</div><div class="kpi-value" id="k-enq-sold">—</div></div>
+      <div class="kpi-card" id="k-card-total-sold"><div class="kpi-label">Sold Inc Demo</div><div class="kpi-value" id="k-total-sold">—</div></div>
+      <div class="kpi-card" id="k-card-demo-mix"><div class="kpi-label">Demo Mix %</div><div class="kpi-value" id="k-demo-mix">—</div></div>
     </div>
   </div>
 
@@ -730,6 +743,35 @@ function renderKPIs() {
   set('k-fleet',    sum('fleet'));
   set('k-demo',     sum('demo_sold'));
   set('k-forecast', totalFcst);
+
+  // Added funnel KPI tiles: enquiries → test drives → sold, with sold including new + demo
+  const totalTD   = sum('test_drives');
+  const totalDemo = sum('demo_sold');
+  const soldIncDemo = totalSold + totalDemo;
+
+  const enqToTd   = totalEnq > 0 ? Math.round((totalTD / totalEnq) * 100) : 0;
+  const tdToSold  = totalTD > 0 ? Math.round((soldIncDemo / totalTD) * 100) : 0;
+  const enqToSold = totalEnq > 0 ? Math.round((soldIncDemo / totalEnq) * 100) : 0;
+  const demoMix   = soldIncDemo > 0 ? Math.round((totalDemo / soldIncDemo) * 100) : 0;
+
+  set('k-enq-td',    enqToTd + '%');
+  set('k-td-sold',   tdToSold + '%');
+  set('k-enq-sold',  enqToSold + '%');
+  set('k-total-sold', soldIncDemo);
+  set('k-demo-mix',  demoMix + '%');
+
+  function setKpiState(cardId, state) {
+    const el = document.getElementById(cardId);
+    if (!el) return;
+    el.classList.remove('strong', 'weak', 'neutral');
+    el.classList.add(state);
+  }
+
+  setKpiState('k-card-enq-td',    totalEnq === 0 ? 'neutral' : (enqToTd >= 35 ? 'strong' : enqToTd < 15 ? 'weak' : 'neutral'));
+  setKpiState('k-card-td-sold',   totalTD  === 0 ? 'neutral' : (tdToSold >= 35 ? 'strong' : tdToSold < 15 ? 'weak' : 'neutral'));
+  setKpiState('k-card-enq-sold',  totalEnq === 0 ? 'neutral' : (enqToSold >= 12 ? 'strong' : enqToSold < 5 ? 'weak' : 'neutral'));
+  setKpiState('k-card-total-sold', soldIncDemo > 0 ? 'strong' : 'neutral');
+  setKpiState('k-card-demo-mix',  soldIncDemo === 0 ? 'neutral' : (demoMix <= 25 ? 'strong' : demoMix >= 50 ? 'weak' : 'neutral'));
 
   // Hero KPIs
   set('h-compliance', compliance + '%');
