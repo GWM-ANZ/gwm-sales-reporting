@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GWM Daily Sales Reporting – User Guide</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { background: #fff; }
+
+    /* Print */
+    @media print {
+      .site-header, .no-print { display: none !important; }
+      .guide-body { padding: 0; }
+      .section-block { page-break-inside: avoid; }
+      a { color: inherit; }
+    }
+
+    .guide-body {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 32px 20px 80px;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      color: #1a1a1a;
+    }
+
+    /* Cover */
+    .cover {
+      background: #111;
+      border-radius: 6px;
+      padding: 40px 40px 36px;
+      margin-bottom: 36px;
+      position: relative;
+      overflow: hidden;
+    }
+    .cover::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 4px;
+      background: #C41230;
+    }
+    .cover-logo {
+      height: 28px;
+      margin-bottom: 24px;
+      display: block;
+    }
+    .cover h1 {
+      font-size: 26px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+      line-height: 1.2;
+    }
+    .cover-sub {
+      font-size: 14px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 24px;
+    }
+    .cover-meta {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .cover-meta-item {
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+    }
+    .cover-meta-item strong {
+      display: block;
+      color: rgba(255,255,255,0.7);
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    /* TOC */
+    .toc {
+      background: #F7F7F7;
+      border-radius: 4px;
+      padding: 20px 24px;
+      margin-bottom: 36px;
+    }
+    .toc h2 {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #888;
+      margin-bottom: 12px;
+    }
+    .toc ol {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 13px;
+      line-height: 2;
+    }
+    .toc a {
+      color: #C41230;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .toc a:hover { text-decoration: underline; }
+
+    /* Section */
+    .section-block {
+      margin-bottom: 44px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #111;
+    }
+
+    .section-num {
+      width: 36px;
+      height: 36px;
+      background: #C41230;
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #111;
+    }
+
+    .section-subtitle {
+      font-size: 12px;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    /* Link card */
+    .link-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: #F7F7F7;
+      border: 1px solid #E8E8E8;
+      border-radius: 4px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.15s;
+    }
+    .link-card:hover { border-color: #C41230; }
+    .link-card-icon {
+      width: 40px;
+      height: 40px;
+      background: #111;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .link-card-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #111;
+      margin-bottom: 2px;
+    }
+    .link-card-url {
+      font-size: 11px;
+      color: #C41230;
+      font-family: 'Menlo', 'Courier New', monospace;
+      word-break: break-all;
+    }
+    .link-card-desc {
+      font-size: 12px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    /* Steps */
+    .steps { margin: 0; padding: 0; list-style: none; }
+    .step-item {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 14px;
+      align-items: flex-start;
+    }
+    .step-dot {
+      width: 24px;
+      height: 24px;
+      background: #111;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step-text {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #333;
+      padding-top: 3px;
+    }
+    .step-text strong { color: #111; }
+
+    /* Info boxes */
+    .info-box {
+      border-radius: 4px;
+      padding: 12px 16px;
+      font-size: 13px;
+      line-height: 1.6;
+      margin: 14px 0;
+    }
+    .info-box.tip  { background: #E8F5E9; border-left: 3px solid #2E7D32; color: #1B5E20; }
+    .info-box.note { background: #FFF3E0; border-left: 3px solid #C84B00; color: #7B4800; }
+    .info-box.warn { background: #FFEBEE; border-left: 3px solid #C41230; color: #7f0016; }
+
+    /* Schema table */
+    .schema-table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+    .schema-table th {
+      background: #111; color: #fff;
+      padding: 8px 12px; text-align: left;
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .schema-table td { padding: 8px 12px; border-bottom: 1px solid #EFEFEF; vertical-align: top; }
+    .schema-table tr:nth-child(even) td { background: #F7F7F7; }
+    .schema-table code {
+      font-family: 'Menlo', 'Courier New', monospace;
+      font-size: 11px; background: #E8E8E8;
+      padding: 1px 5px; border-radius: 2px; color: #C41230;
+    }
+
+    /* Code block */
+    pre.code-block {
+      background: #1a1a1a; color: #E8E8E8;
+      border-radius: 4px; padding: 16px;
+      font-family: 'Menlo', 'Courier New', monospace;
+      font-size: 12px; line-height: 1.7;
+      overflow-x: auto; margin: 12px 0;
+      white-space: pre;
+    }
+    pre.code-block .comment { color: #666; }
+    pre.code-block .highlight { color: #ff9f43; }
+
+    /* Two col */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 14px 0; }
+    @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+    .mini-card {
+      background: #F7F7F7;
+      border: 1px solid #E8E8E8;
+      border-radius: 4px;
+      padding: 14px 16px;
+    }
+    .mini-card h4 { font-size: 12px; font-weight: 700; color: #111; margin-bottom: 6px; }
+    .mini-card p  { font-size: 12px; color: #555; line-height: 1.5; margin: 0; }
+
+    /* Print btn */
+    .print-btn {
+      position: fixed;
+      bottom: 24px; right: 24px;
+      background: #111; color: #fff;
+      border: none; border-radius: 4px;
+      padding: 12px 20px;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      z-index: 100;
+    }
+    .print-btn:hover { background: #C41230; }
+
+    p { font-size: 13px; line-height: 1.7; color: #444; margin: 0 0 10px; }
+    h3 { font-size: 13px; font-weight: 700; color: #111; margin: 18px 0 8px; text-transform: uppercase; letter-spacing: 0.06em; }
+    hr { border: none; border-top: 1px solid #EFEFEF; margin: 28px 0; }
+  </style>
+</head>
+<body>
+
+<header class="site-header no-print">
+  <div class="header-left">
+    <a class="gwm-logo" href="index.html">
+      <img src="gwm-wordmark.png" class="gwm-wordmark-img" alt="GWM Australia">
+    </a>
+    <span class="header-title">User Guide</span>
+  </div>
+  <div class="header-right">
+    <a href="index.html"     class="btn btn-secondary" style="height:34px;padding:0 14px;font-size:12px;">Input Form</a>
+    <a href="dashboard.html" class="btn btn-outline"   style="height:34px;padding:0 14px;font-size:12px;">Dashboard</a>
+  </div>
+</header>
+
+<div class="guide-body">
+
+  <!-- Cover -->
+  <div class="cover">
+    <img src="gwm-wordmark.png" class="cover-logo" alt="GWM Australia">
+    <h1>Daily Sales Reporting Tool<br>Complete User Guide</h1>
+    <div class="cover-sub">Southern Region — Dealer Network</div>
+    <div class="cover-meta">
+      <div class="cover-meta-item"><strong>Version</strong>1.0 — April 2026</div>
+      <div class="cover-meta-item"><strong>Region</strong>Southern Region (VIC / TAS)</div>
+      <div class="cover-meta-item"><strong>Dealers</strong>30 Active Locations</div>
+      <div class="cover-meta-item"><strong>Prepared by</strong>GWM-ANZ</div>
+    </div>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#overview">System Overview &amp; Key Links</a></li>
+      <li><a href="#dealer-guide">Dealer Guide — Submitting Your Daily Report</a></li>
+      <li><a href="#dashboard-guide">Dashboard Guide — Viewing Live Results</a></li>
+      <li><a href="#sheets-guide">Google Sheets — Accessing Raw Data</a></li>
+      <li><a href="#powerbi-guide">Power BI — Connecting &amp; Building Reports</a></li>
+      <li><a href="#troubleshooting">Troubleshooting &amp; FAQs</a></li>
+    </ol>
+  </div>
+
+  <!-- ── Section 1: Overview ─────────────────────────────── -->
+  <div class="section-block" id="overview">
+    <div class="section-head">
+      <div class="section-num">1</div>
+      <div>
+        <div class="section-title">System Overview &amp; Key Links</div>
+        <div class="section-subtitle">What was built and how everything connects</div>
+      </div>
+    </div>
+
+    <p>The GWM Daily Sales Reporting Tool replaces the previous Excel-based weekly process with a fast, mobile-first web application. Dealers submit their daily figures in under 60 seconds. Data flows automatically into a central Google Sheet, which feeds the live dashboard and Power BI.</p>
+
+    <div class="two-col">
+      <div class="mini-card">
+        <h4>What dealers use</h4>
+        <p>A simple mobile web form — no app download required. Works on any phone or desktop browser.</p>
+      </div>
+      <div class="mini-card">
+        <h4>What GWM staff use</h4>
+        <p>The internal dashboard shows live compliance, KPIs, model-level activity, and direction split.</p>
+      </div>
+      <div class="mini-card">
+        <h4>Where data lives</h4>
+        <p>Every submission is stored as flat rows in Google Sheets — one row per model bucket per dealer per day.</p>
+      </div>
+      <div class="mini-card">
+        <h4>How Power BI connects</h4>
+        <p>Power BI reads directly from Google Sheets via a live CSV URL. No manual exports needed.</p>
+      </div>
+    </div>
+
+    <h3>All System Links</h3>
+
+    <a class="link-card" href="https://gwm-anz.github.io/gwm-sales-reporting/" target="_blank">
+      <div class="link-card-icon">📋</div>
+      <div>
+        <div class="link-card-label">Dealer Input Form</div>
+        <div class="link-card-url">https://gwm-anz.github.io/gwm-sales-reporting/</div>
+        <div class="link-card-desc">Share this link with all 30 dealers. Works on phone and desktop.</div>
+      </div>
+    </a>
+
+    <a class="link-card" href="https://gwm-anz.github.io/gwm-sales-reporting/dashboard.html" target="_blank">
+      <div class="link-card-icon">📊</div>
+      <div>
+        <div class="link-card-label">Internal GWM Dashboard</div>
+        <div class="link-card-url">https://gwm-anz.github.io/gwm-sales-reporting/dashboard.html</div>
+        <div class="link-card-desc">For GWM staff only. Shows live KPIs, compliance, model summary, charts.</div>
+      </div>
+    </a>
+
+    <a class="link-card" href="https://docs.google.com/spreadsheets/d/1RgHHcIgq_onYKgh9PC6IqsFXxTWbgM_GAVxJSV0NPrY/edit" target="_blank">
+      <div class="link-card-icon">🟢</div>
+      <div>
+        <div class="link-card-label">Google Sheet — Raw Data</div>
+        <div class="link-card-url">https://docs.google.com/spreadsheets/d/1RgHHcIgq_onYKgh9PC6IqsFXxTWbgM_GAVxJSV0NPrY/edit</div>
+        <div class="link-card-desc">All submission data. Each row = one model bucket for one dealer on one day.</div>
+      </div>
+    </a>
+
+    <a class="link-card" href="https://docs.google.com/spreadsheets/d/1RgHHcIgq_onYKgh9PC6IqsFXxTWbgM_GAVxJSV0NPrY/gviz/tq?tqx=out:csv&sheet=submissions" target="_blank">
+      <div class="link-card-icon">📥</div>
+      <div>
+        <div class="link-card-label">Power BI Live Data URL (CSV)</div>
+        <div class="link-card-url">https://docs.google.com/spreadsheets/d/1RgHHcIgq_onYKgh9PC6IqsFXxTWbgM_GAVxJSV0NPrY/gviz/tq?tqx=out:csv&sheet=submissions</div>
+        <div class="link-card-desc">Paste directly into Power BI "Get Data → Web" for a live connection.</div>
+      </div>
+    </a>
+
+    <a class="link-card" href="https://gwm-anz.github.io/gwm-sales-reporting/setup-guide.html" target="_blank">
+      <div class="link-card-icon">⚙</div>
+      <div>
+        <div class="link-card-label">Technical Setup Guide</div>
+        <div class="link-card-url">https://gwm-anz.github.io/gwm-sales-reporting/setup-guide.html</div>
+        <div class="link-card-desc">For IT/admin use. Covers backend changes, Apps Script, GitHub updates.</div>
+      </div>
+    </a>
+  </div>
+
+  <hr>
+
+  <!-- ── Section 2: Dealer Guide ────────────────────────── -->
+  <div class="section-block" id="dealer-guide">
+    <div class="section-head">
+      <div class="section-num">2</div>
+      <div>
+        <div class="section-title">Dealer Guide</div>
+        <div class="section-subtitle">How to submit your daily sales report — takes under 60 seconds</div>
+      </div>
+    </div>
+
+    <div class="info-box tip">
+      <strong>📱 Mobile first.</strong> This form is designed for phones. Bookmark the link on your home screen for fastest daily access.
+    </div>
+
+    <h3>How to Submit</h3>
+    <ul class="steps">
+      <li class="step-item">
+        <div class="step-dot">1</div>
+        <div class="step-text">Open <strong>https://gwm-anz.github.io/gwm-sales-reporting/</strong> on your phone or computer. Bookmark it for daily use.</div>
+      </li>
+      <li class="step-item">
+        <div class="step-dot">2</div>
+        <div class="step-text">Select your <strong>Dealer</strong> from the dropdown. Your selection is remembered for next time.</div>
+      </li>
+      <li class="step-item">
+        <div class="step-dot">3</div>
+        <div class="step-text">Enter your <strong>name</strong> in the "Submitted By" field. This is remembered between sessions.</div>
+      </li>
+      <li class="step-item">
+        <div class="step-dot">4</div>
+        <div class="step-text">Select <strong>Direction vs Yesterday</strong> — Up, Flat, or Down. This reflects overall traffic/activity sentiment for the day.</div>
+      </li>
+      <li class="step-item">
+        <div class="step-dot">5</div>
+        <div class="step-text">Fill in the <strong>Model Bucket Grid</strong>. Enter numbers for each model you have activity on. Models with no activity can be left as 0. Use Tab to move between cells quickly.</div>
+      </li>
+      <li class="step-item">
+        <div class="step-dot">6</div>
+        <div class="step-text">Check the <strong>Live Totals bar</strong> at the top of the grid — it shows your running total for Enquiries, Test Drives, New Sold, Fleet, Demo Sold, and Forecast.</div>
+      </li>
+      <li class="step-item">
+        <div class="step-dot">7</div>
+        <div class="step-text">Press <strong>Submit Daily Report</strong>. You'll see a confirmation screen. Done.</div>
+      </li>
+    </ul>
+
+    <div class="info-box warn">
+      <strong>⏰ Submit before 10:00 AM.</strong> Reports submitted after 10:00 AM are automatically flagged as late. A red "LATE" badge appears in the header as a reminder.
+    </div>
+
+    <h3>Model Bucket Grid — What to Enter</h3>
+    <table class="schema-table">
+      <thead>
+        <tr><th>Column</th><th>What to enter</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Enquiry</strong></td><td>Total customer enquiries received today for this model (walk-in, phone, online)</td></tr>
+        <tr><td><strong>Test Drives</strong></td><td>Number of test drives conducted today for this model</td></tr>
+        <tr><td><strong>New Sold</strong></td><td>Number of new vehicle sales contracted today</td></tr>
+        <tr><td><strong>Fleet (5+)</strong></td><td>Fleet deals of 5 or more units — enter total units, not number of deals</td></tr>
+        <tr><td><strong>Demo Sold</strong></td><td>Number of demonstrator vehicles sold today</td></tr>
+        <tr><td><strong>Forecast</strong></td><td>Your forecast for total deliveries/handovers this month for this model</td></tr>
+      </tbody>
+    </table>
+
+    <div class="info-box tip">
+      <strong>Tip:</strong> You only need to fill in models where you have activity. All fields default to 0 — just update the ones that changed today.
+    </div>
+
+    <h3>Bookmarking to Your Home Screen</h3>
+    <div class="two-col">
+      <div class="mini-card">
+        <h4>iPhone (Safari)</h4>
+        <p>Open the link in Safari → tap the Share icon → "Add to Home Screen" → tap Add. The form icon will appear on your home screen.</p>
+      </div>
+      <div class="mini-card">
+        <h4>Android (Chrome)</h4>
+        <p>Open the link in Chrome → tap the three-dot menu → "Add to Home screen" → tap Add. Works like an app shortcut.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ── Section 3: Dashboard ───────────────────────────── -->
+  <div class="section-block" id="dashboard-guide">
+    <div class="section-head">
+      <div class="section-num">3</div>
+      <div>
+        <div class="section-title">Dashboard Guide</div>
+        <div class="section-subtitle">Viewing live results — for GWM internal staff</div>
+      </div>
+    </div>
+
+    <a class="link-card" href="https://gwm-anz.github.io/gwm-sales-reporting/dashboard.html" target="_blank">
+      <div class="link-card-icon">📊</div>
+      <div>
+        <div class="link-card-label">Open Dashboard</div>
+        <div class="link-card-url">https://gwm-anz.github.io/gwm-sales-reporting/dashboard.html</div>
+      </div>
+    </a>
+
+    <h3>KPI Cards</h3>
+    <p>The top row shows 11 live KPIs for the selected date:</p>
+    <table class="schema-table">
+      <thead><tr><th>KPI</th><th>What it means</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Submissions Today</strong></td><td>Total number of form submissions received</td></tr>
+        <tr><td><strong>Dealers Submitted</strong></td><td>How many distinct dealers have submitted</td></tr>
+        <tr><td><strong>Dealers Missing</strong></td><td>Dealers yet to submit — names shown below the number</td></tr>
+        <tr><td><strong>Late Submissions</strong></td><td>How many dealers submitted after 10:00 AM</td></tr>
+        <tr><td><strong>Compliance %</strong></td><td>Dealers submitted ÷ 30 total dealers × 100</td></tr>
+        <tr><td><strong>Total Enquiries</strong></td><td>Sum of all enquiry figures across all dealers and models</td></tr>
+        <tr><td><strong>Test Drives</strong></td><td>Sum of all test drive figures</td></tr>
+        <tr><td><strong>New Sold</strong></td><td>Sum of all new vehicle sales</td></tr>
+        <tr><td><strong>Fleet (5+)</strong></td><td>Sum of all fleet deal units</td></tr>
+        <tr><td><strong>Demo Sold</strong></td><td>Sum of demonstrator sales</td></tr>
+        <tr><td><strong>Forecast</strong></td><td>Sum of all dealer forecasts</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Filters</h3>
+    <p>Use the filter bar to narrow data by <strong>Date</strong>, <strong>Dealer</strong>, <strong>Region</strong>, or <strong>Model</strong>. Click <strong>Apply</strong> to refresh all KPIs, charts, and tables.</p>
+
+    <h3>Tabs</h3>
+    <div class="two-col">
+      <div class="mini-card">
+        <h4>Dealer Compliance</h4>
+        <p>Full list of all 30 dealers with submission status, time, late flag, and summary figures.</p>
+      </div>
+      <div class="mini-card">
+        <h4>Model Summary</h4>
+        <p>All 19 model buckets with aggregate totals and conversion rate (New Sold ÷ Enquiries).</p>
+      </div>
+      <div class="mini-card">
+        <h4>Row Detail</h4>
+        <p>Individual submission rows with all figures. Shows up to 200 rows — export CSV for full data.</p>
+      </div>
+      <div class="mini-card">
+        <h4>Charts</h4>
+        <p>Direction split donut (Up/Flat/Down) and daily enquiry trend line for 7, 14, or 30 days.</p>
+      </div>
+    </div>
+
+    <h3>Refreshing Data</h3>
+    <p>Click the <strong>↻ Refresh</strong> button in the header to pull the latest submissions. The dashboard does not auto-refresh — click manually when you want the latest view.</p>
+
+    <h3>Exporting CSV</h3>
+    <p>Click <strong>⬇ Export CSV</strong> in the filter bar to download all currently filtered rows as a CSV file, matching the Google Sheet schema exactly.</p>
+  </div>
+
+  <hr>
+
+  <!-- ── Section 4: Google Sheets ──────────────────────── -->
+  <div class="section-block" id="sheets-guide">
+    <div class="section-head">
+      <div class="section-num">4</div>
+      <div>
+        <div class="section-title">Google Sheets — Raw Data</div>
+        <div class="section-subtitle">Accessing, understanding, and sharing the data source</div>
+      </div>
+    </div>
+
+    <a class="link-card" href="https://docs.google.com/spreadsheets/d/1RgHHcIgq_onYKgh9PC6IqsFXxTWbgM_GAVxJSV0NPrY/edit" target="_blank">
+      <div class="link-card-icon">🟢</div>
+      <div>
+        <div class="link-card-label">Open Google Sheet</div>
+        <div class="link-card-url">https://docs.google.com/spreadsheets/d/1RgHHcIgq_onYKgh9PC6IqsFXxTWbgM_GAVxJSV0NPrY/edit</div>
+        <div class="link-card-desc">The master data source. All submissions land here automatically.</div>
+      </div>
+    </a>
+
+    <div class="info-box note">
+      <strong>Data structure:</strong> Each dealer submission creates <strong>19 rows</strong> — one per model bucket. A dealer submitting today for 5 active models will still create 19 rows, with zeros for inactive models. This flat structure is intentional and required for Power BI.
+    </div>
+
+    <h3>Column Reference</h3>
+    <table class="schema-table">
+      <thead><tr><th>Column</th><th>Name</th><th>Example</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>A</td><td><code>submitted_at</code></td><td>2026-04-25T02:14:00Z</td><td>UTC timestamp — convert to AEST (+10) in Power BI</td></tr>
+        <tr><td>B</td><td><code>report_date</code></td><td>2026-04-25</td><td>The date the report covers (AEST date)</td></tr>
+        <tr><td>C</td><td><code>is_late</code></td><td>FALSE</td><td>TRUE if submitted after 10:00 AM local time</td></tr>
+        <tr><td>D</td><td><code>dealer_code</code></td><td>H3100</td><td>Unique dealer identifier</td></tr>
+        <tr><td>E</td><td><code>dealer_name</code></td><td>Berwick GWM</td><td>Full dealer name</td></tr>
+        <tr><td>F</td><td><code>region</code></td><td>Southern Region</td><td>For future multi-region expansion</td></tr>
+        <tr><td>G</td><td><code>submitted_by</code></td><td>Jane Smith</td><td>Name entered by the submitter</td></tr>
+        <tr><td>H</td><td><code>direction</code></td><td>Up</td><td>Up / Flat / Down</td></tr>
+        <tr><td>I</td><td><code>model_bucket</code></td><td>Jolion ICE</td><td>One of 19 fixed model values</td></tr>
+        <tr><td>J</td><td><code>enquiry</code></td><td>4</td><td>Integer ≥ 0</td></tr>
+        <tr><td>K</td><td><code>test_drives</code></td><td>2</td><td>Integer ≥ 0</td></tr>
+        <tr><td>L</td><td><code>new_sold</code></td><td>1</td><td>Integer ≥ 0</td></tr>
+        <tr><td>M</td><td><code>fleet_5_plus</code></td><td>0</td><td>Fleet units (deals of 5+)</td></tr>
+        <tr><td>N</td><td><code>demo_sold</code></td><td>0</td><td>Integer ≥ 0</td></tr>
+        <tr><td>O</td><td><code>forecast</code></td><td>3</td><td>Monthly delivery forecast for this model</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Making it Accessible for Power BI</h3>
+    <ul class="steps">
+      <li class="step-item">
+        <div class="step-dot">1</div>
+        <div class="step-text">Open the Google Sheet → click <strong>Share</strong> (top right)</div>
+      </li>
+      <li class="step-item">
+        <div class="step-dot">2</div>
+        <div class="step-text">Under "General access" → change to <strong>"Anyone with the link"</strong> → set role to <strong>Viewer</strong></div>
+      </li>
+      <li class="step-item">
+        <div class="step-dot">3</div>
+        <div class="step-text">Click <strong>Done</strong> — Power BI can now read the sheet without requiring login</div>
+      </li>
+    </ul>
+  </div>
+
+  <hr>
+
+  <!-- ── Section 5: Power BI ────────────────────────────── -->
+  <div class="section-block" id="powerbi-guide">
+    <div class="section-head">
+      <div class="section-num">5</div>
+      <div>
+        <div class="section-title">Power BI — Connecting &amp; Building Reports</div>
+        <div class="section-subtitle">Live connection from Google Sheets to Power BI Desktop</div>
+      </div>
+    </div>
+
+    <div class="info-box tip">
+      <strong>Prerequisite:</strong> The Google Sheet must be set to "Anyone with the link can view" (see Section 4 above) before Power BI can connect.
+    </div>
+
+    <h3>Step 1 — Connect Power BI to the Data</h3>
+    <ul class="steps">
+      <li class="step-item">
+        <div class="step-dot">1</div>
+        <div class="step-text">Open <strong>Power BI Desktop</strong> → click <strong>Get Data</strong> → select <strong>Web</strong></div>
+      </li>
+      <li class="step-item">
+        <div class="step-dot">2</div>
+        <div class="step-text">Paste this URL and click <strong>OK</strong>:</div>
+      </li>
+    </ul>
+    <pre class="code-block">https://docs.google.com/spreadsheets/d/1RgHHcIgq_onYKgh9PC6IqsFXxTWbgM_GAVxJSV0NPrY/gviz/tq?tqx=out:csv&sheet=submissions</pre>
+    <ul class="steps">
+      <li class="step-item">
+        <div class="step-dot">3</div>
+        <div class="step-text">In the preview, click <strong>Transform Data</strong> to open Power Query</div>
+      </li>
+      <li class="step-item">
+        <div class="step-dot">4</div>
+        <div class="step-text">Click <strong>"Use First Row as Headers"</strong> if not already applied</div>
+      </li>
+      <li class="step-item">
+        <div class="step-dot">5</div>
+        <div class="step-text">Set column data types (see table below)</div>
+      </li>
+      <li class="step-item">
+        <div class="step-dot">6</div>
+        <div class="step-text">Click <strong>Close &amp; Apply</strong></div>
+      </li>
+    </ul>
+
+    <h3>Step 2 — Set Column Data Types</h3>
+    <table class="schema-table">
+      <thead><tr><th>Column</th><th>Power BI Type</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>submitted_at</code></td><td>Date/Time</td><td>UTC — add a calculated column for AEST: <code>= [submitted_at] + #duration(0,10,0,0)</code></td></tr>
+        <tr><td><code>report_date</code></td><td>Date</td><td>Use this as your primary date filter axis</td></tr>
+        <tr><td><code>is_late</code></td><td>True/False</td><td>Filter by TRUE to see late submissions</td></tr>
+        <tr><td><code>dealer_code</code></td><td>Text</td><td>Use as slicer</td></tr>
+        <tr><td><code>dealer_name</code></td><td>Text</td><td>Use as slicer (more readable)</td></tr>
+        <tr><td><code>region</code></td><td>Text</td><td>For future multi-region filtering</td></tr>
+        <tr><td><code>submitted_by</code></td><td>Text</td><td></td></tr>
+        <tr><td><code>direction</code></td><td>Text</td><td>Values: Up / Flat / Down</td></tr>
+        <tr><td><code>model_bucket</code></td><td>Text</td><td>Use as row axis in matrix visuals</td></tr>
+        <tr><td><code>enquiry</code></td><td>Whole Number</td><td></td></tr>
+        <tr><td><code>test_drives</code></td><td>Whole Number</td><td></td></tr>
+        <tr><td><code>new_sold</code></td><td>Whole Number</td><td></td></tr>
+        <tr><td><code>fleet_5_plus</code></td><td>Whole Number</td><td></td></tr>
+        <tr><td><code>demo_sold</code></td><td>Whole Number</td><td></td></tr>
+        <tr><td><code>forecast</code></td><td>Whole Number</td><td></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Step 3 — Key DAX Measures to Create</h3>
+    <p>In Power BI, click <strong>New Measure</strong> and add these:</p>
+
+    <pre class="code-block"><span class="comment">-- Compliance rate (30 = total dealers in network)</span>
+Compliance % =
+DIVIDE(
+    DISTINCTCOUNT(submissions[dealer_code]),
+    30
+) * 100
+
+<span class="comment">-- Enquiry to sale conversion</span>
+Conversion Rate % =
+DIVIDE(
+    SUM(submissions[new_sold]),
+    SUM(submissions[enquiry])
+) * 100
+
+<span class="comment">-- Late submission count</span>
+Late Submissions =
+CALCULATE(
+    DISTINCTCOUNT(submissions[dealer_code]),
+    submissions[is_late] = TRUE()
+)
+
+<span class="comment">-- Dealers who submitted today</span>
+Dealers Submitted =
+DISTINCTCOUNT(submissions[dealer_code])
+
+<span class="comment">-- Dealers missing (total - submitted)</span>
+Dealers Missing = 30 - [Dealers Submitted]
+
+<span class="comment">-- Total new sold (use for KPI card)</span>
+Total New Sold = SUM(submissions[new_sold])
+
+<span class="comment">-- Total enquiries</span>
+Total Enquiries = SUM(submissions[enquiry])</pre>
+
+    <h3>Step 4 — Recommended Visuals</h3>
+    <table class="schema-table">
+      <thead><tr><th>Visual Type</th><th>Configuration</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><strong>KPI Card</strong></td><td>Value: Compliance % / Target: 100</td><td>Daily compliance at a glance</td></tr>
+        <tr><td><strong>KPI Card</strong></td><td>Value: Total New Sold</td><td>Daily sales total</td></tr>
+        <tr><td><strong>KPI Card</strong></td><td>Value: Total Enquiries</td><td>Pipeline health</td></tr>
+        <tr><td><strong>Bar Chart</strong></td><td>X: model_bucket / Y: new_sold</td><td>Sales by model</td></tr>
+        <tr><td><strong>Line Chart</strong></td><td>X: report_date / Y: enquiry, new_sold</td><td>Daily trend</td></tr>
+        <tr><td><strong>Matrix</strong></td><td>Rows: dealer_name / Cols: model_bucket / Values: new_sold</td><td>Dealer × model heatmap</td></tr>
+        <tr><td><strong>Donut Chart</strong></td><td>Legend: direction / Values: count</td><td>Up/Flat/Down split</td></tr>
+        <tr><td><strong>Table</strong></td><td>dealer_name, Dealers Submitted, Late Submissions</td><td>Compliance table with conditional formatting</td></tr>
+        <tr><td><strong>Slicer</strong></td><td>Field: report_date (date range)</td><td>Filter all visuals by date</td></tr>
+        <tr><td><strong>Slicer</strong></td><td>Field: dealer_name</td><td>Filter to individual dealer</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Step 5 — Set Up Automatic Refresh</h3>
+    <ul class="steps">
+      <li class="step-item">
+        <div class="step-dot">1</div>
+        <div class="step-text">Publish your report to <strong>Power BI Service</strong> (powerbi.com)</div>
+      </li>
+      <li class="step-item">
+        <div class="step-dot">2</div>
+        <div class="step-text">In Power BI Service → go to your dataset → <strong>Settings → Scheduled Refresh</strong></div>
+      </li>
+      <li class="step-item">
+        <div class="step-dot">3</div>
+        <div class="step-text">Enable refresh → set frequency to <strong>Daily</strong> at e.g. 11:00 AM AEST (after all dealers should have submitted)</div>
+      </li>
+      <li class="step-item">
+        <div class="step-dot">4</div>
+        <div class="step-text">Add your email for <strong>refresh failure notifications</strong></div>
+      </li>
+    </ul>
+
+    <div class="info-box note">
+      <strong>Free tier limit:</strong> Power BI Pro allows up to 8 scheduled refreshes per day. The free tier allows 1 per day. For near-real-time data, consider using Power BI Premium or manually refreshing the dataset.
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ── Section 6: Troubleshooting ────────────────────── -->
+  <div class="section-block" id="troubleshooting">
+    <div class="section-head">
+      <div class="section-num">6</div>
+      <div>
+        <div class="section-title">Troubleshooting &amp; FAQs</div>
+        <div class="section-subtitle">Common questions and how to fix them</div>
+      </div>
+    </div>
+
+    <h3>Form Issues</h3>
+    <table class="schema-table">
+      <thead><tr><th>Problem</th><th>Solution</th></tr></thead>
+      <tbody>
+        <tr><td>Form won't submit — "required fields" error</td><td>Make sure Dealer, Submitted By, and Direction are all filled in before submitting</td></tr>
+        <tr><td>Shows "LATE" badge in header</td><td>It's past 10:00 AM — your report will be flagged late but will still submit successfully</td></tr>
+        <tr><td>Page won't load on phone</td><td>Check your internet connection. Try opening in Chrome or Safari. The site is at <strong>gwm-anz.github.io/gwm-sales-reporting/</strong></td></tr>
+        <tr><td>Submitted but nothing in Google Sheet</td><td>Wait 30 seconds and refresh the sheet. If still empty, contact your GWM rep — the backend may need reconnecting</td></tr>
+        <tr><td>Dealer name not in dropdown</td><td>Contact GWM-ANZ to have the dealer added to the system</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Dashboard Issues</h3>
+    <table class="schema-table">
+      <thead><tr><th>Problem</th><th>Solution</th></tr></thead>
+      <tbody>
+        <tr><td>Dashboard showing demo data (orange banner)</td><td>Click the ⚙ button (bottom right) and paste the Apps Script URL</td></tr>
+        <tr><td>Dealer shows as "Missing" but they submitted</td><td>Check the date filter — ensure it's set to today's date. Click Apply.</td></tr>
+        <tr><td>Charts not loading</td><td>Refresh the page. Charts require an internet connection to load Chart.js</td></tr>
+        <tr><td>Export CSV is empty</td><td>Make sure your filters return data — try clearing all filters and exporting again</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Power BI Issues</h3>
+    <table class="schema-table">
+      <thead><tr><th>Problem</th><th>Solution</th></tr></thead>
+      <tbody>
+        <tr><td>Power BI can't connect to the URL</td><td>Ensure the Google Sheet is shared as "Anyone with the link can view"</td></tr>
+        <tr><td>Data not refreshing in Power BI Service</td><td>Web connector data sources use anonymous credentials — check the gateway settings aren't blocking anonymous access</td></tr>
+        <tr><td>Headers showing as Column1, Column2</td><td>In Power Query, click "Use First Row as Headers"</td></tr>
+        <tr><td>Date column showing as text</td><td>In Power Query, click the column header → Change Type → Date</td></tr>
+      </tbody>
+    </table>
+
+    <div class="info-box tip">
+      <strong>Need help?</strong> Contact your GWM-ANZ administrator or refer to the Technical Setup Guide at <strong>gwm-anz.github.io/gwm-sales-reporting/setup-guide.html</strong>
+    </div>
+  </div>
+
+  <p style="text-align:center;font-size:11px;color:#aaa;margin-top:40px;">
+    GWM-ANZ · Daily Sales Reporting Tool · Southern Region · Version 1.0 · April 2026
+  </p>
+
+</div><!-- /guide-body -->
+
+<button class="print-btn no-print" onclick="window.print()">🖨 Print / Save PDF</button>
+
+</body>
+</html>
