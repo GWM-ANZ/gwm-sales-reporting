@@ -501,6 +501,11 @@
       <div class="kpi-card"><div class="kpi-label">Fleet (5+)</div><div class="kpi-value" id="k-fleet">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Demo Sold</div><div class="kpi-value" id="k-demo">—</div></div>
       <div class="kpi-card"><div class="kpi-label">Forecast</div><div class="kpi-value" id="k-forecast">—</div></div>
+      <div class="kpi-card success"><div class="kpi-label">Total Orders</div><div class="kpi-value" id="k-orders">—</div><div class="kpi-sub">New + demo + fleet</div></div>
+      <div class="kpi-card"><div class="kpi-label">Enq → Test Drive</div><div class="kpi-value" id="k-enq-td">—</div><div class="kpi-sub" id="k-enq-td-sub"></div></div>
+      <div class="kpi-card"><div class="kpi-label">Test Drive → Order</div><div class="kpi-value" id="k-td-order">—</div><div class="kpi-sub" id="k-td-order-sub"></div></div>
+      <div class="kpi-card accent"><div class="kpi-label">Enquiry → Order</div><div class="kpi-value" id="k-enq-order">—</div><div class="kpi-sub" id="k-enq-order-sub"></div></div>
+      <div class="kpi-card"><div class="kpi-label">Demo vs New</div><div class="kpi-value" id="k-demo-mix">—</div><div class="kpi-sub" id="k-demo-mix-sub"></div></div>
     </div>
   </div>
 
@@ -993,15 +998,30 @@ function renderKPIs() {
   bar.classList.toggle('good', compliance >= 80);
 
   const sum = key => rows.reduce((a, r) => a + (parseInt(r[key]) || 0), 0);
-  const totalEnq  = sum('enquiry');
-  const totalSold = sum('new_sold');
-  const totalFcst = sum('forecast');
+  const totalEnq   = sum('enquiry');
+  const totalTD    = sum('test_drives');
+  const totalSold  = sum('new_sold');
+  const totalFleet = sum('fleet');
+  const totalDemo  = sum('demo_sold');
+  const totalFcst  = sum('forecast');
+  const totalOrders = totalSold + totalDemo + totalFleet;
+  const pct = (num, den) => den > 0 ? Math.round((num / den) * 100) + '%' : '0%';
+
   set('k-enq',      totalEnq);
-  set('k-td',       sum('test_drives'));
+  set('k-td',       totalTD);
   set('k-sold',     totalSold);
-  set('k-fleet',    sum('fleet'));
-  set('k-demo',     sum('demo_sold'));
+  set('k-fleet',    totalFleet);
+  set('k-demo',     totalDemo);
   set('k-forecast', totalFcst);
+  set('k-orders',   totalOrders);
+  set('k-enq-td',   pct(totalTD, totalEnq));
+  set('k-td-order', pct(totalOrders, totalTD));
+  set('k-enq-order', pct(totalOrders, totalEnq));
+  set('k-demo-mix', pct(totalDemo, totalSold + totalDemo));
+  set('k-enq-td-sub', totalTD + ' TD from ' + totalEnq + ' enquiries');
+  set('k-td-order-sub', totalOrders + ' orders from ' + totalTD + ' TDs');
+  set('k-enq-order-sub', totalOrders + ' orders from ' + totalEnq + ' enquiries');
+  set('k-demo-mix-sub', totalDemo + ' demo sold vs ' + totalSold + ' new sold');
 
   // Hero KPIs
   set('h-compliance', compliance + '%');

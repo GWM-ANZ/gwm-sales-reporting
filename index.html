@@ -665,6 +665,7 @@ function init() {
   });
 
   document.getElementById('dealer-select').addEventListener('change', () => {
+    prepareDealerWorkspace();
     updateSubmitPreview();
     loadForecastForSelectedDealer().then(loadExistingSubmissionIfUnlocked).then(loadDraftForSelectedDealer);
   });
@@ -856,6 +857,34 @@ function onGridKeyDown(e) {
 }
 
 /* ── Live totals ─────────────────────────────────────────── */
+function clearGridData(options = {}) {
+  const includeForecast = options.includeForecast !== false;
+  MODEL_BUCKETS.forEach(model => {
+    GRID_COLS.forEach(col => {
+      if (!includeForecast && col.key === 'forecast') return;
+      if (gridData[model]) gridData[model][col.key] = null;
+      const inp = Array.from(document.querySelectorAll('.grid-input')).find(el => el.getAttribute('data-model') === model && el.getAttribute('data-col') === col.key);
+      if (inp) { inp.value = ''; inp.classList.remove('nonzero'); }
+    });
+    updateRowTotal(model);
+  });
+  updateLiveTotals();
+  updateQuickSummary();
+}
+
+function prepareDealerWorkspace() {
+  clearGridData({ includeForecast: true });
+  quickActivityLog = [];
+  renderActivityLog();
+  updateQuickSummary();
+  manualGridEditCount = 0;
+  lastUpdatedAt = null;
+  formOpenedAt = Date.now();
+  const unlockBanner = document.getElementById('unlock-banner');
+  if (unlockBanner) unlockBanner.style.display = 'none';
+  setDraftStatus('Select dealer to enable draft save');
+}
+
 function updateLiveTotals() {
   const totals = {};
   GRID_COLS.forEach(c => { totals[c.key] = 0; });

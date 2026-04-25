@@ -172,23 +172,61 @@ function getSheet() {
 }
 
 function ensureHeaders(sheet) {
-  if (sheet.getLastRow() === 0) {
+  const lastRow = sheet.getLastRow();
+
+  if (lastRow === 0) {
     sheet.appendRow(COLUMNS);
-    // Style the header row
-    const headerRange = sheet.getRange(1, 1, 1, COLUMNS.length);
-    headerRange.setFontWeight('bold');
-    headerRange.setBackground('#111111');
-    headerRange.setFontColor('#FFFFFF');
-    sheet.setFrozenRows(1);
-    // Set column widths
-    sheet.setColumnWidth(1, 180);  // submitted_at
-    sheet.setColumnWidth(2, 110);  // report_date
-    sheet.setColumnWidth(5, 200);  // dealer_name
-    sheet.setColumnWidth(9, 160);  // is_complete_submission
-    sheet.setColumnWidth(10, 130); // input_method
-    sheet.setColumnWidth(12, 180); // last_updated_at
-    sheet.setColumnWidth(13, 160); // model_bucket
+    styleHeader(sheet);
+    return;
   }
+
+  const currentHeaders = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), COLUMNS.length)).getValues()[0]
+    .map(h => String(h || '').trim())
+    .filter(h => h !== '');
+  const matches = COLUMNS.length === currentHeaders.length && COLUMNS.every((h, i) => h === currentHeaders[i]);
+  if (matches) {
+    styleHeader(sheet);
+    return;
+  }
+
+  // Safe migration for older sheets. Rebuild rows by header name so existing historical data is preserved.
+  const existingValues = sheet.getDataRange().getValues();
+  const oldHeaders = existingValues[0].map(h => String(h || '').trim());
+  const migrated = [COLUMNS];
+
+  for (let r = 1; r < existingValues.length; r++) {
+    const obj = {};
+    oldHeaders.forEach((h, c) => { if (h) obj[h] = existingValues[r][c]; });
+
+    migrated.push(COLUMNS.map(col => {
+      if (col === 'fleet_5_plus') return obj['fleet_5_plus'] !== undefined ? obj['fleet_5_plus'] : (obj['fleet'] !== undefined ? obj['fleet'] : '');
+      if (col === 'is_complete_submission') return obj[col] !== undefined ? obj[col] : '';
+      if (col === 'input_method') return obj[col] !== undefined ? obj[col] : '';
+      if (col === 'submission_duration_seconds') return obj[col] !== undefined ? obj[col] : '';
+      if (col === 'last_updated_at') return obj[col] !== undefined ? obj[col] : (obj['submitted_at'] || '');
+      return obj[col] !== undefined ? obj[col] : '';
+    }));
+  }
+
+  sheet.clearContents();
+  sheet.getRange(1, 1, migrated.length, COLUMNS.length).setValues(migrated);
+  styleHeader(sheet);
+}
+
+function styleHeader(sheet) {
+  const headerRange = sheet.getRange(1, 1, 1, COLUMNS.length);
+  headerRange.setValues([COLUMNS]);
+  headerRange.setFontWeight('bold');
+  headerRange.setBackground('#111111');
+  headerRange.setFontColor('#FFFFFF');
+  sheet.setFrozenRows(1);
+  sheet.setColumnWidth(1, 180);  // submitted_at
+  sheet.setColumnWidth(2, 110);  // report_date
+  sheet.setColumnWidth(5, 200);  // dealer_name
+  sheet.setColumnWidth(9, 160);  // is_complete_submission
+  sheet.setColumnWidth(10, 130); // input_method
+  sheet.setColumnWidth(12, 180); // last_updated_at
+  sheet.setColumnWidth(13, 160); // model_bucket
 }
 
 

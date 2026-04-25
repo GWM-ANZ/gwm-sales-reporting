@@ -35,7 +35,7 @@
     }
     .header-red-line { height: 3px; background: #C41230; }
     .header-actions { display: flex; gap: 8px; align-items: center; }
-  </style>
+  
 
     .guide-header {
       background: var(--black); color: #fff;
@@ -169,31 +169,36 @@
         <li>Go to <strong>sheets.google.com</strong> and create a new blank spreadsheet.</li>
         <li>Name it: <strong>GWM Daily Sales – Southern Region</strong></li>
         <li>Copy the URL — find the long ID between <code>/d/</code> and <code>/edit</code>. This is your <code>SHEET_ID</code>.</li>
-        <li>The Apps Script will auto-create the correct tab and header row on first submission. You don't need to add headers manually.</li>
+        <li>The Apps Script will auto-create or safely upgrade the correct tab and header row on first run. You do not need to add headers manually.</li>
       </ol>
 
       <h3>Google Sheet Column Schema</h3>
-      <div class="note">Do not rename or reorder columns after first use — Power BI connections depend on them.</div>
+      <div class="note">Do not rename or reorder columns manually. The Apps Script now safely upgrades older sheet headers and preserves existing historical rows by header name.</div>
       <table class="schema-table">
         <thead><tr><th>#</th><th>Column Name</th><th>Type</th><th>Notes</th></tr></thead>
         <tbody>
           <tr><td>A</td><td><code>submitted_at</code></td><td>ISO datetime</td><td>UTC timestamp of submission</td></tr>
-          <tr><td>B</td><td><code>report_date</code></td><td>YYYY-MM-DD</td><td>Date the report covers</td></tr>
+          <tr><td>B</td><td><code>report_date</code></td><td>YYYY-MM-DD</td><td>Reporting day, rolls over at 7:00 AM local</td></tr>
           <tr><td>C</td><td><code>is_late</code></td><td>TRUE / FALSE</td><td>Submitted after 10:00 AM local</td></tr>
           <tr><td>D</td><td><code>dealer_code</code></td><td>Text</td><td>e.g. H3100</td></tr>
           <tr><td>E</td><td><code>dealer_name</code></td><td>Text</td><td>e.g. Berwick GWM</td></tr>
           <tr><td>F</td><td><code>region</code></td><td>Text</td><td>Southern Region</td></tr>
           <tr><td>G</td><td><code>submitted_by</code></td><td>Text</td><td>Name entered by dealer user</td></tr>
           <tr><td>H</td><td><code>direction</code></td><td>Up / Flat / Down</td><td>Direction vs yesterday</td></tr>
-          <tr><td>I</td><td><code>model_bucket</code></td><td>Text</td><td>e.g. Jolion ICE</td></tr>
-          <tr><td>J</td><td><code>enquiry</code></td><td>Integer</td><td></td></tr>
-          <tr><td>K</td><td><code>test_drives</code></td><td>Integer</td><td></td></tr>
-          <tr><td>L</td><td><code>new_sold</code></td><td>Integer</td><td></td></tr>
-          <tr><td>M</td><td><code>fleet_5_plus</code></td><td>Integer</td><td>Fleet deals ≥5 units</td></tr>
-          <tr><td>N</td><td><code>demo_sold</code></td><td>Integer</td><td></td></tr>
-          <tr><td>O</td><td><code>forecast</code></td><td>Integer</td><td></td></tr>
+          <tr><td>I</td><td><code>is_complete_submission</code></td><td>TRUE / FALSE</td><td>Completion quality flag</td></tr>
+          <tr><td>J</td><td><code>input_method</code></td><td>Text</td><td>activity / grid / mixed / no_activity</td></tr>
+          <tr><td>K</td><td><code>submission_duration_seconds</code></td><td>Integer</td><td>Form open to submit</td></tr>
+          <tr><td>L</td><td><code>last_updated_at</code></td><td>ISO datetime</td><td>Last edit time before submit</td></tr>
+          <tr><td>M</td><td><code>model_bucket</code></td><td>Text</td><td>e.g. Jolion ICE</td></tr>
+          <tr><td>N</td><td><code>enquiry</code></td><td>Integer / blank</td><td></td></tr>
+          <tr><td>O</td><td><code>test_drives</code></td><td>Integer / blank</td><td></td></tr>
+          <tr><td>P</td><td><code>new_sold</code></td><td>Integer / blank</td><td></td></tr>
+          <tr><td>Q</td><td><code>fleet_5_plus</code></td><td>Integer / blank</td><td>Fleet deals ≥5 units</td></tr>
+          <tr><td>R</td><td><code>demo_sold</code></td><td>Integer / blank</td><td></td></tr>
+          <tr><td>S</td><td><code>forecast</code></td><td>Integer / blank</td><td>Monthly forecast, protected from blank overwrite</td></tr>
         </tbody>
       </table>
+      <div class="tip">A second tab named <code>submission_controls</code> is created automatically when OEM reopens a dealer submission from the dashboard.</div>
     </div>
   </div>
 

@@ -6,11 +6,9 @@
   <title>GWM Daily Sales Reporting – User Guide</title>
   <link rel="stylesheet" href="styles.css">
   <style>
-    body { background: #fff; }
-
-  <style>
     body { background: var(--gray-100); }
     .guide-wrap { max-width: 760px; margin: 0 auto; padding: 28px 16px 60px; }
+    @media print {
       .site-header, .no-print { display: none !important; }
       .guide-body { padding: 0; }
       .section-block { page-break-inside: avoid; }
@@ -454,11 +452,11 @@
       </li>
       <li class="step-item">
         <div class="step-dot">5</div>
-        <div class="step-text">Fill in the <strong>Model Bucket Grid</strong>. Enter numbers for each model you have activity on. Models with no activity can be left as 0. Use Tab to move between cells quickly.</div>
+        <div class="step-text">Use <strong>Quick Activity Entry</strong> for the fastest workflow, or fill the <strong>Model Bucket Grid</strong> directly. Blank fields are treated as not entered; type 0 where you mean a true zero.</div>
       </li>
       <li class="step-item">
         <div class="step-dot">6</div>
-        <div class="step-text">Check the <strong>Live Totals bar</strong> at the top of the grid — it shows your running total for Enquiries, Test Drives, New Sold, Fleet, Demo Sold, and Forecast.</div>
+        <div class="step-text">Check the <strong>Live Totals bar</strong>. It updates live from Quick Activity Entry and the grid, including Enquiries, Test Drives, New Sold, Fleet, Demo Sold, and Forecast.</div>
       </li>
       <li class="step-item">
         <div class="step-dot">7</div>
@@ -485,8 +483,12 @@
       </tbody>
     </table>
 
+    <div class="info-box note">
+      <strong>Reopening a submission:</strong> If a dealer needs to update after submitting, OEM can reopen that dealer from the dashboard. The dealer will see their previous data restored, can update it, and resubmission overwrites the prior dealer/date rows.
+    </div>
+
     <div class="info-box tip">
-      <strong>Tip:</strong> You only need to fill in models where you have activity. Daily activity fields start blank so a true zero can be separated from a missed field. Enter 0 where there was no activity; forecast carries through the month unless changed.
+      <strong>Tip:</strong> Quick Activity Entry is the fastest method. The page autosaves locally while left open during the day. Forecast carries through the month unless changed, and a blank forecast will not wipe the prior monthly forecast.
     </div>
 
     <h3>Bookmarking to Your Home Screen</h3>
@@ -622,29 +624,32 @@
     </a>
 
     <div class="info-box note">
-      <strong>Data structure:</strong> Each dealer submission creates <strong>19 rows</strong> — one per model bucket. A dealer submitting today for 5 active models will still create 19 rows, with zeros for inactive models. This flat structure is intentional and required for Power BI.
+      <strong>Data structure:</strong> Each dealer submission creates <strong>19 rows</strong> — one per model bucket. Daily fields can remain blank when not entered, which keeps a true entered zero separate from a missed field. This flat structure is intentional and required for Power BI.
     </div>
 
     <h3>Column Reference</h3>
     <table class="schema-table">
       <thead><tr><th>Column</th><th>Name</th><th>Example</th><th>Notes</th></tr></thead>
       <tbody>
-        <tr><td>A</td><td><code>submitted_at</code></td><td>2026-04-25T02:14:00Z</td><td>UTC timestamp — convert to AEST (+10) in Power BI</td></tr>
-        <tr><td>B</td><td><code>report_date</code></td><td>2026-04-25</td><td>The date the report covers (AEST date)</td></tr>
+        <tr><td>A</td><td><code>submitted_at</code></td><td>2026-04-25T02:14:00Z</td><td>UTC timestamp of submission</td></tr>
+        <tr><td>B</td><td><code>report_date</code></td><td>2026-04-25</td><td>Reporting day. The daily window rolls over at 7:00 AM local time.</td></tr>
         <tr><td>C</td><td><code>is_late</code></td><td>FALSE</td><td>TRUE if submitted after 10:00 AM local time</td></tr>
         <tr><td>D</td><td><code>dealer_code</code></td><td>H3100</td><td>Unique dealer identifier</td></tr>
         <tr><td>E</td><td><code>dealer_name</code></td><td>Berwick GWM</td><td>Full dealer name</td></tr>
         <tr><td>F</td><td><code>region</code></td><td>Southern Region</td><td>For future multi-region expansion</td></tr>
         <tr><td>G</td><td><code>submitted_by</code></td><td>Jane Smith</td><td>Name entered by the submitter</td></tr>
         <tr><td>H</td><td><code>direction</code></td><td>Up</td><td>Up / Flat / Down</td></tr>
-        <tr><td>I</td><td><code>model_bucket</code></td><td>Jolion ICE</td><td>One of 19 fixed model values</td></tr>
-        <tr><td>J</td><td><code>enquiry</code></td><td>4</td><td>Integer ≥ 0</td></tr>
-        <tr><td>K</td><td><code>test_drives</code></td><td>2</td><td>Integer ≥ 0</td></tr>
-        <tr><td>L</td><td><code>new_sold</code></td><td>1</td><td>Integer ≥ 0</td></tr>
-        <tr><td>M</td><td><code>fleet_5_plus</code></td><td>0</td><td>Fleet units (deals of 5+)</td></tr>
-        <tr><td>N</td><td><code>demo_sold</code></td><td>0</td><td>Integer ≥ 0</td></tr>
-        <tr><td>O</td><td><code>forecast</code></td><td>3</td><td>Monthly delivery forecast for this model. Blank keeps the prior monthly forecast; entered 0 is a true zero.</td></tr>
-        <tr><td>P</td><td><code>is_complete_submission</code></td><td>TRUE</td><td>TRUE only when all daily activity cells were explicitly completed.</td></tr>
+        <tr><td>I</td><td><code>is_complete_submission</code></td><td>TRUE</td><td>TRUE when dealer, name, direction and daily activity are supplied</td></tr>
+        <tr><td>J</td><td><code>input_method</code></td><td>activity</td><td>activity / grid / mixed / no_activity</td></tr>
+        <tr><td>K</td><td><code>submission_duration_seconds</code></td><td>42</td><td>Time from form open to submit</td></tr>
+        <tr><td>L</td><td><code>last_updated_at</code></td><td>2026-04-25T02:13:40Z</td><td>Last local edit time before submission</td></tr>
+        <tr><td>M</td><td><code>model_bucket</code></td><td>Jolion ICE</td><td>One of 19 fixed model values</td></tr>
+        <tr><td>N</td><td><code>enquiry</code></td><td>4</td><td>Integer ≥ 0 or blank if not entered</td></tr>
+        <tr><td>O</td><td><code>test_drives</code></td><td>2</td><td>Integer ≥ 0 or blank if not entered</td></tr>
+        <tr><td>P</td><td><code>new_sold</code></td><td>1</td><td>Integer ≥ 0 or blank if not entered</td></tr>
+        <tr><td>Q</td><td><code>fleet_5_plus</code></td><td>0</td><td>Fleet units, deals of 5+</td></tr>
+        <tr><td>R</td><td><code>demo_sold</code></td><td>0</td><td>Integer ≥ 0 or blank if not entered</td></tr>
+        <tr><td>S</td><td><code>forecast</code></td><td>3</td><td>Monthly forecast. Blank keeps prior monthly forecast; entered 0 is a true zero.</td></tr>
       </tbody>
     </table>
 
