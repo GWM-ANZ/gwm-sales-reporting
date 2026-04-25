@@ -7,78 +7,60 @@
   <title>GWM Daily Sales Input – Southern Region</title>
   <link rel="stylesheet" href="styles.css">
   <style>
-    /* ── Knox-style header & typography only ── */
-
-    /* Bigger, bolder header */
+    /* ── Exact Knox brandbar header ── */
     .site-header {
       height: auto;
       padding: 0;
       flex-direction: column;
       align-items: stretch;
+      border-bottom: none;
+      box-shadow: none;
     }
-
-    /* Top strip: slim clock/late row */
     .header-top-strip {
       display: flex;
       align-items: center;
       justify-content: flex-end;
       gap: 10px;
       padding: 6px 24px;
+      background: #000;
       border-bottom: 1px solid rgba(255,255,255,0.08);
     }
-
-    /* Main brandbar */
     .header-brandbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 14px 24px 16px;
-      border-bottom: 3px solid #C41230;
+      padding: 14px 24px 14px;
+      background: #000;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
     }
-
-    .gwm-wordmark-img {
-      height: 40px;
-      object-fit: contain;
+    .brandbar-left { display: flex; align-items: center; gap: 16px; }
+    .gwm-wordmark-img { height: 34px; width: auto; opacity: .95; }
+    .brand-url {
+      color: #8b8b8b;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
     }
-
     .header-brand-right {
       text-align: right;
     }
     .header-brand-label {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.4);
-      line-height: 1;
-      margin-bottom: 4px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.14em;
+      text-transform: uppercase; color: rgba(255,255,255,0.4);
+      line-height: 1; margin-bottom: 4px;
     }
     .header-brand-region {
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.8);
+      font-size: 13px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: rgba(255,255,255,0.85);
     }
-
-    /* Knox typography — tighter, bolder, more uppercase */
-    .form-label {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.13em;
-    }
-    .card-title {
-      font-size: 10px;
-      letter-spacing: 0.13em;
-    }
-    .model-grid thead th {
-      font-size: 9px;
-      letter-spacing: 0.12em;
-      top: 117px; /* updated for taller header */
+    /* Red accent line below brandbar */
+    .header-red-line {
+      height: 3px;
+      background: #C41230;
     }
     .totals-sticky {
       position: sticky;
-      top: 117px;
+      top: 95px;
       z-index: 50;
       margin: 0 -16px 16px;
       padding: 0 16px;
@@ -131,14 +113,16 @@
     <span class="late-badge" id="late-badge">LATE</span>
   </div>
   <div class="header-brandbar">
-    <a class="gwm-logo" href="index.html">
+    <div class="brandbar-left">
       <img src="gwm-wordmark.png" class="gwm-wordmark-img" alt="GWM Australia">
-    </a>
+      <div class="brand-url">GWMANZ.COM.AU</div>
+    </div>
     <div class="header-brand-right">
       <div class="header-brand-label">Daily Sales Report</div>
       <div class="header-brand-region">Southern Region</div>
     </div>
   </div>
+  <div class="header-red-line"></div>
 </header>
 
 <!-- ── Main ─────────────────────────────────────────────── -->

@@ -8,12 +8,14 @@
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
-    /* ── Matching header style from dealer form ── */
+    /* ── Exact Knox brandbar header ── */
     .site-header {
       height: auto;
       padding: 0;
       flex-direction: column;
       align-items: stretch;
+      border-bottom: none;
+      box-shadow: none;
     }
     .header-top-strip {
       display: flex;
@@ -21,28 +23,37 @@
       justify-content: flex-end;
       gap: 10px;
       padding: 6px 24px;
+      background: #000;
       border-bottom: 1px solid rgba(255,255,255,0.08);
     }
     .header-brandbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 14px 24px 16px;
-      border-bottom: 3px solid #C41230;
+      padding: 14px 24px 14px;
+      background: #000;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
     }
-    .gwm-wordmark-img { height: 40px; object-fit: contain; }
+    .brandbar-left { display: flex; align-items: center; gap: 16px; }
+    .gwm-wordmark-img { height: 34px; width: auto; opacity: .95; }
+    .brand-url {
+      color: #8b8b8b;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
     .header-brand-right { text-align: right; }
     .header-brand-label {
       font-size: 10px; font-weight: 700; letter-spacing: 0.14em;
-      text-transform: uppercase; color: rgba(255,255,255,0.4); line-height: 1; margin-bottom: 4px;
+      text-transform: uppercase; color: rgba(255,255,255,0.4);
+      line-height: 1; margin-bottom: 4px;
     }
     .header-brand-region {
       font-size: 13px; font-weight: 700; letter-spacing: 0.1em;
-      text-transform: uppercase; color: rgba(255,255,255,0.8);
+      text-transform: uppercase; color: rgba(255,255,255,0.85);
     }
-    .header-actions {
-      display: flex; gap: 8px; align-items: center;
-    }
+    .header-actions { display: flex; gap: 8px; align-items: center; }
+    .header-red-line { height: 3px; background: #C41230; }
 
     /* ── Dashboard page styles ── */
     .dash-section { margin-bottom: 24px; }
@@ -101,19 +112,21 @@
   <div class="header-top-strip">
     <span class="header-clock" id="live-clock">--:-- --</span>
     <div class="header-actions">
-      <button class="btn btn-secondary refresh-btn" onclick="loadData()" style="height:30px;padding:0 12px;font-size:11px;">↻ Refresh</button>
-      <a href="index.html" class="btn btn-outline" style="height:30px;padding:0 12px;font-size:11px;">+ Input</a>
+      <button class="btn btn-secondary refresh-btn" onclick="loadData()" style="height:28px;padding:0 12px;font-size:11px;">↻ Refresh</button>
+      <a href="index.html" class="btn btn-outline" style="height:28px;padding:0 12px;font-size:11px;">+ Input</a>
     </div>
   </div>
   <div class="header-brandbar">
-    <a class="gwm-logo" href="dashboard.html">
+    <div class="brandbar-left">
       <img src="gwm-wordmark.png" class="gwm-wordmark-img" alt="GWM Australia">
-    </a>
+      <div class="brand-url">GWMANZ.COM.AU</div>
+    </div>
     <div class="header-brand-right">
       <div class="header-brand-label">Sales Dashboard</div>
       <div class="header-brand-region">Southern Region</div>
     </div>
   </div>
+  <div class="header-red-line"></div>
 </header>
 
 <!-- ── Main ─────────────────────────────────────────────── -->

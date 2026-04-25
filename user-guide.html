@@ -8,8 +8,9 @@
   <style>
     body { background: #fff; }
 
-    /* Print */
-    @media print {
+  <style>
+    body { background: var(--gray-100); }
+    .guide-wrap { max-width: 760px; margin: 0 auto; padding: 28px 16px 60px; }
       .site-header, .no-print { display: none !important; }
       .guide-body { padding: 0; }
       .section-block { page-break-inside: avoid; }
@@ -291,16 +292,23 @@
 <body>
 
 <header class="site-header no-print">
-  <div class="header-left">
-    <a class="gwm-logo" href="index.html">
+  <div class="header-top-strip">
+    <div class="header-actions">
+      <a href="index.html" class="btn btn-secondary" style="height:28px;padding:0 12px;font-size:11px;">Input Form</a>
+      <a href="dashboard.html" class="btn btn-outline" style="height:28px;padding:0 12px;font-size:11px;">Dashboard</a>
+    </div>
+  </div>
+  <div class="header-brandbar">
+    <div class="brandbar-left">
       <img src="gwm-wordmark.png" class="gwm-wordmark-img" alt="GWM Australia">
-    </a>
-    <span class="header-title">User Guide</span>
+      <div class="brand-url">GWMANZ.COM.AU</div>
+    </div>
+    <div class="header-brand-right">
+      <div class="header-brand-label">User Guide</div>
+      <div class="header-brand-region">Southern Region</div>
+    </div>
   </div>
-  <div class="header-right">
-    <a href="index.html"     class="btn btn-secondary" style="height:34px;padding:0 14px;font-size:12px;">Input Form</a>
-    <a href="dashboard.html" class="btn btn-outline"   style="height:34px;padding:0 14px;font-size:12px;">Dashboard</a>
-  </div>
+  <div class="header-red-line"></div>
 </header>
 
 <div class="guide-body">

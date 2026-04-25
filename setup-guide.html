@@ -6,8 +6,36 @@
   <title>Setup Guide – GWM Daily Sales Reporting Tool</title>
   <link rel="stylesheet" href="styles.css">
   <style>
-    body { background: var(--gray-100); }
-    .guide-wrap { max-width: 760px; margin: 0 auto; padding: 28px 16px 60px; }
+    /* ── Knox brandbar header ── */
+    .site-header {
+      height: auto; padding: 0; flex-direction: column;
+      align-items: stretch; border-bottom: none; box-shadow: none;
+    }
+    .header-top-strip {
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: 10px; padding: 6px 24px; background: #000;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .header-brandbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 24px; background: #000;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+    .brandbar-left { display: flex; align-items: center; gap: 16px; }
+    .gwm-wordmark-img { height: 34px; width: auto; opacity: .95; }
+    .brand-url { color: #8b8b8b; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+    .header-brand-right { text-align: right; }
+    .header-brand-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.14em;
+      text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 4px;
+    }
+    .header-brand-region {
+      font-size: 13px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: rgba(255,255,255,0.85);
+    }
+    .header-red-line { height: 3px; background: #C41230; }
+    .header-actions { display: flex; gap: 8px; align-items: center; }
+  </style>
 
     .guide-header {
       background: var(--black); color: #fff;
@@ -103,16 +131,23 @@
 <body>
 
 <header class="site-header">
-  <div class="header-left">
-    <a class="gwm-logo" href="index.html">
+  <div class="header-top-strip">
+    <div class="header-actions">
+      <a href="index.html" class="btn btn-secondary" style="height:28px;padding:0 12px;font-size:11px;">Input Form</a>
+      <a href="dashboard.html" class="btn btn-outline" style="height:28px;padding:0 12px;font-size:11px;">Dashboard</a>
+    </div>
+  </div>
+  <div class="header-brandbar">
+    <div class="brandbar-left">
       <img src="gwm-wordmark.png" class="gwm-wordmark-img" alt="GWM Australia">
-    </a>
-    <span class="header-title">Setup Guide</span>
+      <div class="brand-url">GWMANZ.COM.AU</div>
+    </div>
+    <div class="header-brand-right">
+      <div class="header-brand-label">Technical Setup</div>
+      <div class="header-brand-region">Southern Region</div>
+    </div>
   </div>
-  <div class="header-right">
-    <a href="index.html"    class="btn btn-secondary" style="height:34px;padding:0 14px;font-size:12px;">Input Form</a>
-    <a href="dashboard.html" class="btn btn-outline"  style="height:34px;padding:0 14px;font-size:12px;">Dashboard</a>
-  </div>
+  <div class="header-red-line"></div>
 </header>
 
 <div class="guide-wrap">
