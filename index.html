@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#111111">
+  <title>GWM Daily Sales Input – Southern Region</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Page-specific overrides */
+    .submit-area { margin-top: 20px; }
+    .char-count  { font-size: 11px; color: var(--gray-400); text-align: right; margin-top: 3px; }
+    .grid-section-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--gray-400);
+      padding: 8px 0 4px; border-top: 1px solid var(--gray-100);
+    }
+    .grid-section-label:first-of-type { border-top: none; }
+    .row-total-head {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--gray-400);
+      text-align: center; white-space: nowrap;
+    }
+    .success-screen {
+      text-align: center;
+      padding: 48px 20px;
+    }
+    .success-icon {
+      width: 64px; height: 64px;
+      background: var(--success-bg);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 28px;
+    }
+    .success-screen h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .success-screen p  { font-size: 14px; color: var(--gray-600); margin-bottom: 24px; }
+
+    /* Sticky totals on scroll */
+    .totals-sticky {
+      position: sticky;
+      top: 60px;
+      z-index: 50;
+      margin: 0 -16px 16px;
+      padding: 0 16px;
+    }
+    @media (min-width: 480px) {
+      .totals-sticky { margin: 0 0 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ───────────────────────────────────────────── -->
+<header class="site-header">
+  <div class="header-left">
+    <a class="gwm-logo" href="index.html">
+      <img src="assets/gwm-wordmark.png" class="gwm-wordmark-img" alt="GWM Australia">
+    </a>
+    <span class="header-title">Daily Sales Input</span>
+  </div>
+  <div class="header-right">
+    <span class="header-clock" id="live-clock">--:-- --</span>
+    <span class="late-badge" id="late-badge">LATE</span>
+    <a href="dashboard.html" class="btn btn-secondary" style="height:34px;padding:0 14px;font-size:12px;">Dashboard →</a>
+  </div>
+</header>
+
+<!-- ── Main ─────────────────────────────────────────────── -->
+<main class="main-content" id="main-content">
+
+  <!-- Alert banner (validation / late warning) -->
+  <div class="alert hidden" id="alert-banner" role="alert"></div>
+
+  <!-- Success screen (shown after submit) -->
+  <div class="hidden" id="success-screen">
+    <div class="card success-screen">
+      <div class="success-icon">✓</div>
+      <h2>Report Submitted</h2>
+      <p id="success-msg">Your daily sales data has been recorded successfully.</p>
+      <button class="btn btn-primary" style="max-width:280px;margin:0 auto;" onclick="resetForm()">
+        Submit Another Report
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Form ───────────────────────────────────────────── -->
+  <form id="sales-form" novalidate>
+
+    <!-- Dealer details card -->
+    <div class="card">
+      <div class="card-title">Report Details</div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label" for="dealer-select">Dealer <span class="required">*</span></label>
+          <select class="form-select" id="dealer-select" required>
+            <option value="">— Select dealer —</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="submitted-by">Submitted By <span class="required">*</span></label>
+          <input class="form-input" type="text" id="submitted-by" placeholder="Full name" maxlength="60" autocomplete="name" required>
+        </div>
+      </div>
+
+      <div class="form-row three">
+        <div class="form-field">
+          <label class="form-label" for="report-date">Report Date</label>
+          <input class="form-input" type="text" id="report-date" readonly>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="submit-time">Timestamp</label>
+          <input class="form-input" type="text" id="submit-time" readonly>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Region</label>
+          <input class="form-input" type="text" value="Southern Region" readonly>
+        </div>
+      </div>
+
+      <div class="form-row single">
+        <div class="form-field">
+          <label class="form-label">Direction vs Yesterday <span class="required">*</span></label>
+          <div class="direction-group" id="direction-group" role="group" aria-label="Direction vs Yesterday">
+            <button type="button" class="direction-btn" data-val="Up"   onclick="setDirection('Up')">▲ Up</button>
+            <button type="button" class="direction-btn" data-val="Flat" onclick="setDirection('Flat')">— Flat</button>
+            <button type="button" class="direction-btn" data-val="Down" onclick="setDirection('Down')">▼ Down</button>
+          </div>
+          <input type="hidden" id="direction-val" value="">
+        </div>
+      </div>
+    </div>
+
+    <!-- Live totals (sticky) -->
+    <div class="totals-sticky">
+      <div class="totals-bar" id="totals-bar">
+        <div class="total-item highlight">
+          <div class="total-label">Enquiries</div>
+          <div class="total-value" id="tot-enquiry">0</div>
+        </div>
+        <div class="total-item">
+          <div class="total-label">Test Drives</div>
+          <div class="total-value" id="tot-td">0</div>
+        </div>
+        <div class="total-item">
+          <div class="total-label">New Sold</div>
+          <div class="total-value" id="tot-sold">0</div>
+        </div>
+        <div class="total-item">
+          <div class="total-label">Fleet</div>
+          <div class="total-value" id="tot-fleet">0</div>
+        </div>
+        <div class="total-item">
+          <div class="total-label">Demo Sold</div>
+          <div class="total-value" id="tot-demo">0</div>
+        </div>
+        <div class="total-item">
+          <div class="total-label">Forecast</div>
+          <div class="total-value" id="tot-forecast">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Model bucket grid -->
+    <div class="card" style="padding-bottom:8px;">
+      <div class="card-title" style="margin-bottom:4px;">Model Bucket Activity</div>
+      <p style="font-size:12px;color:var(--gray-400);margin-bottom:12px;">
+        Enter today's figures per model. Use Tab to move between cells. All values default to 0.
+      </p>
+
+      <div class="grid-scroll-wrap">
+        <table class="model-grid" id="model-grid">
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Enquiry</th>
+              <th>Test Drives</th>
+              <th>New Sold</th>
+              <th>Fleet (5+)</th>
+              <th>Demo Sold</th>
+              <th>Forecast</th>
+              <th class="row-total-head">Total</th>
+            </tr>
+          </thead>
+          <tbody id="grid-body">
+            <!-- Rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="submit-area">
+      <div class="alert warning hidden" id="late-warning">
+        <strong>⚠ Late submission</strong> — this report is being submitted after 10:00 AM and will be flagged accordingly.
+      </div>
+      <button type="submit" class="btn btn-primary" id="submit-btn">
+        <span id="submit-label">Submit Daily Report</span>
+        <div class="spinner" id="submit-spinner"></div>
+      </button>
+      <p style="font-size:11px;color:var(--gray-400);text-align:center;margin-top:8px;">
+        Submitting as <strong id="submit-preview-dealer">—</strong> · <span id="submit-preview-date">—</span>
+      </p>
+    </div>
+
+  </form><!-- /sales-form -->
+
+</main>
+
+<!-- ── Toast ─────────────────────────────────────────────── -->
+<div class="toast" id="gwm-toast"></div>
+
+<!-- ── Scripts ───────────────────────────────────────────── -->
+<script src="app.js"></script>
+<script>
+'use strict';
+
+/* ── Model bucket group labels ───────────────────────────── */
+const MODEL_GROUPS = {
+  'Jolion ICE':          'Jolion',
+  'Jolion HEV':          null,
+  'H6 Petrol':           'H6',
+  'H6 HEV':             null,
+  'H6 PHEV':            null,
+  'H6 GT Petrol':        'H6 GT',
+  'H6 GT PHEV':         null,
+  'H7 HEV':             'H7',
+  'Tank 300 Petrol':     'Tank 300',
+  'Tank 300 Diesel':     null,
+  'Tank 300 PHEV':      null,
+  'Tank 500 Hybrid':     'Tank 500',
+  'Tank 500 PHEV':      null,
+  'Tank 500 Diesel':    null,
+  'Cannon Diesel':       'Cannon',
+  'Cannon Alpha Diesel': 'Cannon Alpha',
+  'Cannon Alpha PHEV':  null,
+  'Ora':                 'Ora',
+  'Ora 5':              null,
+};
+
+let selectedDirection = '';
+let gridData = {};   // { modelName: { enquiry:0, test_drives:0, ... } }
+
+/* ── Init ────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', init);
+
+function init() {
+  populateDealerDropdown();
+  buildModelGrid();
+  setDateFields();
+  startClock();
+  checkLateStatus();
+
+  // Restore saved dealer/name from localStorage
+  const savedDealer = localStorage.getItem('gwm_dealer');
+  const savedName   = localStorage.getItem('gwm_name');
+  if (savedDealer) document.getElementById('dealer-select').value = savedDealer;
+  if (savedName)   document.getElementById('submitted-by').value = savedName;
+  updateSubmitPreview();
+
+  document.getElementById('dealer-select').addEventListener('change', updateSubmitPreview);
+  document.getElementById('submitted-by').addEventListener('input',  updateSubmitPreview);
+  document.getElementById('sales-form').addEventListener('submit', handleSubmit);
+}
+
+/* ── Dealer dropdown ─────────────────────────────────────── */
+function populateDealerDropdown() {
+  const sel = document.getElementById('dealer-select');
+  DEALERS.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d.code;
+    opt.textContent = `${d.code} – ${d.name}`;
+    sel.appendChild(opt);
+  });
+}
+
+/* ── Model grid builder ──────────────────────────────────── */
+function buildModelGrid() {
+  const tbody = document.getElementById('grid-body');
+  let lastGroup = null;
+
+  MODEL_BUCKETS.forEach((model, rowIdx) => {
+    // Insert group separator row if new group starts
+    const groupLabel = MODEL_GROUPS[model];
+    if (groupLabel !== null && groupLabel !== lastGroup) {
+      lastGroup = groupLabel;
+      const sepRow = document.createElement('tr');
+      const sepTd  = document.createElement('td');
+      sepTd.colSpan = 8;
+      sepTd.className = 'grid-section-label';
+      sepTd.textContent = groupLabel;
+      sepRow.appendChild(sepTd);
+      tbody.appendChild(sepRow);
+    }
+
+    // Init data store
+    gridData[model] = {};
+    GRID_COLS.forEach(c => { gridData[model][c.key] = 0; });
+
+    // Build row
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-model', model);
+
+    // Model name cell
+    const nameTd = document.createElement('td');
+    nameTd.className = 'model-name';
+    nameTd.textContent = model;
+    tr.appendChild(nameTd);
+
+    // Input cells
+    GRID_COLS.forEach((col, colIdx) => {
+      const td    = document.createElement('td');
+      const input = document.createElement('input');
+      input.type        = 'number';
+      input.min         = '0';
+      input.step        = '1';
+      input.value       = '0';
+      input.className   = 'grid-input';
+      input.setAttribute('data-model', model);
+      input.setAttribute('data-col',   col.key);
+      input.setAttribute('aria-label', `${model} ${col.label}`);
+
+      // Tab navigation order (row-major)
+      input.tabIndex = rowIdx * GRID_COLS.length + colIdx + 1;
+
+      input.addEventListener('focus',  e => e.target.select());
+      input.addEventListener('input',  () => onGridInput(input, model, col.key));
+      input.addEventListener('keydown', onGridKeyDown);
+
+      td.appendChild(input);
+      tr.appendChild(td);
+    });
+
+    // Row total cell
+    const totalTd = document.createElement('td');
+    totalTd.className  = 'row-total';
+    totalTd.id         = `rowtot-${model.replace(/\s+/g,'_')}`;
+    totalTd.textContent = '0';
+    tr.appendChild(totalTd);
+
+    tbody.appendChild(tr);
+  });
+}
+
+/* ── Grid input handler ──────────────────────────────────── */
+function onGridInput(input, model, col) {
+  const val = safeInt(input.value);
+  input.value = val === 0 ? '0' : val;
+  input.classList.toggle('nonzero', val > 0);
+  gridData[model][col] = val;
+  updateRowTotal(model);
+  updateLiveTotals();
+}
+
+function updateRowTotal(model) {
+  const sum = GRID_COLS.reduce((acc, c) => acc + (gridData[model][c.key] || 0), 0);
+  const el = document.getElementById(`rowtot-${model.replace(/\s+/g,'_')}`);
+  if (el) el.textContent = sum;
+}
+
+/* ── Keyboard navigation in grid ─────────────────────────── */
+function onGridKeyDown(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    // Move down one row, same column
+    const inputs = Array.from(document.querySelectorAll('.grid-input'));
+    const idx    = inputs.indexOf(e.target);
+    const nextRow = inputs[idx + GRID_COLS.length];
+    if (nextRow) nextRow.focus();
+    else inputs[0] && inputs[0].focus();
+  }
+}
+
+/* ── Live totals ─────────────────────────────────────────── */
+function updateLiveTotals() {
+  const totals = {};
+  GRID_COLS.forEach(c => { totals[c.key] = 0; });
+  MODEL_BUCKETS.forEach(m => {
+    GRID_COLS.forEach(c => { totals[c.key] += gridData[m][c.key] || 0; });
+  });
+  document.getElementById('tot-enquiry').textContent = totals.enquiry;
+  document.getElementById('tot-td').textContent      = totals.test_drives;
+  document.getElementById('tot-sold').textContent    = totals.new_sold;
+  document.getElementById('tot-fleet').textContent   = totals.fleet;
+  document.getElementById('tot-demo').textContent    = totals.demo_sold;
+  document.getElementById('tot-forecast').textContent = totals.forecast;
+}
+
+/* ── Direction selector ──────────────────────────────────── */
+function setDirection(val) {
+  selectedDirection = val;
+  document.getElementById('direction-val').value = val;
+  document.querySelectorAll('.direction-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.val === val);
+  });
+}
+
+/* ── Date / clock ────────────────────────────────────────── */
+function setDateFields() {
+  document.getElementById('report-date').value  = formatDate(todayISO());
+  document.getElementById('submit-time').value  = new Date().toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: true });
+}
+
+function startClock() {
+  function tick() {
+    const t = new Date().toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: true });
+    const el = document.getElementById('live-clock');
+    if (el) el.textContent = t;
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+function checkLateStatus() {
+  const late = isLate();
+  const badge   = document.getElementById('late-badge');
+  const warning = document.getElementById('late-warning');
+  if (badge)   badge.classList.toggle('visible', late);
+  if (warning) warning.classList.toggle('hidden', !late);
+}
+
+/* ── Submit preview text ─────────────────────────────────── */
+function updateSubmitPreview() {
+  const code = document.getElementById('dealer-select').value;
+  const dealer = DEALERS.find(d => d.code === code);
+  document.getElementById('submit-preview-dealer').textContent =
+    dealer ? `${dealer.code} – ${dealer.name}` : '—';
+  document.getElementById('submit-preview-date').textContent = formatDate(todayISO());
+}
+
+/* ── Form validation ─────────────────────────────────────── */
+function validate() {
+  const errors = [];
+  const dealerEl = document.getElementById('dealer-select');
+  const nameEl   = document.getElementById('submitted-by');
+
+  if (!dealerEl.value) {
+    errors.push('Please select a dealer.');
+    dealerEl.classList.add('error');
+  } else { dealerEl.classList.remove('error'); }
+
+  if (!nameEl.value.trim()) {
+    errors.push('Please enter your name in "Submitted By".');
+    nameEl.classList.add('error');
+  } else { nameEl.classList.remove('error'); }
+
+  if (!selectedDirection) {
+    errors.push('Please select a direction (Up / Flat / Down).');
+  }
+  return errors;
+}
+
+/* ── Build submission rows ───────────────────────────────── */
+function buildRows() {
+  const dealerCode = document.getElementById('dealer-select').value;
+  const dealer     = DEALERS.find(d => d.code === dealerCode);
+  const ts         = nowTimestamp();
+  const date       = todayISO();
+  const late       = isLate();
+  const name       = document.getElementById('submitted-by').value.trim();
+  const direction  = selectedDirection;
+
+  return MODEL_BUCKETS.map(model => ({
+    submitted_at: ts,
+    report_date:  date,
+    is_late:      late,
+    dealer_code:  dealerCode,
+    dealer_name:  dealer ? dealer.name : '',
+    region:       GWM_CONFIG.region,
+    submitted_by: name,
+    direction:    direction,
+    model_bucket: model,
+    enquiry:      gridData[model].enquiry,
+    test_drives:  gridData[model].test_drives,
+    new_sold:     gridData[model].new_sold,
+    fleet:        gridData[model].fleet,
+    demo_sold:    gridData[model].demo_sold,
+    forecast:     gridData[model].forecast,
+  }));
+}
+
+/* ── Submit handler ──────────────────────────────────────── */
+async function handleSubmit(e) {
+  e.preventDefault();
+
+  const errors = validate();
+  const alertEl = document.getElementById('alert-banner');
+
+  if (errors.length) {
+    alertEl.className = 'alert error';
+    alertEl.innerHTML = errors.map(e => `• ${e}`).join('<br>');
+    alertEl.scrollIntoView({ block: 'nearest' });
+    return;
+  }
+
+  alertEl.className = 'alert hidden';
+
+  const btn     = document.getElementById('submit-btn');
+  const label   = document.getElementById('submit-label');
+  const spinner = document.getElementById('submit-spinner');
+
+  btn.disabled        = true;
+  label.textContent   = 'Submitting…';
+  spinner.classList.add('visible');
+
+  const rows = buildRows();
+
+  try {
+    if (!GWM_CONFIG.scriptUrl) {
+      // Offline / demo mode — simulate latency
+      await new Promise(r => setTimeout(r, 900));
+      handleSuccess(rows);
+    } else {
+      await postRows(rows);
+      handleSuccess(rows);
+    }
+  } catch (err) {
+    btn.disabled       = false;
+    label.textContent  = 'Submit Daily Report';
+    spinner.classList.remove('visible');
+    alertEl.className  = 'alert error';
+    alertEl.textContent = `Submission failed: ${err.message}. Please try again or contact support.`;
+    alertEl.scrollIntoView({ block: 'nearest' });
+  }
+}
+
+function handleSuccess(rows) {
+  // Save dealer & name for next visit
+  localStorage.setItem('gwm_dealer', document.getElementById('dealer-select').value);
+  localStorage.setItem('gwm_name',   document.getElementById('submitted-by').value.trim());
+
+  // Save to local history (for offline dashboard demo)
+  const history = JSON.parse(localStorage.getItem('gwm_submissions') || '[]');
+  rows.forEach(r => history.push(r));
+  // Keep last 2000 rows
+  if (history.length > 2000) history.splice(0, history.length - 2000);
+  localStorage.setItem('gwm_submissions', JSON.stringify(history));
+
+  document.getElementById('sales-form').classList.add('hidden');
+  const totEnq  = rows.reduce((a,r) => a + r.enquiry, 0);
+  const totSold = rows.reduce((a,r) => a + r.new_sold, 0);
+  document.getElementById('success-msg').textContent =
+    `Submitted ${rows.length} model rows — ${totEnq} enquiries, ${totSold} new sold. ` +
+    (rows[0].is_late ? '(Flagged as late submission)' : '');
+  document.getElementById('success-screen').classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ── Reset form ──────────────────────────────────────────── */
+function resetForm() {
+  selectedDirection = '';
+  document.querySelectorAll('.direction-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('direction-val').value = '';
+  document.querySelectorAll('.grid-input').forEach(inp => {
+    inp.value = '0';
+    inp.classList.remove('nonzero');
+  });
+  MODEL_BUCKETS.forEach(m => {
+    GRID_COLS.forEach(c => { gridData[m][c.key] = 0; });
+    updateRowTotal(m);
+  });
+  updateLiveTotals();
+  document.getElementById('submitted-by').value = localStorage.getItem('gwm_name') || '';
+  document.getElementById('submit-btn').disabled = false;
+  document.getElementById('submit-label').textContent = 'Submit Daily Report';
+  document.getElementById('submit-spinner').classList.remove('visible');
+  document.getElementById('sales-form').classList.remove('hidden');
+  document.getElementById('success-screen').classList.add('hidden');
+  document.getElementById('alert-banner').className = 'alert hidden';
+  setDateFields();
+  checkLateStatus();
+  updateSubmitPreview();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

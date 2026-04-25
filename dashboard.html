@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#111111">
+  <title>GWM Sales Dashboard – Southern Region</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .dash-section { margin-bottom: 24px; }
+    .missing-pill {
+      display: inline-block; padding: 2px 8px;
+      background: #FFEBEE; color: #C62828;
+      border-radius: 2px; font-size: 11px; font-weight: 600;
+    }
+    .compliance-bar-wrap { width: 100%; height: 6px; background: var(--gray-100); border-radius: 3px; margin-top: 6px; }
+    .compliance-bar-fill { height: 100%; border-radius: 3px; background: var(--red); transition: width 0.4s; }
+    .compliance-bar-fill.good { background: var(--success); }
+    .refresh-btn { font-size: 12px; }
+    .demo-ribbon {
+      background: #FFF3E0; border: 1px solid #FFCC80;
+      color: #C84B00; font-size: 12px; font-weight: 600;
+      padding: 8px 16px; border-radius: var(--radius);
+      margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+    }
+    .trend-range { display:flex; gap:6px; align-items:center; }
+    .trend-range button {
+      padding: 3px 10px; border-radius: 2px; border: 1px solid var(--gray-200);
+      background: #fff; font-family: var(--font); font-size: 11px;
+      font-weight: 600; cursor: pointer; color: var(--gray-600);
+    }
+    .trend-range button.active { background: var(--red); color: #fff; border-color: var(--red); }
+    .no-data { text-align:center; padding: 40px 20px; color: var(--gray-400); font-size:13px; }
+
+    /* Config panel */
+    .config-panel {
+      position: fixed; bottom: 24px; right: 24px; z-index: 90;
+    }
+    .config-panel-btn {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--black); color: #fff; border: none;
+      font-size: 18px; cursor: pointer; box-shadow: var(--shadow-lg);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .config-panel-btn:hover { background: var(--gray-800); }
+    .config-drawer {
+      position: absolute; bottom: 52px; right: 0;
+      background: #fff; border-radius: var(--radius);
+      box-shadow: var(--shadow-lg); padding: 20px;
+      width: 320px; display: none;
+    }
+    .config-drawer.open { display: block; }
+    .config-drawer h3 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+    .config-drawer p  { font-size: 12px; color: var(--gray-600); margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ───────────────────────────────────────────── -->
+<header class="site-header">
+  <div class="header-left">
+    <a class="gwm-logo" href="index.html">
+      <img src="assets/gwm-wordmark.png" class="gwm-wordmark-img" alt="GWM Australia">
+    </a>
+    <span class="header-title">Sales Dashboard — Southern Region</span>
+  </div>
+  <div class="header-right">
+    <span class="header-clock" id="live-clock">--:-- --</span>
+    <button class="btn btn-secondary refresh-btn" onclick="loadData()" style="height:34px;padding:0 14px;font-size:12px;">
+      ↻ Refresh
+    </button>
+    <a href="index.html" class="btn btn-outline" style="height:34px;padding:0 14px;font-size:12px;">+ Input</a>
+  </div>
+</header>
+
+<!-- ── Main ─────────────────────────────────────────────── -->
+<main class="main-content wide" id="main-content">
+
+  <!-- Demo ribbon -->
+  <div class="demo-ribbon" id="demo-ribbon">
+    ⚠ Demo mode — showing sample data. Connect your Google Apps Script URL to see live data.
+    <button class="btn btn-secondary" style="height:28px;padding:0 10px;font-size:11px;margin-left:auto;" onclick="toggleConfig()">Configure</button>
+  </div>
+
+  <!-- Filters -->
+  <div class="card" style="padding:16px;">
+    <div class="filter-bar" id="filter-bar">
+      <div class="filter-field">
+        <label class="filter-label">Date</label>
+        <input type="date" class="filter-input" id="f-date" style="width:150px;">
+      </div>
+      <div class="filter-field">
+        <label class="filter-label">Dealer</label>
+        <select class="filter-select" id="f-dealer">
+          <option value="">All Dealers</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="filter-label">Region</label>
+        <select class="filter-select" id="f-region">
+          <option value="">All Regions</option>
+          <option value="Southern Region">Southern Region</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="filter-label">Model</label>
+        <select class="filter-select" id="f-model">
+          <option value="">All Models</option>
+        </select>
+      </div>
+      <div class="filter-field" style="justify-content:flex-end;">
+        <button class="btn btn-primary" onclick="applyFilters()" style="height:36px;padding:0 18px;font-size:13px;">Apply</button>
+      </div>
+      <div class="filter-field" style="justify-content:flex-end;margin-left:auto;">
+        <button class="btn btn-secondary" onclick="exportData()" style="height:36px;padding:0 14px;font-size:12px;">⬇ Export CSV</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI grid -->
+  <div class="dash-section">
+    <div class="kpi-grid" id="kpi-grid">
+      <div class="kpi-card accent"><div class="kpi-label">Submissions Today</div><div class="kpi-value" id="k-submissions">—</div></div>
+      <div class="kpi-card success"><div class="kpi-label">Dealers Submitted</div><div class="kpi-value" id="k-submitted">—</div></div>
+      <div class="kpi-card warning"><div class="kpi-label">Dealers Missing</div><div class="kpi-value" id="k-missing">—</div><div class="kpi-sub" id="k-missing-names"></div></div>
+      <div class="kpi-card warning"><div class="kpi-label">Late Submissions</div><div class="kpi-value" id="k-late">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Compliance %</div><div class="kpi-value" id="k-compliance">—</div><div class="compliance-bar-wrap"><div class="compliance-bar-fill" id="compliance-bar" style="width:0%"></div></div></div>
+      <div class="kpi-card accent"><div class="kpi-label">Total Enquiries</div><div class="kpi-value" id="k-enq">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Test Drives</div><div class="kpi-value" id="k-td">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">New Sold</div><div class="kpi-value" id="k-sold">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Fleet (5+)</div><div class="kpi-value" id="k-fleet">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Demo Sold</div><div class="kpi-value" id="k-demo">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Forecast</div><div class="kpi-value" id="k-forecast">—</div></div>
+    </div>
+  </div>
+
+  <!-- Charts row -->
+  <div class="charts-row">
+    <div class="chart-wrap">
+      <div class="chart-title">Direction Split</div>
+      <canvas id="chart-direction" height="200"></canvas>
+    </div>
+    <div class="chart-wrap">
+      <div class="flex-between" style="margin-bottom:16px;">
+        <div class="chart-title" style="margin:0;">Daily Enquiry Trend</div>
+        <div class="trend-range">
+          <button onclick="setTrendRange(7)"  id="tr7"  class="active">7d</button>
+          <button onclick="setTrendRange(14)" id="tr14">14d</button>
+          <button onclick="setTrendRange(30)" id="tr30">30d</button>
+        </div>
+      </div>
+      <canvas id="chart-trend" height="180"></canvas>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="card" style="padding:0 20px 0;">
+    <div class="page-tabs" style="padding-top:4px;">
+      <div class="page-tab active" data-tab="compliance" onclick="switchTab('compliance')">Dealer Compliance</div>
+      <div class="page-tab" data-tab="models"      onclick="switchTab('models')">Model Summary</div>
+      <div class="page-tab" data-tab="detail"      onclick="switchTab('detail')">Row Detail</div>
+    </div>
+
+    <!-- Tab: Compliance -->
+    <div class="tab-panel active" id="tab-compliance" style="padding-bottom:16px;">
+      <div class="section-header" style="margin-bottom:10px;">
+        <h2>Dealer Compliance — Today</h2>
+        <span id="compliance-summary" style="font-size:12px;color:var(--gray-400);"></span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="data-table" id="tbl-compliance">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Dealer Name</th>
+              <th>Status</th>
+              <th>Submitted At</th>
+              <th>Late</th>
+              <th class="num">Enquiries</th>
+              <th class="num">New Sold</th>
+              <th class="num">Forecast</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-compliance">
+            <tr><td colspan="8" class="no-data">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Model summary -->
+    <div class="tab-panel" id="tab-models" style="padding-bottom:16px;">
+      <div class="section-header" style="margin-bottom:10px;">
+        <h2>Model Bucket Summary</h2>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="data-table" id="tbl-models">
+          <thead>
+            <tr>
+              <th>Model Bucket</th>
+              <th class="num">Enquiry</th>
+              <th class="num">Test Drives</th>
+              <th class="num">New Sold</th>
+              <th class="num">Fleet (5+)</th>
+              <th class="num">Demo Sold</th>
+              <th class="num">Forecast</th>
+              <th class="num">Conv %</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-models">
+            <tr><td colspan="8" class="no-data">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Row detail -->
+    <div class="tab-panel" id="tab-detail" style="padding-bottom:16px;">
+      <div class="section-header" style="margin-bottom:10px;">
+        <h2>Submission Detail</h2>
+        <span style="font-size:12px;color:var(--gray-400);" id="detail-count"></span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="data-table" id="tbl-detail">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Dealer</th>
+              <th>Model</th>
+              <th>Direction</th>
+              <th class="num">Enq</th>
+              <th class="num">TD</th>
+              <th class="num">Sold</th>
+              <th class="num">Fleet</th>
+              <th class="num">Demo</th>
+              <th class="num">Fcst</th>
+              <th>Late</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-detail">
+            <tr><td colspan="11" class="no-data">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div><!-- /card -->
+
+</main>
+
+<!-- ── Config panel (FAB) ─────────────────────────────────── -->
+<div class="config-panel">
+  <div class="config-drawer" id="config-drawer">
+    <h3>Connect Backend</h3>
+    <p>Paste your deployed Google Apps Script Web App URL below. Leave empty for demo mode.</p>
+    <div class="form-field" style="margin-bottom:10px;">
+      <label class="form-label">Apps Script URL</label>
+      <input type="url" class="form-input" id="cfg-url" placeholder="https://script.google.com/macros/s/…/exec" style="font-size:12px;">
+    </div>
+    <button class="btn btn-primary" onclick="saveConfig()" style="height:40px;font-size:13px;">Save & Reload</button>
+  </div>
+  <button class="config-panel-btn" onclick="toggleConfig()" title="Configure backend">⚙</button>
+</div>
+
+<!-- ── Scripts ───────────────────────────────────────────── -->
+<script src="app.js"></script>
+<script>
+'use strict';
+
+/* ── State ───────────────────────────────────────────────── */
+let allRows        = [];
+let filteredRows   = [];
+let directionChart = null;
+let trendChart     = null;
+let trendDays      = 7;
+let activeTab      = 'compliance';
+
+/* ── Init ────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  // Load saved config
+  const savedUrl = localStorage.getItem('gwm_script_url');
+  if (savedUrl) {
+    GWM_CONFIG.scriptUrl = savedUrl;
+    document.getElementById('cfg-url').value = savedUrl;
+  }
+
+  // Set default filter date to today
+  document.getElementById('f-date').value = todayISO();
+
+  // Populate filter dropdowns
+  populateFilterDropdowns();
+
+  // Start clock
+  setInterval(() => {
+    const el = document.getElementById('live-clock');
+    if (el) el.textContent = new Date().toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true });
+  }, 1000);
+
+  loadData();
+});
+
+/* ── Populate filter dropdowns ───────────────────────────── */
+function populateFilterDropdowns() {
+  const dSel = document.getElementById('f-dealer');
+  DEALERS.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d.code;
+    opt.textContent = `${d.code} – ${d.name}`;
+    dSel.appendChild(opt);
+  });
+
+  const mSel = document.getElementById('f-model');
+  MODEL_BUCKETS.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = m;
+    mSel.appendChild(opt);
+  });
+}
+
+/* ── Load data ───────────────────────────────────────────── */
+async function loadData() {
+  const dateFilter = document.getElementById('f-date').value || todayISO();
+
+  try {
+    if (GWM_CONFIG.scriptUrl) {
+      // Live mode — fetch from Apps Script
+      document.getElementById('demo-ribbon').style.display = 'none';
+      const data = await fetchRows({ date: dateFilter });
+      allRows = Array.isArray(data) ? data : (data.rows || []);
+    } else {
+      // Demo mode — generate sample data
+      document.getElementById('demo-ribbon').style.display = 'flex';
+
+      // Merge with any locally submitted rows for today
+      const localHistory = JSON.parse(localStorage.getItem('gwm_submissions') || '[]');
+      const localToday   = localHistory.filter(r => r.report_date === dateFilter);
+      const demoRows     = generateDemoData(dateFilter);
+
+      // Use local submissions for dealers that submitted locally; fill rest with demo
+      const localDealers = new Set(localToday.map(r => r.dealer_code));
+      const demoFiltered = demoRows.filter(r => !localDealers.has(r.dealer_code));
+      allRows = [...localToday, ...demoFiltered];
+    }
+  } catch (err) {
+    console.error('Load error:', err);
+    showToast('Failed to load data: ' + err.message, 'error');
+    allRows = generateDemoData(dateFilter);
+  }
+
+  applyFilters();
+}
+
+/* ── Apply filters ───────────────────────────────────────── */
+function applyFilters() {
+  const fDate   = document.getElementById('f-date').value;
+  const fDealer = document.getElementById('f-dealer').value;
+  const fRegion = document.getElementById('f-region').value;
+  const fModel  = document.getElementById('f-model').value;
+
+  filteredRows = allRows.filter(r => {
+    if (fDate   && r.report_date  !== fDate)   return false;
+    if (fDealer && r.dealer_code  !== fDealer) return false;
+    if (fRegion && r.region       !== fRegion) return false;
+    if (fModel  && r.model_bucket !== fModel)  return false;
+    return true;
+  });
+
+  renderKPIs();
+  renderComplianceTable();
+  renderModelTable();
+  renderDetailTable();
+  renderDirectionChart();
+  renderTrendChart();
+}
+
+/* ── KPI render ──────────────────────────────────────────── */
+function renderKPIs() {
+  const rows     = filteredRows;
+  const dateRows = rows.filter(r => r.report_date === (document.getElementById('f-date').value || todayISO()));
+
+  // Unique dealers that submitted
+  const submittedCodes = new Set(dateRows.map(r => r.dealer_code));
+  const totalDealers   = DEALERS.length;
+  const submitted      = submittedCodes.size;
+  const missing        = totalDealers - submitted;
+  const lateSet        = new Set(dateRows.filter(r => r.is_late).map(r => r.dealer_code));
+  const compliance     = Math.round((submitted / totalDealers) * 100);
+
+  // Submission count = number of distinct (dealer, time) combos
+  const submissionIds  = new Set(dateRows.map(r => `${r.dealer_code}|${r.submitted_at}`));
+
+  set('k-submissions', submissionIds.size);
+  set('k-submitted',   submitted);
+  set('k-missing',     missing);
+  set('k-late',        lateSet.size);
+  set('k-compliance',  compliance + '%');
+
+  const bar = document.getElementById('compliance-bar');
+  bar.style.width = compliance + '%';
+  bar.classList.toggle('good', compliance >= 80);
+
+  // Aggregates
+  const sum = key => rows.reduce((a, r) => a + (parseInt(r[key]) || 0), 0);
+  set('k-enq',      sum('enquiry'));
+  set('k-td',       sum('test_drives'));
+  set('k-sold',     sum('new_sold'));
+  set('k-fleet',    sum('fleet'));
+  set('k-demo',     sum('demo_sold'));
+  set('k-forecast', sum('forecast'));
+
+  // Missing dealer names sub-label
+  const missingNames = DEALERS.filter(d => !submittedCodes.has(d.code)).slice(0,5).map(d => d.code).join(', ');
+  document.getElementById('k-missing-names').textContent = missing > 0 ? missingNames + (missing > 5 ? ` +${missing-5}` : '') : 'All dealers in ✓';
+}
+
+function set(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+/* ── Compliance table ────────────────────────────────────── */
+function renderComplianceTable() {
+  const dateVal    = document.getElementById('f-date').value || todayISO();
+  const dateRows   = filteredRows.filter(r => r.report_date === dateVal);
+  const byDealer   = {};
+
+  dateRows.forEach(r => {
+    if (!byDealer[r.dealer_code]) {
+      byDealer[r.dealer_code] = {
+        name: r.dealer_name, late: r.is_late,
+        time: r.submitted_at,
+        enquiry: 0, new_sold: 0, forecast: 0,
+      };
+    }
+    byDealer[r.dealer_code].enquiry  += parseInt(r.enquiry)  || 0;
+    byDealer[r.dealer_code].new_sold += parseInt(r.new_sold) || 0;
+    byDealer[r.dealer_code].forecast += parseInt(r.forecast) || 0;
+  });
+
+  const tbody = document.getElementById('tbody-compliance');
+  tbody.innerHTML = '';
+
+  DEALERS.forEach(d => {
+    const data = byDealer[d.code];
+    const tr   = document.createElement('tr');
+    tr.innerHTML = `
+      <td><code style="font-size:12px;">${d.code}</code></td>
+      <td>${d.name}</td>
+      <td>${data ? '<span class="badge badge-green">Submitted</span>' : '<span class="badge badge-red">Missing</span>'}</td>
+      <td style="font-variant-numeric:tabular-nums;font-size:12px;">${data ? formatTime(data.time) : '—'}</td>
+      <td>${data ? (data.late ? '<span class="badge badge-orange">Late</span>' : '<span class="badge badge-green">On time</span>') : '—'}</td>
+      <td class="num">${data ? data.enquiry  : '—'}</td>
+      <td class="num">${data ? data.new_sold : '—'}</td>
+      <td class="num">${data ? data.forecast : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const submitted = Object.keys(byDealer).length;
+  document.getElementById('compliance-summary').textContent =
+    `${submitted} of ${DEALERS.length} dealers · ${Math.round(submitted/DEALERS.length*100)}% compliance`;
+}
+
+/* ── Model summary table ─────────────────────────────────── */
+function renderModelTable() {
+  const agg = {};
+  MODEL_BUCKETS.forEach(m => {
+    agg[m] = { enquiry:0, test_drives:0, new_sold:0, fleet:0, demo_sold:0, forecast:0 };
+  });
+
+  filteredRows.forEach(r => {
+    const a = agg[r.model_bucket];
+    if (!a) return;
+    a.enquiry     += parseInt(r.enquiry)     || 0;
+    a.test_drives += parseInt(r.test_drives) || 0;
+    a.new_sold    += parseInt(r.new_sold)    || 0;
+    a.fleet       += parseInt(r.fleet)       || 0;
+    a.demo_sold   += parseInt(r.demo_sold)   || 0;
+    a.forecast    += parseInt(r.forecast)    || 0;
+  });
+
+  const tbody = document.getElementById('tbody-models');
+  tbody.innerHTML = '';
+
+  // Totals row
+  const totals = { enquiry:0, test_drives:0, new_sold:0, fleet:0, demo_sold:0, forecast:0 };
+
+  MODEL_BUCKETS.forEach(m => {
+    const a   = agg[m];
+    const conv = a.enquiry > 0 ? Math.round((a.new_sold / a.enquiry) * 100) : 0;
+    Object.keys(totals).forEach(k => { totals[k] += a[k]; });
+    const hasData = Object.values(a).some(v => v > 0);
+    const tr = document.createElement('tr');
+    if (!hasData) tr.style.opacity = '0.45';
+    tr.innerHTML = `
+      <td style="font-weight:500;">${m}</td>
+      <td class="num">${a.enquiry}</td>
+      <td class="num">${a.test_drives}</td>
+      <td class="num">${a.new_sold}</td>
+      <td class="num">${a.fleet}</td>
+      <td class="num">${a.demo_sold}</td>
+      <td class="num">${a.forecast}</td>
+      <td class="num" style="color:${conv>0?'var(--success)':'var(--gray-400)'};">${conv > 0 ? conv+'%' : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Totals footer
+  const tfoot = document.createElement('tr');
+  tfoot.style.cssText = 'background:var(--gray-50);font-weight:700;border-top:2px solid var(--gray-200);';
+  const totalConv = totals.enquiry > 0 ? Math.round((totals.new_sold / totals.enquiry)*100) : 0;
+  tfoot.innerHTML = `
+    <td style="font-weight:700;">TOTAL</td>
+    <td class="num">${totals.enquiry}</td>
+    <td class="num">${totals.test_drives}</td>
+    <td class="num">${totals.new_sold}</td>
+    <td class="num">${totals.fleet}</td>
+    <td class="num">${totals.demo_sold}</td>
+    <td class="num">${totals.forecast}</td>
+    <td class="num">${totalConv > 0 ? totalConv+'%' : '—'}</td>
+  `;
+  tbody.appendChild(tfoot);
+}
+
+/* ── Detail table ────────────────────────────────────────── */
+function renderDetailTable() {
+  const rows  = filteredRows.filter(r =>
+    Object.values({
+      e: r.enquiry, t: r.test_drives, n: r.new_sold,
+      f: r.fleet,   d: r.demo_sold,   fc: r.forecast
+    }).some(v => parseInt(v) > 0)
+  );
+
+  document.getElementById('detail-count').textContent = `${rows.length} rows with activity`;
+
+  const tbody = document.getElementById('tbody-detail');
+  tbody.innerHTML = '';
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="11" class="no-data">No rows with activity for this filter.</td></tr>';
+    return;
+  }
+
+  rows.slice(0, 200).forEach(r => {
+    const tr = document.createElement('tr');
+    const dirColor = r.direction === 'Up' ? '#2E7D32' : r.direction === 'Down' ? '#C62828' : '#555';
+    tr.innerHTML = `
+      <td style="font-size:12px;font-variant-numeric:tabular-nums;">${formatTime(r.submitted_at)}</td>
+      <td style="font-size:12px;">${r.dealer_code}</td>
+      <td style="font-size:12px;">${r.model_bucket}</td>
+      <td style="color:${dirColor};font-weight:600;font-size:12px;">${r.direction || '—'}</td>
+      <td class="num">${r.enquiry || 0}</td>
+      <td class="num">${r.test_drives || 0}</td>
+      <td class="num">${r.new_sold || 0}</td>
+      <td class="num">${r.fleet || 0}</td>
+      <td class="num">${r.demo_sold || 0}</td>
+      <td class="num">${r.forecast || 0}</td>
+      <td>${r.is_late ? '<span class="badge badge-orange">Late</span>' : ''}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  if (rows.length > 200) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="11" class="no-data" style="font-size:12px;">Showing 200 of ${rows.length} rows. Export CSV for full data.</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+/* ── Direction doughnut chart ────────────────────────────── */
+function renderDirectionChart() {
+  const dateVal  = document.getElementById('f-date').value || todayISO();
+  const dateRows = filteredRows.filter(r => r.report_date === dateVal);
+  const byDealer = {};
+  dateRows.forEach(r => { byDealer[r.dealer_code] = r.direction; });
+
+  const counts = { Up: 0, Flat: 0, Down: 0 };
+  Object.values(byDealer).forEach(d => { if (counts[d] !== undefined) counts[d]++; });
+
+  const ctx = document.getElementById('chart-direction').getContext('2d');
+  if (directionChart) directionChart.destroy();
+
+  directionChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Up', 'Flat', 'Down'],
+      datasets: [{
+        data: [counts.Up, counts.Flat, counts.Down],
+        backgroundColor: ['#2E7D32', '#9A9A9A', '#C41230'],
+        borderWidth: 0,
+        hoverOffset: 6,
+      }],
+    },
+    options: {
+      cutout: '68%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { family: 'Helvetica Neue, Helvetica, Arial, sans-serif', size: 12 }, padding: 14, boxWidth: 12 },
+        },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} dealers` } },
+      },
+    },
+  });
+}
+
+/* ── Trend line chart ────────────────────────────────────── */
+function setTrendRange(days) {
+  trendDays = days;
+  [7,14,30].forEach(d => {
+    document.getElementById(`tr${d}`).classList.toggle('active', d === days);
+  });
+  renderTrendChart();
+}
+
+function renderTrendChart() {
+  // Build date array going back trendDays days
+  const dates = [];
+  const today = new Date();
+  for (let i = trendDays - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    dates.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+  }
+
+  const enquiryByDate = {};
+  const soldByDate    = {};
+  dates.forEach(d => { enquiryByDate[d] = 0; soldByDate[d] = 0; });
+
+  allRows.forEach(r => {
+    if (enquiryByDate[r.report_date] !== undefined) {
+      enquiryByDate[r.report_date] += parseInt(r.enquiry)  || 0;
+      soldByDate[r.report_date]    += parseInt(r.new_sold) || 0;
+    }
+  });
+
+  const labels = dates.map(d => {
+    const [,m,day] = d.split('-');
+    return `${day}/${m}`;
+  });
+
+  const ctx = document.getElementById('chart-trend').getContext('2d');
+  if (trendChart) trendChart.destroy();
+
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Enquiries',
+          data: dates.map(d => enquiryByDate[d]),
+          borderColor: '#C41230',
+          backgroundColor: 'rgba(196,18,48,0.08)',
+          borderWidth: 2,
+          tension: 0.35,
+          fill: true,
+          pointRadius: 3,
+          pointBackgroundColor: '#C41230',
+        },
+        {
+          label: 'New Sold',
+          data: dates.map(d => soldByDate[d]),
+          borderColor: '#2E7D32',
+          backgroundColor: 'rgba(46,125,50,0.06)',
+          borderWidth: 2,
+          tension: 0.35,
+          fill: true,
+          pointRadius: 3,
+          pointBackgroundColor: '#2E7D32',
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { font: { family: 'Helvetica Neue, Helvetica, Arial, sans-serif', size: 12 }, boxWidth: 12 } },
+      },
+      scales: {
+        x: { grid: { color: '#f0f0f0' }, ticks: { font: { size: 11 } } },
+        y: { grid: { color: '#f0f0f0' }, ticks: { font: { size: 11 } }, beginAtZero: true },
+      },
+    },
+  });
+}
+
+/* ── Tab switcher ────────────────────────────────────────── */
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.page-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `tab-${tab}`));
+}
+
+/* ── Config drawer ───────────────────────────────────────── */
+function toggleConfig() {
+  document.getElementById('config-drawer').classList.toggle('open');
+}
+
+function saveConfig() {
+  const url = document.getElementById('cfg-url').value.trim();
+  GWM_CONFIG.scriptUrl = url;
+  localStorage.setItem('gwm_script_url', url);
+  document.getElementById('config-drawer').classList.remove('open');
+  loadData();
+}
+
+/* ── CSV export ──────────────────────────────────────────── */
+function exportData() {
+  if (!filteredRows.length) { showToast('No data to export', 'error'); return; }
+  exportCSV(filteredRows, `gwm_report_${document.getElementById('f-date').value || todayISO()}.csv`);
+  showToast(`Exported ${filteredRows.length} rows`, 'success');
+}
+</script>
+</body>
+</html>
