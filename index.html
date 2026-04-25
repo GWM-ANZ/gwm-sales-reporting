@@ -566,38 +566,89 @@ const MODEL_GROUPS = {
 
 let selectedDirection = '';
 let gridData = {};   // { modelName: { enquiry:0, test_drives:0, ... } }
+let submittedDealerCodes = new Set();
 
 /* ── Init ────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', init);
 
 function init() {
-  populateDealerDropdown();
   buildModelGrid();
   setDateFields();
   startClock();
   checkLateStatus();
 
-  // Restore saved dealer/name from localStorage
-  const savedDealer = localStorage.getItem('gwm_dealer');
-  const savedName   = localStorage.getItem('gwm_name');
-  if (savedDealer) document.getElementById('dealer-select').value = savedDealer;
-  if (savedName)   document.getElementById('submitted-by').value = savedName;
-  updateSubmitPreview();
+  const savedName = localStorage.getItem('gwm_name');
+  if (savedName) document.getElementById('submitted-by').value = savedName;
 
-  document.getElementById('dealer-select').addEventListener('change', updateSubmitPreview);
-  document.getElementById('submitted-by').addEventListener('input',  updateSubmitPreview);
+  populateDealerDropdown();
+  refreshAvailableDealers().then(() => {
+    const savedDealer = localStorage.getItem('gwm_dealer');
+    const sel = document.getElementById('dealer-select');
+    if (savedDealer && Array.from(sel.options).some(o => o.value === savedDealer)) {
+      sel.value = savedDealer;
+      loadForecastForSelectedDealer();
+    }
+    updateSubmitPreview();
+  });
+
+  document.getElementById('dealer-select').addEventListener('change', () => {
+    updateSubmitPreview();
+    loadForecastForSelectedDealer();
+  });
+  document.getElementById('submitted-by').addEventListener('input', updateSubmitPreview);
   document.getElementById('sales-form').addEventListener('submit', handleSubmit);
+  scheduleDealerResetRefresh();
 }
 
 /* ── Dealer dropdown ─────────────────────────────────────── */
 function populateDealerDropdown() {
   const sel = document.getElementById('dealer-select');
-  DEALERS.forEach(d => {
-    const opt = document.createElement('option');
-    opt.value = d.code;
-    opt.textContent = `${d.code} – ${d.name}`;
-    sel.appendChild(opt);
-  });
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— Select dealer —</option>';
+
+  DEALERS
+    .filter(d => !submittedDealerCodes.has(d.code))
+    .forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.code;
+      opt.textContent = `${d.code} – ${d.name}`;
+      sel.appendChild(opt);
+    });
+
+  if (current && Array.from(sel.options).some(o => o.value === current)) sel.value = current;
+}
+
+async function refreshAvailableDealers() {
+  const reportDate = reportingDateISO();
+  let rows = [];
+
+  try {
+    if (GWM_CONFIG.scriptUrl) {
+      const data = await fetchRows({ date: reportDate });
+      rows = Array.isArray(data) ? data : (data.rows || []);
+    } else {
+      rows = JSON.parse(localStorage.getItem('gwm_submissions') || '[]').filter(r => r.report_date === reportDate);
+    }
+  } catch (err) {
+    console.warn('Dealer availability check failed:', err);
+    rows = JSON.parse(localStorage.getItem('gwm_submissions') || '[]').filter(r => r.report_date === reportDate);
+  }
+
+  submittedDealerCodes = new Set(rows.map(r => String(r.dealer_code || '').trim()).filter(Boolean));
+  populateDealerDropdown();
+  updateSubmitPreview();
+}
+
+function scheduleDealerResetRefresh() {
+  const now = new Date();
+  const next = new Date(now);
+  next.setHours(7, 0, 0, 0);
+  if (next <= now) next.setDate(next.getDate() + 1);
+  setTimeout(() => {
+    setDateFields();
+    refreshAvailableDealers();
+    scheduleDealerResetRefresh();
+  }, next - now + 1000);
 }
 
 /* ── Model grid builder ──────────────────────────────────── */
@@ -676,6 +727,7 @@ function onGridInput(input, model, col) {
   gridData[model][col] = val;
   updateRowTotal(model);
   updateLiveTotals();
+  if (col === 'forecast') saveForecastForSelectedDealer();
 }
 
 function updateRowTotal(model) {
@@ -723,7 +775,7 @@ function setDirection(val) {
 
 /* ── Date / clock ────────────────────────────────────────── */
 function setDateFields() {
-  const today = todayISO();
+  const today = reportingDateISO();
   document.getElementById('report-date').value  = formatDate(today);
   document.getElementById('submit-time').value  = new Date().toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: true });
   const ctx = document.getElementById('ctx-report-date');
@@ -754,7 +806,7 @@ function updateSubmitPreview() {
   const dealer = DEALERS.find(d => d.code === code);
   document.getElementById('submit-preview-dealer').textContent =
     dealer ? `${dealer.code} – ${dealer.name}` : '—';
-  document.getElementById('submit-preview-date').textContent = formatDate(todayISO());
+  document.getElementById('submit-preview-date').textContent = formatDate(reportingDateISO());
 }
 
 /* ── Form validation ─────────────────────────────────────── */
@@ -765,6 +817,9 @@ function validate() {
 
   if (!dealerEl.value) {
     errors.push('Please select a dealer.');
+    dealerEl.classList.add('error');
+  } else if (submittedDealerCodes.has(dealerEl.value)) {
+    errors.push('This dealer has already submitted today. It will reopen automatically from 7:00 AM tomorrow.');
     dealerEl.classList.add('error');
   } else { dealerEl.classList.remove('error'); }
 
@@ -784,7 +839,7 @@ function buildRows() {
   const dealerCode = document.getElementById('dealer-select').value;
   const dealer     = DEALERS.find(d => d.code === dealerCode);
   const ts         = nowTimestamp();
-  const date       = todayISO();
+  const date       = reportingDateISO();
   const late       = isLate();
   const name       = document.getElementById('submitted-by').value.trim();
   const direction  = selectedDirection;
@@ -857,6 +912,8 @@ function handleSuccess(rows) {
   // Save dealer & name for next visit
   localStorage.setItem('gwm_dealer', document.getElementById('dealer-select').value);
   localStorage.setItem('gwm_name',   document.getElementById('submitted-by').value.trim());
+  saveForecastForSelectedDealer();
+  submittedDealerCodes.add(document.getElementById('dealer-select').value);
 
   // Save to local history (for offline dashboard demo)
   const history = JSON.parse(localStorage.getItem('gwm_submissions') || '[]');
@@ -864,6 +921,7 @@ function handleSuccess(rows) {
   // Keep last 2000 rows
   if (history.length > 2000) history.splice(0, history.length - 2000);
   localStorage.setItem('gwm_submissions', JSON.stringify(history));
+  populateDealerDropdown();
 
   document.getElementById('sales-form').classList.add('hidden');
   const totEnq  = rows.reduce((a,r) => a + r.enquiry, 0);
@@ -873,6 +931,74 @@ function handleSuccess(rows) {
     (rows[0].is_late ? '(Flagged as late submission)' : '');
   document.getElementById('success-screen').classList.remove('hidden');
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ── Forecast persistence ────────────────────────────────── */
+function forecastStorageKey(dealerCode) {
+  return `gwm_forecast_${monthKeyFromISO(reportingDateISO())}_${dealerCode}`;
+}
+
+function getForecastInputs() {
+  return Array.from(document.querySelectorAll('.grid-input[data-col="forecast"]'));
+}
+
+function collectCurrentForecast() {
+  const out = {};
+  MODEL_BUCKETS.forEach(m => { out[m] = safeInt(gridData[m]?.forecast); });
+  return out;
+}
+
+function applyForecastMap(map) {
+  if (!map) return;
+  getForecastInputs().forEach(inp => {
+    const model = inp.getAttribute('data-model');
+    const val = safeInt(map[model]);
+    inp.value = String(val);
+    inp.classList.toggle('nonzero', val > 0);
+    if (gridData[model]) gridData[model].forecast = val;
+    updateRowTotal(model);
+  });
+  updateLiveTotals();
+}
+
+function saveForecastForSelectedDealer() {
+  const dealerCode = document.getElementById('dealer-select').value;
+  if (!dealerCode) return;
+  localStorage.setItem(forecastStorageKey(dealerCode), JSON.stringify(collectCurrentForecast()));
+}
+
+async function loadForecastForSelectedDealer() {
+  const dealerCode = document.getElementById('dealer-select').value;
+  if (!dealerCode) return;
+
+  let forecast = null;
+  try {
+    const local = localStorage.getItem(forecastStorageKey(dealerCode));
+    if (local) forecast = JSON.parse(local);
+  } catch (_) {}
+
+  try {
+    if (GWM_CONFIG.scriptUrl) {
+      const data = await fetchRows({ dealer: dealerCode });
+      const rows = Array.isArray(data) ? data : (data.rows || []);
+      const monthKey = monthKeyFromISO(reportingDateISO());
+      const latest = {};
+      rows
+        .filter(r => String(r.report_date || '').slice(0, 7) === monthKey)
+        .forEach(r => {
+          const model = r.model_bucket;
+          const ts = new Date(r.submitted_at || 0).getTime() || 0;
+          if (!latest[model] || ts >= latest[model].ts) latest[model] = { ts, val: safeInt(r.forecast) };
+        });
+      const serverForecast = {};
+      Object.keys(latest).forEach(model => { serverForecast[model] = latest[model].val; });
+      if (Object.keys(serverForecast).length) forecast = serverForecast;
+    }
+  } catch (err) {
+    console.warn('Forecast preload failed:', err);
+  }
+
+  applyForecastMap(forecast || {});
 }
 
 /* ── Reset form ──────────────────────────────────────────── */

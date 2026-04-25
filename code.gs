@@ -97,6 +97,12 @@ function doPost(e) {
     const sheet = getSheet();
     ensureHeaders(sheet);
 
+    // Prevent double-sent data. A dealer/date can only have one live submission.
+    // If the same dealer submits again for the same report_date, replace the prior model rows.
+    const dealerCode = rows[0].dealer_code;
+    const reportDate = rows[0].report_date;
+    deleteExistingSubmissionRows(sheet, dealerCode, reportDate);
+
     const appended = [];
     rows.forEach(row => {
       const rowData = COLUMNS.map(col => {
@@ -147,6 +153,31 @@ function ensureHeaders(sheet) {
     sheet.setColumnWidth(5, 200);  // dealer_name
     sheet.setColumnWidth(9, 160);  // model_bucket
   }
+}
+
+function deleteExistingSubmissionRows(sheet, dealerCode, reportDate) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return;
+
+  const data = sheet.getRange(2, 1, lastRow - 1, COLUMNS.length).getValues();
+  const dealerCol = COLUMNS.indexOf('dealer_code');
+  const dateCol   = COLUMNS.indexOf('report_date');
+
+  // Delete from bottom up so row numbers stay valid.
+  for (let i = data.length - 1; i >= 0; i--) {
+    const rowDealer = String(data[i][dealerCol] || '').trim();
+    const rowDate   = normaliseSheetDate(data[i][dateCol]);
+    if (rowDealer === String(dealerCode).trim() && rowDate === String(reportDate).trim()) {
+      sheet.deleteRow(i + 2);
+    }
+  }
+}
+
+function normaliseSheetDate(value) {
+  if (value instanceof Date) {
+    return Utilities.formatDate(value, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  }
+  return String(value || '').trim();
 }
 
 function safeInt(val) {

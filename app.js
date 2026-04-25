@@ -91,6 +91,20 @@ function nowTimestamp() {
   return new Date().toISOString();
 }
 
+/* Reporting day helper
+   Daily submission window resets at 7:00am local time.
+   Before 7:00am, the input form still belongs to the previous report day.
+*/
+function reportingDateISO() {
+  const d = new Date();
+  if (d.getHours() < 7) d.setDate(d.getDate() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function monthKeyFromISO(iso) {
+  return String(iso || todayISO()).slice(0, 7);
+}
+
 function formatDate(iso) {
   if (!iso) return '';
   const [y, m, d] = iso.split('-');
