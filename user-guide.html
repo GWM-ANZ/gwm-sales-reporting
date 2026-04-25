@@ -523,33 +523,9 @@
     </a>
 
     <h3>KPI Cards</h3>
-    <p>The dashboard contains two KPI layers:
+    <p>The dashboard now contains two KPI layers for the selected date: the primary operating KPIs and the funnel performance KPIs.</p>
 
-Primary KPIs (top row):
-Core operational metrics including compliance, enquiries, test drives, sold, and forecast.
-
-Funnel KPIs (secondary row):
-Conversion and performance indicators including:
-- Enquiry → Test Drive %
-- Test Drive → Sold %
-- Enquiry → Sold %
-- Sold (incl demo)
-- Demo Mix %
-
-These provide a quick view of pipeline health, conversion efficiency, and reliance on demo activity.
-
-Colour Indicators:
-- Green = Strong performance
-- Red = Weak performance
-- Neutral = Within normal range
-
-These are based on internal benchmarks and highlight where action may be required.
-
-How to use funnel KPIs:
-- Low Enquiry → TD % = showroom / engagement issue
-- Low TD → Sold % = closing / product / pricing issue
-- High Demo Mix % = reliance on non-retail sales
-</p>
+    <h3>Primary KPI Cards</h3>
     <table class="schema-table">
       <thead><tr><th>KPI</th><th>What it means</th></tr></thead>
       <tbody>
@@ -566,6 +542,33 @@ How to use funnel KPIs:
         <tr><td><strong>Forecast</strong></td><td>Sum of all dealer forecasts</td></tr>
       </tbody>
     </table>
+
+    <h3>Funnel KPI Cards</h3>
+    <p>The added funnel cards show how effectively daily activity is moving through the sales pipeline.</p>
+    <table class="schema-table">
+      <thead><tr><th>Funnel KPI</th><th>What it means</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Enq → TD %</strong></td><td>Test Drives ÷ Enquiries. Shows how well enquiry activity converts into showroom or drive activity.</td></tr>
+        <tr><td><strong>TD → Sold %</strong></td><td>Sold including demos ÷ Test Drives. Shows closing strength after customer engagement.</td></tr>
+        <tr><td><strong>Enq → Sold %</strong></td><td>Sold including demos ÷ Enquiries. Shows full funnel conversion from enquiry to sale.</td></tr>
+        <tr><td><strong>Sold Inc Demo</strong></td><td>New Sold + Demo Sold. Shows total sales activity captured for the day.</td></tr>
+        <tr><td><strong>Demo Mix %</strong></td><td>Demo Sold ÷ Sold including demos. Shows reliance on demonstrator sales versus normal new vehicle sales.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="info-box tip">
+      <strong>Colour indicators:</strong><br>
+      Green = strong performance<br>
+      Red = weak performance<br>
+      Neutral = within normal range
+    </div>
+
+    <div class="info-box note">
+      <strong>How to interpret the funnel:</strong><br>
+      Low Enq → TD % can indicate an engagement or showroom conversion issue.<br>
+      Low TD → Sold % can indicate a closing, pricing, stock, or product-fit issue.<br>
+      High Demo Mix % can indicate reliance on demo activity rather than normal new vehicle sales.
+    </div>
 
     <h3>Filters</h3>
     <p>Use the filter bar to narrow data by <strong>Date</strong>, <strong>Dealer</strong>, <strong>Region</strong>, or <strong>Model</strong>. Click <strong>Apply</strong> to refresh all KPIs, charts, and tables.</p>
