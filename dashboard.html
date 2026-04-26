@@ -1097,7 +1097,9 @@ function renderKPIs() {
   bar.style.width = compliance + '%';
   bar.classList.toggle('good', compliance >= 80);
 
-  const sum = key => rows.reduce((a, r) => a + (parseInt(r[key]) || 0), 0);
+  const metricRows = completeAnalysisRows(rows);
+  const incompleteCount = rows.length - metricRows.length;
+  const sum = key => metricRows.reduce((a, r) => a + (parseInt(r[key]) || 0), 0);
   const totalEnq   = sum('enquiry');
   const totalTD    = sum('test_drives');
   const totalSold  = sum('new_sold');
@@ -1165,6 +1167,15 @@ function set(id, val) {
   if (el) el.textContent = val;
 }
 
+function isCompleteRow(r) {
+  if (!r) return false;
+  return r.is_complete_submission === true || r.is_complete_submission === 'TRUE' || r.is_complete_submission === 1 || r.is_complete_submission === '1';
+}
+
+function completeAnalysisRows(rows) {
+  return (rows || []).filter(isCompleteRow);
+}
+
 /* ── Compliance table ────────────────────────────────────── */
 function renderComplianceTable() {
   const dateVal    = document.getElementById('f-date').value || reportingDateISO();
@@ -1176,12 +1187,13 @@ function renderComplianceTable() {
       byDealer[r.dealer_code] = {
         name: r.dealer_name, late: r.is_late,
         time: r.submitted_at,
-        enquiry: 0, new_sold: 0, forecast: 0,
+        enquiry: 0, new_sold: 0, forecast: 0, incomplete: false,
       };
     }
     byDealer[r.dealer_code].enquiry  += parseInt(r.enquiry)  || 0;
     byDealer[r.dealer_code].new_sold += parseInt(r.new_sold) || 0;
     byDealer[r.dealer_code].forecast += parseInt(r.forecast) || 0;
+    if (!isCompleteRow(r)) byDealer[r.dealer_code].incomplete = true;
   });
 
   const tbody = document.getElementById('tbody-compliance');
@@ -1197,7 +1209,7 @@ function renderComplianceTable() {
     tr.innerHTML = `
       <td><code style="font-size:12px;">${d.code}</code></td>
       <td style="font-weight:600;">${d.name}</td>
-      <td>${data ? '<span class="badge badge-green">Submitted</span>' : '<span class="badge badge-red">Missing</span>'}</td>
+      <td>${data ? (data.incomplete ? '<span class="badge badge-orange">Partial</span>' : '<span class="badge badge-green">Submitted</span>') : '<span class="badge badge-red">Missing</span>'}</td>
       <td style="font-size:12px;font-variant-numeric:tabular-nums;">${data ? formatTime(data.time) : '—'}</td>
       <td>${data ? (data.late ? '<span class="badge badge-orange">Late</span>' : '<span class="badge badge-green">On time</span>') : '—'}</td>
       <td class="num">${data ? data.enquiry  : '—'}</td>
@@ -1242,7 +1254,7 @@ function renderModelTable() {
     agg[m] = { enquiry:0, test_drives:0, new_sold:0, fleet:0, demo_sold:0, forecast:0 };
   });
 
-  filteredRows.forEach(r => {
+  completeAnalysisRows(filteredRows).forEach(r => {
     const a = agg[r.model_bucket];
     if (!a) return;
     a.enquiry     += parseInt(r.enquiry)     || 0;
@@ -1575,26 +1587,26 @@ function rowsForDateWithCurrentFilters(dateVal) {
   const fDealer = document.getElementById('f-dealer').value;
   const fRegion = document.getElementById('f-region').value;
   const fModel  = document.getElementById('f-model').value;
-  return allRows.filter(r => {
+  return completeAnalysisRows(allRows.filter(r => {
     if (r.report_date !== dateVal) return false;
     if (fDealer && r.dealer_code !== fDealer) return false;
     if (fRegion && r.region !== fRegion) return false;
     if (fModel  && r.model_bucket !== fModel) return false;
     return true;
-  });
+  }));
 }
 function rowsForMonthToDateWithCurrentFilters(yearMonth, upToDay) {
   const fDealer = document.getElementById('f-dealer').value;
   const fRegion = document.getElementById('f-region').value;
   const fModel  = document.getElementById('f-model').value;
-  return allRows.filter(r => {
+  return completeAnalysisRows(allRows.filter(r => {
     if (!r.report_date || !r.report_date.startsWith(yearMonth)) return false;
     if (r.report_date.slice(8,10) > upToDay) return false;
     if (fDealer && r.dealer_code !== fDealer) return false;
     if (fRegion && r.region !== fRegion) return false;
     if (fModel  && r.model_bucket !== fModel) return false;
     return true;
-  });
+  }));
 }
 function modelAgg(rows) {
   const agg = {};
@@ -1706,7 +1718,7 @@ function renderModelMomentum() {
 
 /* ── New tab: Model Funnel ──────────────────────────────── */
 function renderModelFunnel() {
-  const agg = modelAgg(filteredRows);
+  const agg = modelAgg(completeAnalysisRows(filteredRows));
   const rows = MODEL_BUCKETS.map(model => {
     const a = agg[model];
     const enqTd = a.enquiry > 0 ? Math.round((a.test_drives / a.enquiry) * 100) : 0;
@@ -1827,7 +1839,8 @@ function renderDealerHeatmap() {
   const metricSel = document.getElementById('heatmap-metric');
   const metric = metricSel ? metricSel.value : 'enquiry';
   const labelMap = { enquiry:'Enquiries', test_drives:'Test Drives', new_sold:'New Sold', total_sold:'Total Sold', forecast:'Forecast' };
-  const activeModels = MODEL_BUCKETS.filter(model => filteredRows.some(r => r.model_bucket === model && (metric === 'total_sold' ? totalSoldRow(r) : nVal(r[metric])) > 0));
+  const heatRows = completeAnalysisRows(filteredRows);
+  const activeModels = MODEL_BUCKETS.filter(model => heatRows.some(r => r.model_bucket === model && (metric === 'total_sold' ? totalSoldRow(r) : nVal(r[metric])) > 0));
   const models = activeModels.length ? activeModels : MODEL_BUCKETS.slice(0, 10);
   const dealers = DEALERS.filter(d => !document.getElementById('f-dealer').value || d.code === document.getElementById('f-dealer').value);
 
@@ -1837,7 +1850,7 @@ function renderDealerHeatmap() {
     values[d.code] = {};
     models.forEach(m => values[d.code][m] = 0);
   });
-  filteredRows.forEach(r => {
+  heatRows.forEach(r => {
     if (!values[r.dealer_code] || values[r.dealer_code][r.model_bucket] === undefined) return;
     const v = metric === 'total_sold' ? totalSoldRow(r) : nVal(r[metric]);
     values[r.dealer_code][r.model_bucket] += v;
@@ -1884,7 +1897,7 @@ function renderExecutiveInsightSummary() {
   const prevWeek = isoShift(dateVal, -7);
   const cur = modelAgg(rowsForDateWithCurrentFilters(dateVal));
   const prev = modelAgg(rowsForDateWithCurrentFilters(prevWeek));
-  const todayAgg = modelAgg(filteredRows);
+  const todayAgg = modelAgg(completeAnalysisRows(filteredRows));
 
   const modelRows = MODEL_BUCKETS.map(model => {
     const c = cur[model];

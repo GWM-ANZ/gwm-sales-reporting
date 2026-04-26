@@ -484,7 +484,7 @@
     </table>
 
     <div class="info-box note">
-      <strong>Reopening a submission:</strong> If a dealer needs to update after submitting, OEM can reopen that dealer from the dashboard. The dealer will see their previous data restored, can update it, and resubmission overwrites the prior dealer/date rows.
+      <strong>Reopening a submission:</strong> If a dealer needs to update after submitting, OEM can reopen that dealer from the dashboard. The dealer will see their previous data restored, can update it, and resubmission overwrites the prior dealer/date rows. Without a dashboard reopen, the backend rejects duplicate dealer/date submissions.
     </div>
 
     <div class="info-box tip">
@@ -663,7 +663,7 @@
         <tr><td>F</td><td><code>region</code></td><td>Southern Region</td><td>For future multi-region expansion</td></tr>
         <tr><td>G</td><td><code>submitted_by</code></td><td>Jane Smith</td><td>Name entered by the submitter</td></tr>
         <tr><td>H</td><td><code>direction</code></td><td>Up</td><td>Up / Flat / Down</td></tr>
-        <tr><td>I</td><td><code>is_complete_submission</code></td><td>TRUE</td><td>TRUE when dealer, name, direction and daily activity are supplied</td></tr>
+        <tr><td>I</td><td><code>is_complete_submission</code></td><td>TRUE</td><td>TRUE when dealer, name, direction and the full model-bucket row set are supplied</td></tr>
         <tr><td>J</td><td><code>input_method</code></td><td>activity</td><td>activity / grid / mixed / no_activity</td></tr>
         <tr><td>K</td><td><code>submission_duration_seconds</code></td><td>42</td><td>Time from form open to submit</td></tr>
         <tr><td>L</td><td><code>last_updated_at</code></td><td>2026-04-25T02:13:40Z</td><td>Last local edit time before submission</td></tr>
@@ -760,7 +760,7 @@
         <tr><td><code>fleet_5_plus</code></td><td>Whole Number</td><td></td></tr>
         <tr><td><code>demo_sold</code></td><td>Whole Number</td><td></td></tr>
         <tr><td><code>forecast</code></td><td>Whole Number</td><td>Protected monthly value. Blank means no change; entered 0 is treated as a true zero.</td></tr>
-        <tr><td><code>is_complete_submission</code></td><td>True/False</td><td>TRUE only when every daily activity field was explicitly completed. This helps separate complete reports from partial submissions.</td></tr>
+        <tr><td><code>is_complete_submission</code></td><td>True/False</td><td>TRUE when the full dealer/date model set is received with dealer, submitter and direction. Dashboard trend and conversion reads use complete rows only so partial submissions do not pollute HQ analysis.</td></tr>
       </tbody>
     </table>
 

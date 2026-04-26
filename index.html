@@ -659,7 +659,7 @@ function init() {
     const sel = document.getElementById('dealer-select');
     if (savedDealer && Array.from(sel.options).some(o => o.value === savedDealer)) {
       sel.value = savedDealer;
-      loadForecastForSelectedDealer().then(loadExistingSubmissionIfUnlocked).then(loadDraftForSelectedDealer);
+      loadForecastForSelectedDealer().then(loadExistingSubmissionIfUnlocked).then(unlocked => { if (!unlocked) return loadDraftForSelectedDealer(); });
     }
     updateSubmitPreview();
   });
@@ -667,7 +667,7 @@ function init() {
   document.getElementById('dealer-select').addEventListener('change', () => {
     prepareDealerWorkspace();
     updateSubmitPreview();
-    loadForecastForSelectedDealer().then(loadExistingSubmissionIfUnlocked).then(loadDraftForSelectedDealer);
+    loadForecastForSelectedDealer().then(loadExistingSubmissionIfUnlocked).then(unlocked => { if (!unlocked) return loadDraftForSelectedDealer(); });
   });
   document.getElementById('submitted-by').addEventListener('input', () => { updateSubmitPreview(); queueDraftSave(); });
   document.getElementById('sales-form').addEventListener('submit', handleSubmit);
@@ -999,11 +999,11 @@ function buildRows() {
     submission_duration_seconds: durationSeconds,
     last_updated_at: updatedAt,
     model_bucket: model,
-    enquiry:      gridData[model].enquiry === null ? '' : gridData[model].enquiry,
-    test_drives:  gridData[model].test_drives === null ? '' : gridData[model].test_drives,
-    new_sold:     gridData[model].new_sold === null ? '' : gridData[model].new_sold,
-    fleet:        gridData[model].fleet === null ? '' : gridData[model].fleet,
-    demo_sold:    gridData[model].demo_sold === null ? '' : gridData[model].demo_sold,
+    enquiry:      gridData[model].enquiry === null ? 0 : gridData[model].enquiry,
+    test_drives:  gridData[model].test_drives === null ? 0 : gridData[model].test_drives,
+    new_sold:     gridData[model].new_sold === null ? 0 : gridData[model].new_sold,
+    fleet:        gridData[model].fleet === null ? 0 : gridData[model].fleet,
+    demo_sold:    gridData[model].demo_sold === null ? 0 : gridData[model].demo_sold,
     forecast:     gridData[model].forecast === null ? '' : gridData[model].forecast,
   }));
 }
@@ -1167,11 +1167,11 @@ function loadExistingSubmissionIfUnlocked() {
   const banner = document.getElementById('unlock-banner');
   if (!dealerCode || !unlockedDealerCodes.has(dealerCode)) {
     if (banner) banner.style.display = 'none';
-    return Promise.resolve();
+    return Promise.resolve(false);
   }
   const rows = existingSubmissionCache[dealerCode] || [];
   if (banner) banner.style.display = 'block';
-  if (!rows.length) return Promise.resolve();
+  if (!rows.length) return Promise.resolve(true);
   rows.forEach(r => {
     const model = r.model_bucket;
     if (!gridData[model]) return;
@@ -1191,7 +1191,7 @@ function loadExistingSubmissionIfUnlocked() {
   renderActivityLog();
   updateQuickSummary();
   setDraftStatus('Reopened submission restored');
-  return Promise.resolve();
+  return Promise.resolve(true);
 }
 
 function initialiseMobileGridState() {
@@ -1345,7 +1345,7 @@ function hasAnyDailyActivity() {
   return MODEL_BUCKETS.some(model => GRID_COLS.some(col => col.key !== 'forecast' && gridData[model]?.[col.key] !== null));
 }
 function isCompleteSubmission() {
-  return Boolean(document.getElementById('dealer-select').value && document.getElementById('submitted-by').value.trim() && selectedDirection && hasAnyDailyActivity());
+  return Boolean(document.getElementById('dealer-select').value && document.getElementById('submitted-by').value.trim() && selectedDirection && MODEL_BUCKETS.every(model => gridData[model]));
 }
 function getInputMethod() {
   const hasQuick = quickActivityLog.length > 0;

@@ -40,6 +40,9 @@ const COLUMNS = [
   'forecast',
 ];
 
+
+const DAILY_VALUE_COLUMNS = ['enquiry','test_drives','new_sold','fleet_5_plus','demo_sold'];
+const MIN_EXPECTED_MODEL_ROWS = 19;
 // ── GET handler – returns rows for dashboard ──────────────
 function doGet(e) {
   const params = e.parameter || {};
@@ -120,20 +123,36 @@ function doPost(e) {
     const sheet = getSheet();
     ensureHeaders(sheet);
 
-    // Prevent double-sent data. A dealer/date can only have one live submission.
-    // If the same dealer submits again for the same report_date, replace the prior model rows.
-    const dealerCode = rows[0].dealer_code;
-    const reportDate = rows[0].report_date;
+    const dealerCode = String(rows[0].dealer_code || '').trim();
+    const reportDate = normaliseSheetDate(rows[0].report_date);
+    validateSubmissionRows(rows, dealerCode, reportDate);
+
+    const alreadySubmitted = hasExistingSubmissionRows(sheet, dealerCode, reportDate);
+    const isUnlocked = isSubmissionUnlocked(dealerCode, reportDate);
+    if (alreadySubmitted && !isUnlocked) {
+      return jsonResponse({
+        success: false,
+        error: 'Submission already exists for this dealer/date. Reopen it from the dashboard before resubmitting.',
+        code: 'SUBMISSION_LOCKED',
+        dealer_code: dealerCode,
+        report_date: reportDate,
+      }, 409);
+    }
+
+    // If reopened, resubmission replaces the old dealer/date rows and then locks the dealer again.
     const existingForecasts = getExistingMonthlyForecasts(sheet, dealerCode, reportDate);
-    deleteExistingSubmissionRows(sheet, dealerCode, reportDate);
-    clearSubmissionUnlock(dealerCode, reportDate);
+    if (alreadySubmitted) deleteExistingSubmissionRows(sheet, dealerCode, reportDate);
 
     const appended = [];
     rows.forEach(row => {
+      const isComplete = isServerCompleteSubmission(rows, dealerCode, reportDate);
       const rowData = COLUMNS.map(col => {
-        if (col === 'is_late')    return row[col] ? 'TRUE' : 'FALSE';
-        if (col === 'is_complete_submission') return row[col] ? 'TRUE' : 'FALSE';
-        if (col === 'fleet_5_plus') return row['fleet'] === '' || row['fleet'] === null || row['fleet'] === undefined ? '' : safeInt(row['fleet']);   // map fleet → fleet_5_plus
+        if (col === 'is_late') return row[col] ? 'TRUE' : 'FALSE';
+        if (col === 'is_complete_submission') return isComplete ? 'TRUE' : 'FALSE';
+        if (col === 'report_date') return reportDate;
+        if (col === 'dealer_code') return dealerCode;
+        if (col === 'fleet_5_plus') return coerceDailyValue(row['fleet_5_plus'] !== undefined ? row['fleet_5_plus'] : row['fleet']);
+        if (DAILY_VALUE_COLUMNS.indexOf(col) >= 0) return coerceDailyValue(row[col]);
         if (col === 'forecast') {
           if (row[col] === '' || row[col] === null || row[col] === undefined) {
             const model = String(row.model_bucket || '').trim();
@@ -141,11 +160,14 @@ function doPost(e) {
           }
           return safeInt(row[col]);
         }
+        if (col === 'last_updated_at') return row[col] || row['submitted_at'] || new Date().toISOString();
         return row[col] !== undefined ? row[col] : '';
       });
       sheet.appendRow(rowData);
       appended.push(row.model_bucket);
     });
+
+    clearSubmissionUnlock(dealerCode, reportDate);
 
     return jsonResponse({
       success: true,
@@ -227,6 +249,64 @@ function styleHeader(sheet) {
   sheet.setColumnWidth(10, 130); // input_method
   sheet.setColumnWidth(12, 180); // last_updated_at
   sheet.setColumnWidth(13, 160); // model_bucket
+}
+
+
+function validateSubmissionRows(rows, dealerCode, reportDate) {
+  if (!dealerCode) throw new Error('dealer_code is required');
+  if (!reportDate) throw new Error('report_date is required');
+  if (!Array.isArray(rows) || rows.length < MIN_EXPECTED_MODEL_ROWS) {
+    throw new Error('Incomplete submission. Expected one row per model bucket.');
+  }
+
+  const seenModels = {};
+  rows.forEach(row => {
+    const rowDealer = String(row.dealer_code || '').trim();
+    const rowDate = normaliseSheetDate(row.report_date);
+    const model = String(row.model_bucket || '').trim();
+    if (rowDealer !== dealerCode) throw new Error('Mixed dealer codes in one submission are not allowed');
+    if (rowDate !== reportDate) throw new Error('Mixed report dates in one submission are not allowed');
+    if (!model) throw new Error('model_bucket is required on every row');
+    seenModels[model] = true;
+  });
+
+  if (Object.keys(seenModels).length < MIN_EXPECTED_MODEL_ROWS) {
+    throw new Error('Incomplete submission. Duplicate or missing model bucket rows detected.');
+  }
+}
+
+function isServerCompleteSubmission(rows, dealerCode, reportDate) {
+  if (!dealerCode || !reportDate || !Array.isArray(rows) || rows.length < MIN_EXPECTED_MODEL_ROWS) return false;
+  const first = rows[0] || {};
+  if (!String(first.submitted_by || '').trim()) return false;
+  if (!String(first.direction || '').trim()) return false;
+  const models = {};
+  rows.forEach(row => { if (row.model_bucket) models[String(row.model_bucket).trim()] = true; });
+  return Object.keys(models).length >= MIN_EXPECTED_MODEL_ROWS;
+}
+
+function coerceDailyValue(val) {
+  // Daily activity values are zero by default at submission time.
+  // Forecast remains protected separately and is not coerced here.
+  if (val === '' || val === null || val === undefined) return 0;
+  return safeInt(val);
+}
+
+function hasExistingSubmissionRows(sheet, dealerCode, reportDate) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return false;
+  const data = sheet.getRange(2, 1, lastRow - 1, COLUMNS.length).getValues();
+  const dealerCol = COLUMNS.indexOf('dealer_code');
+  const dateCol = COLUMNS.indexOf('report_date');
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][dealerCol] || '').trim() === String(dealerCode).trim()
+        && normaliseSheetDate(data[i][dateCol]) === String(reportDate).trim()) return true;
+  }
+  return false;
+}
+
+function isSubmissionUnlocked(dealerCode, reportDate) {
+  return getUnlockedDealerCodes(reportDate).indexOf(String(dealerCode || '').trim()) >= 0;
 }
 
 

@@ -149,14 +149,28 @@ function showToast(msg, type = 'default', duration = 3500) {
 async function postRows(rows) {
   const url = GWM_CONFIG.scriptUrl;
   if (!url) throw new Error('NO_URL');
+  if (!Array.isArray(rows) || !rows.length) throw new Error('No rows to submit');
 
-  const res = await fetch(url, {
+  // Preflight lock check. Apps Script POST uses no-cors, so this GET check gives the UI
+  // a readable control-layer response before we send anything.
+  const first = rows[0];
+  const dealerCode = String(first.dealer_code || '').trim();
+  const reportDate = String(first.report_date || '').trim();
+  if (dealerCode && reportDate) {
+    const state = await fetchRows({ date: reportDate, dealer: dealerCode, include_controls: '1' });
+    const existingRows = Array.isArray(state) ? state : (state?.rows || []);
+    const unlocked = Array.isArray(state?.unlockedDealerCodes) ? state.unlockedDealerCodes.map(x => String(x).trim()) : [];
+    if (existingRows.length && !unlocked.includes(dealerCode)) {
+      throw new Error('This dealer/date is locked. Reopen it from the dashboard before resubmitting.');
+    }
+  }
+
+  await fetch(url, {
     method: 'POST',
     mode: 'no-cors',               // Apps Script requires no-cors
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ rows }),
   });
-  // no-cors means we can't read the response — treat it as success
   return { ok: true };
 }
 
