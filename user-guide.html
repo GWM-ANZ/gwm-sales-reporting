@@ -287,6 +287,131 @@
     hr { border: none; border-top: 1px solid #EFEFEF; margin: 28px 0; }
 
 
+    /* ── Desktop polish: branded guide header + tighter content rhythm ── */
+    .site-header.no-print {
+      height: auto;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      background: #000;
+      border-bottom: none;
+      box-shadow: 0 2px 14px rgba(0,0,0,0.22);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-top-strip {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 7px 28px;
+      background: #000;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .header-brandbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 16px 28px 14px;
+      background: #000;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+    .brandbar-left {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-width: 0;
+    }
+    .brandbar-left .gwm-wordmark-img {
+      height: 34px;
+      width: auto;
+      max-width: 300px;
+      object-fit: contain;
+    }
+    .brand-url {
+      color: rgba(255,255,255,0.62);
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .header-brand-right {
+      text-align: right;
+      min-width: 170px;
+    }
+    .header-brand-label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.44);
+      line-height: 1;
+      margin-bottom: 5px;
+    }
+    .header-brand-region {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.86);
+      line-height: 1.1;
+    }
+    .header-red-line { height: 3px; background: #C41230; }
+
+    .guide-body {
+      max-width: 1040px;
+      padding: 26px 24px 84px;
+    }
+    .cover,
+    .toc,
+    .section-block {
+      max-width: 980px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .cover {
+      border-radius: 4px;
+      padding: 34px 42px 32px;
+      margin-bottom: 26px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.16);
+    }
+    .cover-logo { height: 26px; margin-bottom: 24px; }
+    .cover h1 { font-size: 28px; letter-spacing: 0.01em; }
+    .cover-sub { margin-bottom: 22px; }
+    .cover-meta { gap: 34px; }
+
+    .toc {
+      padding: 22px 28px;
+      margin-bottom: 30px;
+      border: 1px solid #E6E6E6;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    .toc ol {
+      columns: 2;
+      column-gap: 44px;
+      line-height: 1.9;
+    }
+    .toc li { break-inside: avoid; padding-right: 8px; }
+    .section-block { margin-bottom: 34px; }
+    .section-head { margin-bottom: 16px; }
+    hr { max-width: 980px; margin: 24px auto; }
+
+    .print-btn {
+      right: 28px;
+      bottom: 28px;
+      border-radius: 3px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.24);
+    }
+
+
     /* ── Final rollout guide mobile/desktop optimisation ── */
     .process-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 14px 0; }
     .process-card { background: #F7F7F7; border: 1px solid #E8E8E8; border-left: 3px solid #111; border-radius: 4px; padding: 14px 16px; }
@@ -300,11 +425,23 @@
     .schema-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .schema-scroll .schema-table { min-width: 620px; }
     @media (max-width: 700px) {
+      .site-header.no-print { position: static; }
+      .header-top-strip { padding: 8px 14px; justify-content: flex-start; }
+      .header-actions { width: 100%; }
+      .header-actions a { flex: 1; text-align: center; }
+      .header-brandbar { display: block; padding: 12px 14px 10px; }
+      .brandbar-left { justify-content: space-between; gap: 10px; }
+      .brandbar-left .gwm-wordmark-img { height: 28px; max-width: 72vw; }
+      .brand-url { display: none; }
+      .header-brand-right { text-align: left; min-width: 0; margin-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .header-brand-label { margin-bottom: 0; font-size: 9px; letter-spacing: 0.12em; }
+      .header-brand-region { font-size: 11px; letter-spacing: 0.08em; white-space: nowrap; }
       .guide-body { padding: 20px 14px 56px; }
       .cover { padding: 28px 22px 26px; border-radius: 4px; }
       .cover h1 { font-size: 22px; }
       .cover-meta { gap: 12px; }
       .toc { padding: 16px 18px; }
+      .toc ol { columns: 1; }
       .section-head { align-items: flex-start; gap: 10px; }
       .section-num { width: 32px; height: 32px; font-size: 13px; }
       .section-title { font-size: 16px; }
