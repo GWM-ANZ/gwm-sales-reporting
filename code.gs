@@ -78,9 +78,15 @@ function doGet(e) {
       // Filter by dealer if provided
       if (params.dealer && String(row['dealer_code']).trim() !== String(params.dealer).trim()) continue;
 
-      // Normalise boolean fields
-      row['is_late'] = row['is_late'] === true || row['is_late'] === 'TRUE' || row['is_late'] === 1;
-      row['is_complete_submission'] = row['is_complete_submission'] === true || row['is_complete_submission'] === 'TRUE' || row['is_complete_submission'] === 1;
+      // Normalise boolean fields. Preserve blank/missing completion flags for legacy imports.
+      row['is_late'] = row['is_late'] === true || row['is_late'] === 'TRUE' || row['is_late'] === 1 || row['is_late'] === '1';
+
+      const rawComplete = row['is_complete_submission'];
+      if (rawComplete === undefined || rawComplete === null || rawComplete === '') {
+        row['is_complete_submission'] = '';
+      } else {
+        row['is_complete_submission'] = rawComplete === true || rawComplete === 'TRUE' || rawComplete === 1 || rawComplete === '1';
+      }
 
       rows.push(row);
     }

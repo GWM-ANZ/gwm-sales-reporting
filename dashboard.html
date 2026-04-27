@@ -1198,6 +1198,13 @@ function isCompleteRow(r) {
   // If the field is missing, treat the row as complete so historical/imported data still feeds the dashboard.
   if (r.is_complete_submission === undefined || r.is_complete_submission === null || r.is_complete_submission === '') return true;
 
+  if (r.is_complete_submission === false || r.is_complete_submission === 'FALSE' || r.is_complete_submission === 0 || r.is_complete_submission === '0') {
+    // Legacy imported rows had no completion metadata. Some Apps Script versions converted that blank to FALSE.
+    // Treat only metadata-free historical rows as complete; keep genuine partial live submissions excluded.
+    if (!r.input_method && !r.submission_duration_seconds) return true;
+    return false;
+  }
+
   return r.is_complete_submission === true ||
          r.is_complete_submission === 'TRUE' ||
          r.is_complete_submission === 1 ||
