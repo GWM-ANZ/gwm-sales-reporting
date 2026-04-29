@@ -428,9 +428,14 @@
 <main class="main-content" id="main-content">
 
   <!-- Date context bar -->
-  <div style="background:#111;color:rgba(255,255,255,0.45);font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:7px 20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
-    <span>Report Date: <strong style="color:#fff;" id="ctx-report-date">—</strong></span>
-    <span style="color:rgba(255,255,255,0.3);font-weight:500;letter-spacing:0.06em;text-transform:none;font-size:11px;">Submit before 10:00 AM</span>
+  <div style="background:#111;color:rgba(255,255,255,0.55);font-size:10px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;padding:9px 20px;margin-bottom:16px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:center;">
+    <span>Reporting For: <strong style="color:#fff;" id="ctx-report-date">—</strong></span>
+    <span>Entered On: <strong style="color:#fff;" id="ctx-entered-date">—</strong></span>
+    <span>Status: <strong style="color:#fff;" id="ctx-report-state">Current required report</strong></span>
+    <span>Sunday Rule: <strong style="color:#fff;" id="ctx-sunday-rule">Sunday skipped</strong></span>
+  </div>
+  <div style="background:#fff;border:1px solid #DCDCDC;border-left:3px solid #C41230;color:#555;font-size:12px;font-weight:700;padding:10px 14px;margin-bottom:16px;">
+    Daily reporting is retrospective: today you submit the previous required reporting day. If a dealer has missed an earlier required day, that missed date is locked in first and must be completed before the current report opens.
   </div>
 
   <!-- Alert banner (validation / late warning) -->
@@ -450,9 +455,9 @@
 
   <!-- ── Form ───────────────────────────────────────────── -->
   <form id="sales-form" novalidate>
-    <div class="unlock-banner" id="unlock-banner">OEM has reopened this dealer's submission for today. Existing data has been restored, update and resubmit to overwrite the prior version.</div>
-    <div class="missed-day-banner" id="missed-day-banner">⚠ Missed reporting day detected. You must complete <span id="missed-day-label">the missed day</span> before submitting today's report.</div>
-    <div class="submitted-banner" id="submitted-banner">✓ Submitted for today. Contact OEM to reopen if changes are required.</div>
+    <div class="unlock-banner" id="unlock-banner">OEM has reopened this dealer/date submission. Existing data has been restored, update and resubmit to overwrite the prior version.</div>
+    <div class="missed-day-banner" id="missed-day-banner">⚠ Missed reporting day detected. You are now completing <span id="missed-day-label">the missed day</span>. After submission, the system verifies the save and then moves to the next required reporting day.</div>
+    <div class="submitted-banner" id="submitted-banner">✓ Submitted for this reporting date. Contact OEM to reopen if changes are required.</div>
 
     <!-- Dealer details card -->
     <div class="card">
@@ -635,8 +640,6 @@ let gridData = {};   // { modelName: { enquiry:0, test_drives:0, ... } }
 let submittedDealerCodes = new Set();
 let unlockedDealerCodes = new Set();
 let existingSubmissionCache = {};
-let eligibleDealerCodes = new Set(DEALERS.map(d => d.code));
-let dealerForcedMissingDates = {};
 let quickActivityLog = [];
 let activeReportDate = reportingDateISO();
 let forcedMissingReportDate = null;
@@ -684,56 +687,36 @@ function populateDealerDropdown() {
   sel.innerHTML = '<option value="">— Select dealer —</option>';
 
   DEALERS.forEach(d => {
-    const isEligible = eligibleDealerCodes.has(d.code) || unlockedDealerCodes.has(d.code);
-    if (!isEligible) return;
-
     const opt = document.createElement('option');
     opt.value = d.code;
-    const missedDate = dealerForcedMissingDates[d.code];
-    opt.textContent = missedDate
-      ? `${d.code} – ${d.name}  ⚠ missed ${formatDate(missedDate)}`
-      : `${d.code} – ${d.name}`;
+    opt.textContent = `${d.code} – ${d.name}`;
     sel.appendChild(opt);
   });
 
-  if (current && Array.from(sel.options).some(o => o.value === current)) {
-    sel.value = current;
-  } else {
-    sel.value = '';
-    selectedDealerSubmittedDates = new Set();
-    applyForcedMissingDate(null);
-  }
+  if (current && Array.from(sel.options).some(o => o.value === current)) sel.value = current;
 }
 
 async function refreshAvailableDealers() {
   const reportDate = reportingDateISO();
-  let allRows = [];
   let rows = [];
   let unlocked = [];
 
   try {
     if (GWM_CONFIG.scriptUrl) {
-      const allData = await fetchRows({});
-      allRows = Array.isArray(allData) ? allData : (allData.rows || []);
-
-      const controlData = await fetchRows({ date: reportDate, include_controls: '1' });
-      unlocked = Array.isArray(controlData?.unlockedDealerCodes) ? controlData.unlockedDealerCodes : [];
-      rows = allRows.filter(r => String(r.report_date || '').slice(0, 10) === reportDate);
+      const data = await fetchRows({ date: reportDate, include_controls: '1' });
+      rows = Array.isArray(data) ? data : (data.rows || []);
+      unlocked = Array.isArray(data?.unlockedDealerCodes) ? data.unlockedDealerCodes : [];
     } else {
-      allRows = JSON.parse(localStorage.getItem('gwm_submissions') || '[]');
-      rows = allRows.filter(r => r.report_date === reportDate);
+      rows = JSON.parse(localStorage.getItem('gwm_submissions') || '[]').filter(r => r.report_date === reportDate);
       unlocked = getLocalUnlockedDealers(reportDate);
     }
   } catch (err) {
     console.warn('Dealer availability check failed:', err);
-    allRows = JSON.parse(localStorage.getItem('gwm_submissions') || '[]');
-    rows = allRows.filter(r => r.report_date === reportDate);
+    rows = JSON.parse(localStorage.getItem('gwm_submissions') || '[]').filter(r => r.report_date === reportDate);
     unlocked = getLocalUnlockedDealers(reportDate);
   }
 
   submittedDealerCodes = new Set(rows.map(r => String(r.dealer_code || '').trim()).filter(Boolean));
-  unlockedDealerCodes = new Set(unlocked.map(x => String(x || '').trim()).filter(Boolean));
-
   existingSubmissionCache = {};
   rows.forEach(r => {
     const code = String(r.dealer_code || '').trim();
@@ -741,21 +724,7 @@ async function refreshAvailableDealers() {
     if (!existingSubmissionCache[code]) existingSubmissionCache[code] = [];
     existingSubmissionCache[code].push(r);
   });
-
-  dealerForcedMissingDates = {};
-  eligibleDealerCodes = new Set();
-  DEALERS.forEach(d => {
-    const dealerRows = allRows.filter(r => String(r.dealer_code || '').trim() === d.code);
-    const missingDate = findForcedMissingDateForDealer(dealerRows, reportDate);
-    if (missingDate) dealerForcedMissingDates[d.code] = missingDate;
-
-    const hasSubmittedCurrentReport = submittedDealerCodes.has(d.code);
-    const isUnlocked = unlockedDealerCodes.has(d.code);
-    if (missingDate || !hasSubmittedCurrentReport || isUnlocked) {
-      eligibleDealerCodes.add(d.code);
-    }
-  });
-
+  unlockedDealerCodes = new Set(unlocked.map(x => String(x || '').trim()).filter(Boolean));
   populateDealerDropdown();
   updateSubmitPreview();
 }
@@ -798,8 +767,20 @@ function isoCompare(a, b) {
   return String(a || '').localeCompare(String(b || ''));
 }
 
+function isSkippedReportDate(iso) {
+  return typeof isRequiredReportDateISO === 'function' ? !isRequiredReportDateISO(iso) : false;
+}
+
+function nextRequiredReportDateISO(iso) {
+  let cursor = isoAddDays(iso, 1);
+  while (isSkippedReportDate(cursor)) cursor = isoAddDays(cursor, 1);
+  return cursor;
+}
+
 function uniqueSubmittedDates(rows) {
-  return new Set((rows || []).map(r => String(r.report_date || '').slice(0, 10)).filter(Boolean));
+  return new Set((rows || [])
+    .map(r => String(r.report_date || '').slice(0, 10))
+    .filter(Boolean));
 }
 
 function findForcedMissingDateForDealer(rows, currentReportDate) {
@@ -807,17 +788,18 @@ function findForcedMissingDateForDealer(rows, currentReportDate) {
   if (!dates.length) return null;
 
   const submitted = new Set(dates);
+  if (submitted.has(currentReportDate)) return null;
 
   const latestBeforeCurrent = dates.filter(d => isoCompare(d, currentReportDate) < 0).pop();
   if (!latestBeforeCurrent) return null;
 
-  // Catch-up window is capped at 14 days so a dealer is not forced through months of backfill.
-  const oldestAllowed = isoAddDays(currentReportDate, -14);
-  let cursor = isoCompare(latestBeforeCurrent, oldestAllowed) < 0 ? oldestAllowed : isoAddDays(latestBeforeCurrent, 1);
+  // Catch-up window is capped at roughly 14 required reporting days so a dealer is not forced through months of backfill.
+  const oldestAllowed = isoAddDays(currentReportDate, -21);
+  let cursor = isoCompare(latestBeforeCurrent, oldestAllowed) < 0 ? oldestAllowed : nextRequiredReportDateISO(latestBeforeCurrent);
 
   while (isoCompare(cursor, currentReportDate) <= 0) {
-    if (!submitted.has(cursor)) return cursor;
-    cursor = isoAddDays(cursor, 1);
+    if (!isSkippedReportDate(cursor) && !submitted.has(cursor)) return cursor;
+    cursor = nextRequiredReportDateISO(cursor);
   }
   return null;
 }
@@ -1050,6 +1032,12 @@ function setDateFields() {
   document.getElementById('submit-time').value  = new Date().toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: true });
   const ctx = document.getElementById('ctx-report-date');
   if (ctx) ctx.textContent = formatDate(today);
+  const entered = document.getElementById('ctx-entered-date');
+  if (entered) entered.textContent = formatDate(todayISO());
+  const state = document.getElementById('ctx-report-state');
+  if (state) state.textContent = forcedMissingReportDate ? 'Catch-up required' : 'Current required report';
+  const sunday = document.getElementById('ctx-sunday-rule');
+  if (sunday) sunday.textContent = GWM_CONFIG.requireSundayReports === false ? 'Sunday skipped' : 'Sunday required';
 }
 
 function startClock() {
@@ -1170,10 +1158,10 @@ async function handleSubmit(e) {
     if (!GWM_CONFIG.scriptUrl) {
       // Offline / demo mode — simulate latency
       await new Promise(r => setTimeout(r, 900));
-      handleSuccess(rows);
+      await handleSuccess(rows);
     } else {
       await postRows(rows);
-      handleSuccess(rows);
+      await handleSuccess(rows);
     }
   } catch (err) {
     btn.disabled       = false;
@@ -1185,7 +1173,7 @@ async function handleSubmit(e) {
   }
 }
 
-function handleSuccess(rows) {
+async function handleSuccess(rows) {
   // Save dealer & name for next visit
   localStorage.setItem('gwm_dealer', document.getElementById('dealer-select').value);
   localStorage.setItem('gwm_name',   document.getElementById('submitted-by').value.trim());
@@ -1193,37 +1181,40 @@ function handleSuccess(rows) {
   clearDraftForSelectedDealer();
   formOpenedAt = Date.now();
   const submittedDealer = document.getElementById('dealer-select').value;
-  submittedDealerCodes.add(submittedDealer);
-  unlockedDealerCodes.delete(submittedDealer);
-  setLocalUnlock(submittedDealer, activeReportDate || reportingDateISO(), false);
-
-  // Save to local history (for offline dashboard demo)
-  let history = JSON.parse(localStorage.getItem('gwm_submissions') || '[]');
   const date = activeReportDate || reportingDateISO();
+  submittedDealerCodes.add(submittedDealer);
+  selectedDealerSubmittedDates.add(date);
+  unlockedDealerCodes.delete(submittedDealer);
+  setLocalUnlock(submittedDealer, date, false);
+
+  // Save to local history (for offline dashboard demo and instant catch-up recalculation)
+  let history = JSON.parse(localStorage.getItem('gwm_submissions') || '[]');
   history = history.filter(r => !(r.report_date === date && r.dealer_code === submittedDealer));
   rows.forEach(r => history.push(r));
   // Keep last 2000 rows
   if (history.length > 2000) history.splice(0, history.length - 2000);
   localStorage.setItem('gwm_submissions', JSON.stringify(history));
-
-  // Immediately mark this date as submitted in the current browser state.
-  // This prevents the same missed date from continuing to display while Apps Script catches up.
-  selectedDealerSubmittedDates.add(date);
-  if (forcedMissingReportDate === date) {
-    forcedMissingReportDate = null;
-    applyForcedMissingDate(null);
-  }
-
-  // Refresh in the background with cache-busted GET calls.
-  setTimeout(() => refreshAvailableDealers(), 1200);
+  populateDealerDropdown();
 
   document.getElementById('sales-form').classList.add('hidden');
   const totEnq  = rows.reduce((a,r) => a + safeInt(r.enquiry), 0);
   const totSold = rows.reduce((a,r) => a + safeInt(r.new_sold), 0);
+  let refreshedRows = Array.from(selectedDealerSubmittedDates).map(d => ({ report_date: d }));
+  if (GWM_CONFIG.scriptUrl) {
+    try {
+      refreshedRows = await getRowsForSelectedDealer(submittedDealer);
+      selectedDealerSubmittedDates = uniqueSubmittedDates(refreshedRows);
+    } catch (err) {
+      console.warn('Post-submit refresh failed:', err);
+    }
+  }
+  const nextMissing = findForcedMissingDateForDealer(refreshedRows, reportingDateISO());
+  const nextMsg = nextMissing
+    ? ` Next required catch-up date: ${formatDate(nextMissing)}.`
+    : ' This dealer is now up to date for the current required reporting day.';
   document.getElementById('success-msg').textContent =
-    `Submitted ${rows.length} model rows — ${totEnq} enquiries, ${totSold} new sold. ` +
-    (rows[0].is_late ? '(Flagged as late submission)' : '') +
-    (forcedMissingReportDate ? ' Refresh/select the dealer again to check whether another missed day needs to be completed.' : '');
+    `Submitted ${rows.length} model rows for ${formatDate(date)} — ${totEnq} enquiries, ${totSold} new sold. ` +
+    (rows[0].is_late ? '(Flagged as late submission). ' : '') + nextMsg;
   document.getElementById('success-screen').classList.remove('hidden');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
