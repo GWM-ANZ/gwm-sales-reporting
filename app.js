@@ -200,19 +200,31 @@ function showToast(msg, type = 'default', duration = 3500) {
 }
 
 /* ── Submission confirmation helper ───────────────────── */
-async function waitForSubmissionConfirmation(dealerCode, reportDate, attempts = 8) {
+async function waitForSubmissionConfirmation(dealerCode, reportDate, attempts = 18) {
+  const minRows = Math.max(1, MODEL_BUCKETS.length);
   for (let i = 0; i < attempts; i++) {
-    await new Promise(r => setTimeout(r, i < 2 ? 900 : 1400));
+    await new Promise(r => setTimeout(r, i < 3 ? 1000 : 1800));
     try {
-      const state = await fetchRows({ date: reportDate, dealer: dealerCode, include_controls: '1' });
+      const state = await fetchRows({
+        date: reportDate,
+        dealer: dealerCode,
+        include_controls: '1',
+        _: Date.now() + '-' + i
+      });
       const rows = Array.isArray(state) ? state : (state?.rows || []);
-      const unlocked = Array.isArray(state?.unlockedDealerCodes) ? state.unlockedDealerCodes.map(x => String(x).trim()) : [];
-      if (rows.length >= MODEL_BUCKETS.length && !unlocked.includes(String(dealerCode).trim())) return rows;
+      const unlocked = Array.isArray(state?.unlockedDealerCodes)
+        ? state.unlockedDealerCodes.map(x => String(x).trim())
+        : [];
+      const matchingRows = rows.filter(r =>
+        String(r.dealer_code || '').trim() === String(dealerCode).trim() &&
+        String(r.report_date || '').trim() === String(reportDate).trim()
+      );
+      if (matchingRows.length >= minRows && !unlocked.includes(String(dealerCode).trim())) return matchingRows;
     } catch (err) {
       console.warn('Submission confirmation check failed:', err);
     }
   }
-  throw new Error('Submission was sent, but the backend did not confirm the saved rows. Refresh and check the dashboard before submitting again.');
+  throw new Error('Submission was sent, but the saved rows could not be confirmed quickly enough. Refresh the dashboard once before submitting again.');
 }
 
 /* ── API call (POST to Apps Script) ─────────────────────── */
@@ -241,7 +253,7 @@ async function postRows(rows) {
   await fetch(url, {
     method: 'POST',
     mode: 'no-cors',               // Apps Script requires no-cors
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({ rows }),
   });
 
@@ -258,7 +270,7 @@ async function postControl(payload) {
   await fetch(url, {
     method: 'POST',
     mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(payload),
   });
   return { ok: true };
@@ -268,8 +280,9 @@ async function postControl(payload) {
 async function fetchRows(params = {}) {
   const url = GWM_CONFIG.scriptUrl;
   if (!url) return null;
-  const qs = new URLSearchParams(params).toString();
-  const res = await fetch(`${url}?${qs}`);
+  const withBust = Object.assign({ _: Date.now() }, params || {});
+  const qs = new URLSearchParams(withBust).toString();
+  const res = await fetch(url + "?" + qs, { cache: 'no-store' });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }

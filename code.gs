@@ -166,7 +166,8 @@ function doGet(e) {
 // ── POST handler – appends submission rows ────────────────
 function doPost(e) {
   try {
-    const body = JSON.parse(e.postData.contents);
+    const rawBody = e && e.postData && e.postData.contents ? e.postData.contents : (e.parameter && e.parameter.payload ? e.parameter.payload : '{}');
+    const body = JSON.parse(rawBody);
 
     // OEM dashboard control actions.
     if (body.action === 'unlock_submission') {
@@ -238,6 +239,7 @@ function doPost(e) {
     });
 
     clearSubmissionUnlock(dealerCode, reportDate);
+    SpreadsheetApp.flush();
 
     return jsonResponse({
       success: true,
