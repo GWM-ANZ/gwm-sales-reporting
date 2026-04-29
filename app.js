@@ -257,9 +257,11 @@ async function postRows(rows) {
     body: JSON.stringify({ rows }),
   });
 
-  // no-cors POSTs are opaque. Confirm via readable GET before the UI marks success.
-  await waitForSubmissionConfirmation(dealerCode, reportDate);
-  return { ok: true, confirmed: true };
+  // Apps Script no-cors POSTs are opaque and Google Sheets can lag on readable GETs.
+  // Do not block the dealer on a secondary confirmation poll. The backend remains the
+  // source of truth, and the UI locks the dealer/date immediately after submit.
+  await new Promise(r => setTimeout(r, 900));
+  return { ok: true, confirmed: false, pendingSheetSync: true };
 }
 
 /* ── API control call (POST to Apps Script) ─────────────── */
