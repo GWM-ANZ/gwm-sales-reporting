@@ -397,9 +397,12 @@
 
     .mobile-summary-bar { display:none; }
     .grid-toggle-mobile { display:none; }
-    .unlock-banner { display:none; background:#FFF3E0; border:1px solid #FFCC80; border-left:3px solid #C84B00; color:#7B4800; padding:10px 14px; font-size:12px; font-weight:700; margin-bottom:14px; }
-    .missing-banner { display:none; background:#FFEBEE; border:1px solid #FFCDD2; border-left:3px solid #C41230; color:#7f0016; padding:12px 14px; font-size:12px; font-weight:800; margin-bottom:14px; line-height:1.5; }
-    .submitted-banner { display:none; background:#E8F5E9; border:1px solid #A5D6A7; border-left:3px solid #2E7D32; color:#1B5E20; padding:10px 14px; font-size:12px; font-weight:700; margin-bottom:14px; }
+    .unlock-banner { display:none; background:#FFF3E0; border:1px solid #FFCC80; border-left:4px solid #C84B00; color:#7B4800; padding:12px 16px; font-size:12px; font-weight:800; margin-bottom:14px; letter-spacing:0.02em; }
+    .missing-banner { display:none; background:#fff; border:1px solid #DCDCDC; border-left:4px solid #C41230; color:#111; padding:14px 16px; margin-bottom:14px; box-shadow:none; }
+    .missing-banner-title { display:flex; align-items:center; gap:8px; font-size:10px; font-weight:900; letter-spacing:0.16em; text-transform:uppercase; color:#C41230; margin-bottom:6px; }
+    .missing-banner-body { font-size:13px; font-weight:800; line-height:1.45; color:#111; }
+    .missing-banner-meta { margin-top:6px; font-size:11px; font-weight:700; color:#777; letter-spacing:0.04em; text-transform:uppercase; }
+    .submitted-banner { display:none; background:#E8F5E9; border:1px solid #A5D6A7; border-left:4px solid #2E7D32; color:#1B5E20; padding:12px 16px; font-size:12px; font-weight:800; margin-bottom:14px; }
 </style>
 </head>
 <body>
@@ -1270,7 +1273,7 @@ function updateComplianceBanners() {
   const isUnlocked = unlockedSubmissionKeys.has(`${dealerCode}|${reportDate}`);
   const current = reportingDateISO();
   if (!isUnlocked && reportDate < current) {
-    missingBanner.innerHTML = `⚠ Incomplete reporting detected.<br>You must complete ${formatDate(reportDate)} before ${formatDate(current)} reporting will unlock.`;
+    missingBanner.innerHTML = `<div class="missing-banner-title">⚠ Reporting action required</div><div class="missing-banner-body">Complete ${formatDate(reportDate)} first. ${formatDate(current)} reporting will unlock automatically after submission.</div><div class="missing-banner-meta">Oldest incomplete reporting day is enforced first</div>`;
     missingBanner.style.display = 'block';
   } else {
     missingBanner.style.display = 'none';

@@ -15,7 +15,7 @@ const GWM_CONFIG = {
 
   // First date the system should enforce from. Set this to your go-live date.
   // Leave blank to enforce from the first day of the current month.
-  reportingStartDate: '',
+  reportingStartDate: '2026-04-27',
 
   // Sunday reporting is opt-in by dealer. Most dealers will not be forced to report Sundays.
   // Add dealer codes here only if they trade Sundays and need Sunday activity captured.

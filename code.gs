@@ -19,7 +19,7 @@ const ACCESS_CODE = '';                            // Optional: set a shared acc
 
 // First date the system should enforce from. Set this to your go-live date.
 // Leave blank to enforce from the first day of the current month.
-const REPORTING_START_DATE = '';
+const REPORTING_START_DATE = '2026-04-27';
 
 // Sunday reporting is opt-in. Add dealer codes that trade Sundays and need Sunday reporting.
 const SUNDAY_TRADING_DEALERS = [];
@@ -250,6 +250,29 @@ function doPost(e) {
   } catch (err) {
     return jsonResponse({ error: err.message }, 500);
   }
+}
+
+// ── One-off launch reset helper ───────────────────────────
+// Run this manually once from Apps Script to wipe test/history data and start clean from 27/04/2026.
+// This keeps the required headers and clears reopen controls.
+function RESET_REPORTING_LAUNCH_27042026() {
+  const ss = SHEET_ID
+    ? SpreadsheetApp.openById(SHEET_ID)
+    : SpreadsheetApp.getActiveSpreadsheet();
+
+  let sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) sheet = ss.insertSheet(SHEET_NAME);
+  sheet.clearContents();
+  sheet.getRange(1, 1, 1, COLUMNS.length).setValues([COLUMNS]);
+  styleHeader(sheet);
+
+  let control = ss.getSheetByName(CONTROL_SHEET_NAME);
+  if (!control) control = ss.insertSheet(CONTROL_SHEET_NAME);
+  control.clearContents();
+  control.getRange(1, 1, 1, 5).setValues([['dealer_code', 'report_date', 'status', 'updated_at', 'updated_by']]);
+  control.getRange(1, 1, 1, 5).setFontWeight('bold').setBackground('#111111').setFontColor('#FFFFFF');
+
+  return 'Reset complete. Reporting now starts from 2026-04-27.';
 }
 
 // ── Sheet helpers ─────────────────────────────────────────
