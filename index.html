@@ -51,13 +51,6 @@
       </label>
     </div>
 
-    <div class="form-grid single">
-      <label class="field">
-        <span>Pilot access code <em>(only if supplied by GWM)</em></span>
-        <input id="accessCode" type="password" maxlength="80" placeholder="Leave blank unless requested">
-      </label>
-    </div>
-
     <div class="direction-wrap">
       <div class="field-label">Daily direction</div>
       <div class="direction-group" role="radiogroup" aria-label="Daily direction">
@@ -210,7 +203,6 @@ function init() {
   if (dealerFromUrl && DEALERS.some(d => d.code === dealerFromUrl)) dealerSelect.disabled = true;
 
   $('submittedBy').value = localStorage.getItem('gwm_submitted_by') || '';
-  $('accessCode').value = localStorage.getItem('gwm_access_code') || '';
   $('reportDate').value = yesterdayISO();
   $('reportDate').max = ALLOW_TODAY_FOR_TESTING ? todayISO() : yesterdayISO();
   $('reportDate').addEventListener('change', updateDateLabel);
@@ -402,7 +394,7 @@ async function submitReport(event) {
     const payload = {
       return_mode: 'iframe',
       rows,
-      code: clean($('accessCode').value),
+      code: '',
       dealer_token: dealerToken,
       confirm_all_zero: confirmedAllZero,
       client_submitted_at: new Date().toISOString(),
@@ -416,7 +408,6 @@ async function submitReport(event) {
 
     localStorage.setItem('gwm_submitted_by', clean($('submittedBy').value));
     localStorage.setItem('gwm_dealer_code', getDealer().code);
-    localStorage.setItem('gwm_access_code', clean($('accessCode').value));
     showReceipt(result);
   } catch (err) {
     showMessage(`Submit failed: ${err.message}`, 'error');
