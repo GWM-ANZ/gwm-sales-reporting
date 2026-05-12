@@ -1,0 +1,7 @@
+key,value,notes
+pilot_access_code,,Optional shared pilot code. Leave blank for no shared code. Prefer dealer tokens for production.
+allow_today_for_testing,FALSE,TRUE only during controlled internal smoke testing.
+allow_earlier_corrections,TRUE,Allows dealer/date corrections for earlier report dates.
+read_csv_token,,Optional token for Apps Script CSV reads.
+cutoff_hour,10,Hour in local timezone when submissions become late.
+timezone,Australia/Melbourne,Reporting timezone.

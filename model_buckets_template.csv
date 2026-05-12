@@ -1,0 +1,20 @@
+sort_order,model_bucket,active
+1,Jolion ICE,TRUE
+2,Jolion HEV,TRUE
+3,H6 Petrol,TRUE
+4,H6 HEV,TRUE
+5,H6 PHEV,TRUE
+6,H6 GT Petrol,TRUE
+7,H6 GT PHEV,TRUE
+8,H7 HEV,TRUE
+9,Tank 300 Petrol,TRUE
+10,Tank 300 Diesel,TRUE
+11,Tank 300 PHEV,TRUE
+12,Tank 500 Hybrid,TRUE
+13,Tank 500 PHEV,TRUE
+14,Tank 500 Diesel,TRUE
+15,Cannon Diesel,TRUE
+16,Cannon Alpha Diesel,TRUE
+17,Cannon Alpha PHEV,TRUE
+18,Ora,TRUE
+19,Ora 5,TRUE

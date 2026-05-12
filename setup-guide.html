@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Setup Guide | GWM Daily Reporting Simplified Testing Build</title>
+  <title>Setup Guide | GWM Daily Reporting v2.1</title>
   <link rel="stylesheet" href="styles.css">
   <style>
-    .doc { max-width: 900px; margin: 0 auto; padding: 24px 16px 64px; }
+    .doc { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
     .hero { background:#050505; color:#fff; border-bottom:4px solid #C41230; padding:28px; margin-bottom:18px; }
     .hero img { height:32px; margin-bottom:22px; }
     .hero h1 { margin:0 0 8px; font-size:26px; line-height:1.15; }
@@ -20,13 +20,16 @@
     pre { background:#111; color:#fff; overflow:auto; padding:14px; font-size:12px; }
     .warn { border-left:5px solid #C41230; background:#FFF5F6; padding:12px 14px; font-weight:800; }
     .ok { border-left:5px solid #2E7D32; background:#E8F5E9; padding:12px 14px; font-weight:800; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th, td { border:1px solid #DCDCDC; padding:10px; text-align:left; vertical-align:top; }
+    th { background:#111; color:#fff; }
   </style>
 </head>
 <body>
   <header class="brand-header">
     <div class="brand-main">
       <div class="brand-left"><img src="gwm-wordmark.png" alt="GWM" class="brand-logo"><span class="brand-url">GWMANZ.COM.AU</span></div>
-      <div class="brand-right"><span>Setup Guide</span><strong>Simplified Testing Build</strong></div>
+      <div class="brand-right"><span>Setup Guide</span><strong>v2.1 Pilot-Safe Build</strong></div>
     </div>
     <div class="brand-redline"></div>
   </header>
@@ -34,50 +37,57 @@
   <main class="doc">
     <section class="hero">
       <img src="gwm-wordmark.png" alt="GWM">
-      <h1>GWM Daily Sales Reporting, simplified setup</h1>
-      <p>Dealer input page to Google Sheets to Power BI. No dashboard layer.</p>
+      <h1>GWM Daily Sales Reporting, v2.1 setup</h1>
+      <p>Dealer input page to Google Sheets to Power BI. No internal dashboard layer.</p>
     </section>
 
     <section class="step">
-      <h2>1. What changed</h2>
+      <h2>1. What changed from v2</h2>
       <ul>
-        <li>The dealer-facing page is now the only live front end.</li>
-        <li>Submissions write straight to the Google Sheet tab named <code>submissions</code>.</li>
-        <li>Power BI reads from the Google Sheet CSV export.</li>
-        <li>The dashboard, reopen workflow, missed-day lock and dashboard setup requirements have been removed for testing.</li>
+        <li>Forecast has been removed from the daily grid to avoid accidental forecast zeroing.</li>
+        <li>The page now waits for a backend receipt before showing success.</li>
+        <li>Apps Script validates dealer, report date, direction, model buckets and numbers server-side.</li>
+        <li>Active rows go to <code>submissions_current</code>.</li>
+        <li>Every submission version is retained in <code>submissions_audit</code>.</li>
+        <li>Rejected/failed submissions are logged in <code>error_log</code>.</li>
+        <li>Dealer, model and config tabs are created by the setup function.</li>
       </ul>
     </section>
 
     <section class="step">
       <h2>2. Files to publish</h2>
       <ol>
-        <li>Upload <code>index.html</code>, <code>styles.css</code> and <code>gwm-wordmark.png</code> to GitHub Pages or the chosen static host.</li>
+        <li>Upload <code>index.html</code>, <code>styles.css</code>, <code>gwm-wordmark.png</code> and <code>user-guide.html</code> to GitHub Pages or the chosen static host.</li>
+        <li>Replace the old live <code>/user-guide.html</code>. Do not leave the dashboard-era guide online.</li>
         <li>Do not publish <code>dashboard.html</code>. It is not part of this build.</li>
-        <li>Keep <code>setup-guide.html</code> and <code>dealer-user-guide.html</code> for internal handover or link them only if required.</li>
+        <li>Keep <code>setup-guide.html</code> for internal handover.</li>
       </ol>
     </section>
 
     <section class="step">
       <h2>3. Google Sheet setup</h2>
       <ol>
-        <li>Open the testing Google Sheet.</li>
-        <li>Create a tab named <code>submissions</code>, or allow the script to create it.</li>
+        <li>Create or open the testing Google Sheet.</li>
         <li>Open <strong>Extensions &gt; Apps Script</strong>.</li>
         <li>Paste the full contents of <code>code.gs</code>.</li>
         <li>Replace <code>YOUR_GOOGLE_SHEET_ID_HERE</code> with the actual Google Sheet ID, unless the script is bound to the Sheet.</li>
-        <li>Save the script project.</li>
+        <li>Save the project as <strong>GWM Daily Reporting v2.1</strong>.</li>
+        <li>Run <code>initWorkbookForPilot</code> once and authorise the script.</li>
+        <li>Run <code>smokeTestSetup</code>. It should confirm 19 active models and a sample dealer.</li>
       </ol>
+      <p class="ok">The setup function creates <code>submissions_current</code>, <code>submissions_audit</code>, <code>dealers</code>, <code>model_buckets</code>, <code>config</code>, <code>error_log</code>, <code>forecast_current</code> and <code>forecast_audit</code>.</p>
     </section>
 
     <section class="step">
-      <h2>4. Reset the sheet for testing</h2>
-      <p class="warn">The actual Google Sheet is not reset by the zip file. Reset must be run manually in Apps Script.</p>
+      <h2>4. Security setup for pilot</h2>
+      <p class="warn">Apps Script Web App access may still need to be set to Anyone for the fast pilot. That means endpoint protection must come from validation, optional access code and dealer tokens.</p>
       <ol>
-        <li>If old data needs to be kept, run <code>archiveSubmissionsBeforeReset</code> first.</li>
-        <li>Then run <code>resetSubmissionsForTesting</code>.</li>
-        <li>The <code>submissions</code> tab should now contain headers only.</li>
+        <li>In the <code>config</code> tab, optionally set <code>pilot_access_code</code>. Dealers enter this on the form.</li>
+        <li>For stronger control, add a unique <code>dealer_token</code> in the <code>dealers</code> tab for each dealer.</li>
+        <li>Dealer-specific links can then use <code>?dealer=H3100&amp;token=DEALER_TOKEN</code>.</li>
+        <li>Keep the Google Sheet private to the minimum required GWM users.</li>
+        <li>For CSV access, optionally set <code>read_csv_token</code> in <code>config</code>.</li>
       </ol>
-      <p class="ok">This reset is deliberate and manual so live or historical data is not accidentally deleted.</p>
     </section>
 
     <section class="step">
@@ -86,36 +96,86 @@
         <li>Go to <strong>Deploy &gt; New deployment</strong>.</li>
         <li>Choose <strong>Web app</strong>.</li>
         <li>Set <strong>Execute as</strong> to <strong>Me</strong>.</li>
-        <li>Set <strong>Who has access</strong> to <strong>Anyone</strong>.</li>
+        <li>Set <strong>Who has access</strong> to <strong>Anyone</strong> for pilot use.</li>
         <li>Deploy and copy the Web App URL.</li>
-        <li>Open <code>index.html</code> and replace the value of <code>APPS_SCRIPT_URL</code> with the deployed URL.</li>
+        <li>Open <code>index.html</code> and replace <code>PASTE_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE</code> with the deployed URL.</li>
+        <li>Republish <code>index.html</code>.</li>
       </ol>
     </section>
 
     <section class="step">
       <h2>6. Power BI connection</h2>
-      <p>Use Power BI Desktop &gt; Get Data &gt; Web with the Google Sheet CSV URL:</p>
-      <pre>https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/gviz/tq?tqx=out:csv&amp;sheet=submissions</pre>
-      <p>Recommended column types:</p>
+      <p>Preferred Apps Script CSV endpoints:</p>
+      <pre>WEB_APP_URL?format=csv&amp;sheet=current
+WEB_APP_URL?format=csv&amp;sheet=dealers
+WEB_APP_URL?format=csv&amp;sheet=models
+WEB_APP_URL?format=csv&amp;sheet=forecast_current</pre>
+      <p>If a read token is configured:</p>
+      <pre>WEB_APP_URL?format=csv&amp;sheet=current&amp;token=YOUR_READ_TOKEN</pre>
+      <p>Recommended model:</p>
+      <table>
+        <thead><tr><th>Power BI table</th><th>Source</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>FactDailyActivity</td><td><code>submissions_current</code></td><td>Main reporting table.</td></tr>
+          <tr><td>FactSubmissionAudit</td><td><code>submissions_audit</code></td><td>QA and correction history.</td></tr>
+          <tr><td>DimDealer</td><td><code>dealers</code></td><td>Dealer list, missing dealer reporting and filters.</td></tr>
+          <tr><td>DimModelBucket</td><td><code>model_buckets</code></td><td>Model sort order and model filters.</td></tr>
+          <tr><td>DimDate</td><td>Generated in Power BI</td><td>Daily and month-to-date reporting.</td></tr>
+          <tr><td>FactForecast</td><td><code>forecast_current</code></td><td>Separate monthly forecast once used.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="step">
+      <h2>7. Internal smoke test</h2>
+      <ol>
+        <li>Open the live <code>index.html</code>.</li>
+        <li>Select one dealer, yesterday’s date and a direction.</li>
+        <li>Enter small test quantities for two model buckets.</li>
+        <li>Submit and confirm the page shows a receipt.</li>
+        <li>Confirm exactly 19 rows appear in <code>submissions_current</code>.</li>
+        <li>Confirm 19 rows also appear in <code>submissions_audit</code>.</li>
+        <li>Submit the same dealer/date again and confirm <code>submissions_current</code> still has 19 active rows while <code>submissions_audit</code> has another 19 rows.</li>
+        <li>Try an all-zero submission and confirm the warning appears.</li>
+        <li>Try today’s date and confirm it is blocked by the page and backend.</li>
+        <li>Refresh Power BI and confirm rows appear with correct data types.</li>
+      </ol>
+    </section>
+
+    <section class="step">
+      <h2>8. Reset and archive</h2>
+      <p class="warn">The ZIP does not reset the live Google Sheet. Reset must be run manually in Apps Script.</p>
       <ul>
-        <li><code>submitted_at</code>: Date/Time</li>
-        <li><code>report_date</code>: Date</li>
-        <li><code>is_late</code>: True/False</li>
-        <li><code>enquiry</code>, <code>test_drives</code>, <code>new_sold</code>, <code>fleet_5_plus</code>, <code>demo_sold</code>, <code>forecast</code>: Whole Number</li>
+        <li><code>archiveCurrentBeforeReset</code> copies <code>submissions_current</code> before reset.</li>
+        <li><code>resetCurrentForTesting</code> clears only <code>submissions_current</code>. Audit remains.</li>
+        <li><code>resetAllPilotData</code> clears current, audit, errors and forecast tabs. Use only before internal testing, never mid-rollout.</li>
       </ul>
     </section>
 
     <section class="step">
-      <h2>7. Test process</h2>
-      <ol>
-        <li>Open <code>index.html</code>.</li>
-        <li>Select a dealer, submitted-by name, report date and direction.</li>
-        <li>Enter a small test quantity for one or two model buckets.</li>
-        <li>Submit.</li>
-        <li>Confirm exactly 19 model rows appear in the <code>submissions</code> tab.</li>
-        <li>Submit the same dealer/date again and confirm the previous 19 rows are replaced.</li>
-        <li>Refresh Power BI and confirm the rows appear.</li>
-      </ol>
+      <h2>9. Rollback</h2>
+      <ul>
+        <li>GitHub Pages: revert the previous commit or republish the previous ZIP.</li>
+        <li>Apps Script: Deploy &gt; Manage deployments &gt; edit deployment &gt; select previous version.</li>
+        <li>Power BI: switch source back to the previous CSV endpoint if required.</li>
+        <li>Data: restore from <code>submissions_audit</code> or an archive tab.</li>
+      </ul>
+    </section>
+
+    <section class="step">
+      <h2>10. Go/no-go checklist</h2>
+      <ul>
+        <li>Old live <code>/user-guide.html</code> replaced.</li>
+        <li><code>APPS_SCRIPT_URL</code> pasted into <code>index.html</code>.</li>
+        <li><code>initWorkbookForPilot</code> and <code>smokeTestSetup</code> passed.</li>
+        <li>Receipt displayed after successful submit.</li>
+        <li>All-zero warning tested.</li>
+        <li>Server rejects today/future dates.</li>
+        <li>19 active rows written per dealer/date.</li>
+        <li>Audit rows retained after correction.</li>
+        <li>Power BI refresh works from current, dealers and model tables.</li>
+        <li>Named business owner, technical owner and fallback owner confirmed.</li>
+      </ul>
     </section>
   </main>
 </body>

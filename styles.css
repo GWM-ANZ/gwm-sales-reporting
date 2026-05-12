@@ -105,3 +105,12 @@ td { border-bottom: 1px solid #EFEFEF; padding: 8px; vertical-align: middle; }
   .submit-panel { display: block; }
   .primary-btn { width: 100%; margin-top: 14px; }
 }
+
+/* v2.1 additions */
+.form-grid.single { grid-template-columns: 1fr; }
+.field em { font-style: normal; color: #777; font-weight: 500; }
+.review-panel { margin-top: 18px; border: 1px solid #DADADA; background: #FAFAFA; padding: 14px 16px; }
+.review-panel strong { display:block; font-size: 12px; text-transform: uppercase; letter-spacing: .14em; margin-bottom: 6px; }
+.review-panel p { margin: 0; color: #333; font-size: 14px; line-height: 1.45; }
+.receipt p { margin: 4px 0; }
+.message.success .receipt strong { display:block; margin-bottom: 8px; }

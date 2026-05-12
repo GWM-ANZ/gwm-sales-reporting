@@ -30,6 +30,7 @@
   <section class="status-strip">
     <span>Report date: <strong id="reportDateLabel">--</strong></span>
     <span>Google Sheets input only</span>
+    <span>v2.1 pilot-safe build</span>
   </section>
 
   <form id="reportForm" class="card" autocomplete="off">
@@ -50,6 +51,13 @@
       </label>
     </div>
 
+    <div class="form-grid single">
+      <label class="field">
+        <span>Pilot access code <em>(only if supplied by GWM)</em></span>
+        <input id="accessCode" type="password" maxlength="80" placeholder="Leave blank unless requested">
+      </label>
+    </div>
+
     <div class="direction-wrap">
       <div class="field-label">Daily direction</div>
       <div class="direction-group" role="radiogroup" aria-label="Daily direction">
@@ -66,13 +74,12 @@
       <div><span>New sold</span><strong id="total-new_sold">0</strong></div>
       <div><span>Fleet 5+</span><strong id="total-fleet_5_plus">0</strong></div>
       <div><span>Demo sold</span><strong id="total-demo_sold">0</strong></div>
-      <div><span>Forecast</span><strong id="total-forecast">0</strong></div>
     </div>
 
     <div class="grid-head">
       <div>
         <div class="card-title tight">Model bucket grid</div>
-        <p>Enter completed activity for the selected report date. Blank fields submit as zero.</p>
+        <p>Enter completed activity for the selected report date. Blank daily activity fields submit as zero. Forecast is deliberately removed from the daily grid to prevent accidental forecast wipe.</p>
       </div>
       <button type="button" class="ghost-btn" id="clearGrid">Clear grid</button>
     </div>
@@ -87,7 +94,6 @@
             <th>New sold</th>
             <th>Fleet 5+</th>
             <th>Demo sold</th>
-            <th>Forecast</th>
             <th>Total</th>
           </tr>
         </thead>
@@ -95,12 +101,17 @@
       </table>
     </div>
 
+    <div class="review-panel" aria-live="polite">
+      <strong>Before submit</strong>
+      <p id="reviewText">Select dealer, report date and activity. The final confirmation will show the dealer, date and total activity before anything is sent.</p>
+    </div>
+
     <div id="message" class="message" hidden></div>
 
     <div class="submit-panel">
       <div>
         <strong>Testing build</strong>
-        <p>No dashboard, no reopen controls, no missed-day enforcement. Submission rows write directly to Google Sheets.</p>
+        <p>No dashboard, no reopen controls, no missed-day enforcement. Current rows write to Google Sheets and every submission is also retained in the audit tab.</p>
       </div>
       <button type="submit" class="primary-btn" id="submitBtn">Submit to Google Sheets</button>
     </div>
@@ -110,10 +121,12 @@
 <script>
 'use strict';
 
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxh7-IUcOe6tGrkCqK1sYrzb4LBhPoiwwePqkEd_sab2vAUGihrEGIer2Gm5VlUFH14sA/exec';
+const APPS_SCRIPT_URL = 'PASTE_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE';
 const REGION = 'Southern Region';
 const CUTOFF_HOUR = 10;
 const ALLOW_TODAY_FOR_TESTING = false;
+const RESPONSE_TIMEOUT_MS = 30000;
+const SOFT_MAX_METRIC = 100;
 
 const DEALERS = [
   { code: 'H3100', name: 'Berwick GWM' },
@@ -161,10 +174,13 @@ const METRICS = [
   { key: 'test_drives', label: 'Test drives' },
   { key: 'new_sold', label: 'New sold' },
   { key: 'fleet_5_plus', label: 'Fleet 5+' },
-  { key: 'demo_sold', label: 'Demo sold' },
-  { key: 'forecast', label: 'Forecast' }
+  { key: 'demo_sold', label: 'Demo sold' }
 ];
 
+const startedAt = Date.now();
+const urlParams = new URLSearchParams(window.location.search);
+const dealerToken = urlParams.get('token') || '';
+const dealerFromUrl = urlParams.get('dealer') || '';
 const $ = id => document.getElementById(id);
 
 function pad(n) { return String(n).padStart(2, '0'); }
@@ -172,17 +188,34 @@ function toISODate(date) { return `${date.getFullYear()}-${pad(date.getMonth() +
 function todayISO() { return toISODate(new Date()); }
 function yesterdayISO() { const d = new Date(); d.setDate(d.getDate() - 1); return toISODate(d); }
 function displayDate(iso) { if (!iso) return '--'; const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; }
-function safeInt(value) { const n = parseInt(value, 10); return Number.isFinite(n) && n > 0 ? n : 0; }
 function isLateNow() { return new Date().getHours() >= CUTOFF_HOUR; }
+function clean(value) { return String(value || '').trim(); }
+
+function safeWholeNumber(value) {
+  const text = clean(value);
+  if (text === '') return 0;
+  if (!/^\d+$/.test(text)) throw new Error('Only whole numbers of zero or above can be submitted.');
+  const number = Number(text);
+  if (!Number.isSafeInteger(number) || number < 0) throw new Error('Only whole numbers of zero or above can be submitted.');
+  return number;
+}
 
 function init() {
   const dealerSelect = $('dealer');
   dealerSelect.innerHTML = '<option value="">Select dealer</option>' + DEALERS.map(d => `<option value="${d.code}">${d.code} | ${d.name}</option>`).join('');
 
+  const rememberedDealer = localStorage.getItem('gwm_dealer_code') || '';
+  const initialDealer = dealerFromUrl || rememberedDealer;
+  if (initialDealer && DEALERS.some(d => d.code === initialDealer)) dealerSelect.value = initialDealer;
+  if (dealerFromUrl && DEALERS.some(d => d.code === dealerFromUrl)) dealerSelect.disabled = true;
+
   $('submittedBy').value = localStorage.getItem('gwm_submitted_by') || '';
+  $('accessCode').value = localStorage.getItem('gwm_access_code') || '';
   $('reportDate').value = yesterdayISO();
   $('reportDate').max = ALLOW_TODAY_FOR_TESTING ? todayISO() : yesterdayISO();
   $('reportDate').addEventListener('change', updateDateLabel);
+  $('dealer').addEventListener('change', updateReviewText);
+  $('submittedBy').addEventListener('input', updateReviewText);
   updateDateLabel();
 
   document.querySelectorAll('.direction-btn').forEach(btn => {
@@ -194,15 +227,18 @@ function init() {
   $('reportForm').addEventListener('submit', submitReport);
   setInterval(updateClock, 1000);
   updateClock();
+  updateReviewText();
 }
 
 function setDirection(value) {
   $('direction').value = value;
   document.querySelectorAll('.direction-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.direction === value));
+  updateReviewText();
 }
 
 function updateDateLabel() {
   $('reportDateLabel').textContent = displayDate($('reportDate').value);
+  updateReviewText();
 }
 
 function updateClock() {
@@ -216,7 +252,7 @@ function renderModelGrid() {
   body.innerHTML = MODELS.map((model, modelIndex) => {
     const cells = METRICS.map(metric => `
       <td data-label="${metric.label}">
-        <input class="grid-input" inputmode="numeric" min="0" step="1" type="number" data-model-index="${modelIndex}" data-key="${metric.key}" placeholder="0">
+        <input class="grid-input" inputmode="numeric" min="0" step="1" type="number" data-model-index="${modelIndex}" data-key="${metric.key}" placeholder="0" aria-label="${model} ${metric.label}">
       </td>`).join('');
     return `<tr><td class="model-name" data-label="Model">${model}</td>${cells}<td class="row-total" data-label="Total" id="rowTotal-${modelIndex}">0</td></tr>`;
   }).join('');
@@ -230,48 +266,83 @@ function getDealer() {
 
 function collectRows() {
   const dealer = getDealer();
-  const ts = new Date().toISOString();
   const reportDate = $('reportDate').value;
-  const submittedBy = $('submittedBy').value.trim();
+  const submittedBy = clean($('submittedBy').value);
   const direction = $('direction').value;
+  const duration = Math.max(0, Math.round((Date.now() - startedAt) / 1000));
 
   return MODELS.map((model, modelIndex) => {
     const row = {
-      submitted_at: ts,
       report_date: reportDate,
-      is_late: isLateNow(),
       dealer_code: dealer.code,
       dealer_name: dealer.name,
       region: REGION,
       submitted_by: submittedBy,
       direction,
       is_complete_submission: true,
-      input_method: 'single_index_testing',
-      submission_duration_seconds: '',
-      last_updated_at: ts,
+      input_method: 'single_index_v2_1',
+      submission_duration_seconds: duration,
       model_bucket: model
     };
     METRICS.forEach(metric => {
       const input = document.querySelector(`[data-model-index="${modelIndex}"][data-key="${metric.key}"]`);
-      row[metric.key] = safeInt(input.value);
+      row[metric.key] = safeWholeNumber(input.value);
     });
     return row;
   });
 }
 
-function updateTotals() {
+function calculateTotals(rows) {
   const totals = Object.fromEntries(METRICS.map(m => [m.key, 0]));
-  MODELS.forEach((model, modelIndex) => {
-    let rowTotal = 0;
+  rows.forEach(row => METRICS.forEach(metric => { totals[metric.key] += Number(row[metric.key] || 0); }));
+  totals.total_activity = METRICS.reduce((sum, metric) => sum + totals[metric.key], 0);
+  return totals;
+}
+
+function updateTotals() {
+  let totals = Object.fromEntries(METRICS.map(m => [m.key, 0]));
+  try {
+    MODELS.forEach((model, modelIndex) => {
+      let rowTotal = 0;
+      METRICS.forEach(metric => {
+        const input = document.querySelector(`[data-model-index="${modelIndex}"][data-key="${metric.key}"]`);
+        const val = safeWholeNumber(input.value);
+        totals[metric.key] += val;
+        rowTotal += val;
+      });
+      $(`rowTotal-${modelIndex}`).textContent = rowTotal;
+    });
+  } catch (err) {
+    showMessage(err.message, 'error');
+  }
+  METRICS.forEach(metric => { $(`total-${metric.key}`).textContent = totals[metric.key]; });
+  updateReviewText();
+}
+
+function updateReviewText() {
+  const dealer = getDealer();
+  let total = 0;
+  try {
+    total = calculateTotals(collectRowsSafe()).total_activity;
+  } catch (err) {
+    total = 0;
+  }
+  const dealerText = dealer ? `${dealer.code} | ${dealer.name}` : 'No dealer selected';
+  const dateText = displayDate($('reportDate').value);
+  const directionText = $('direction').value || 'No direction selected';
+  $('reviewText').textContent = `${dealerText}. Report date ${dateText}. Direction ${directionText}. Total daily activity ${total}.`;
+}
+
+function collectRowsSafe() {
+  const dealer = getDealer() || { code: '', name: '' };
+  return MODELS.map((model, modelIndex) => {
+    const row = { dealer_code: dealer.code, dealer_name: dealer.name, model_bucket: model };
     METRICS.forEach(metric => {
       const input = document.querySelector(`[data-model-index="${modelIndex}"][data-key="${metric.key}"]`);
-      const val = safeInt(input.value);
-      totals[metric.key] += val;
-      if (metric.key !== 'forecast') rowTotal += val;
+      row[metric.key] = safeWholeNumber(input ? input.value : '');
     });
-    $(`rowTotal-${modelIndex}`).textContent = rowTotal;
+    return row;
   });
-  METRICS.forEach(metric => { $(`total-${metric.key}`).textContent = totals[metric.key]; });
 }
 
 function clearGrid() {
@@ -282,12 +353,25 @@ function clearGrid() {
 
 function validateForm() {
   if (!getDealer()) return 'Select a dealer.';
-  if (!$('submittedBy').value.trim()) return 'Enter submitted by.';
+  if (!clean($('submittedBy').value)) return 'Enter submitted by.';
   if (!$('direction').value) return 'Select Up, Flat or Down.';
   if (!$('reportDate').value) return 'Select a report date.';
   if (!ALLOW_TODAY_FOR_TESTING && $('reportDate').value >= todayISO()) return 'Reporting is retrospective. Select yesterday or an earlier date.';
-  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('PASTE_')) return 'Paste the deployed Apps Script Web App URL into APPS_SCRIPT_URL.';
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('PASTE_DEPLOYED')) return 'Paste the deployed Apps Script Web App URL into APPS_SCRIPT_URL.';
+  try { collectRows(); } catch (err) { return err.message; }
   return '';
+}
+
+function buildConfirmationText(rows, totals) {
+  const dealer = getDealer();
+  const warnings = [];
+  METRICS.forEach(metric => {
+    if (totals[metric.key] > SOFT_MAX_METRIC) warnings.push(`${metric.label}: ${totals[metric.key]}`);
+  });
+
+  let text = `Confirm submission\n\nDealer: ${dealer.code} | ${dealer.name}\nReport date: ${displayDate($('reportDate').value)}\nDirection: ${$('direction').value}\nTotal daily activity: ${totals.total_activity}\n\nThis will become the active submission for this dealer/date. A full audit copy will be retained.`;
+  if (warnings.length) text += `\n\nHigh total warning:\n${warnings.join('\n')}`;
+  return text;
 }
 
 async function submitReport(event) {
@@ -298,32 +382,124 @@ async function submitReport(event) {
     return;
   }
 
+  const rows = collectRows();
+  const totals = calculateTotals(rows);
+  let confirmedAllZero = false;
+
+  if (!window.confirm(buildConfirmationText(rows, totals))) return;
+
+  if (totals.total_activity === 0) {
+    confirmedAllZero = window.confirm('You are submitting an all-zero day across every model and metric. Only continue if this is a genuine zero-activity day.');
+    if (!confirmedAllZero) return;
+  }
+
   const submitBtn = $('submitBtn');
   submitBtn.disabled = true;
   submitBtn.textContent = 'Submitting...';
+  showMessage('Submitting to Google Sheets. Wait for the receipt before closing this page.', 'info');
 
   try {
-    const rows = collectRows();
-    await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ rows })
-    });
+    const payload = {
+      return_mode: 'iframe',
+      rows,
+      code: clean($('accessCode').value),
+      dealer_token: dealerToken,
+      confirm_all_zero: confirmedAllZero,
+      client_submitted_at: new Date().toISOString(),
+      user_agent: navigator.userAgent
+    };
 
-    localStorage.setItem('gwm_submitted_by', $('submittedBy').value.trim());
-    showMessage(`Submitted ${rows.length} model rows for ${getDealer().name} on ${displayDate($('reportDate').value)}. Check the Google Sheet to confirm.`, 'success');
+    const result = await postViaIframe(payload);
+    if (!result || result.success !== true) {
+      throw new Error((result && result.error) || 'Submission was rejected by Apps Script.');
+    }
+
+    localStorage.setItem('gwm_submitted_by', clean($('submittedBy').value));
+    localStorage.setItem('gwm_dealer_code', getDealer().code);
+    localStorage.setItem('gwm_access_code', clean($('accessCode').value));
+    showReceipt(result);
   } catch (err) {
-    showMessage('Submit failed. Check the Apps Script URL, deployment access, and Sheet ID.', 'error');
+    showMessage(`Submit failed: ${err.message}`, 'error');
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submit to Google Sheets';
   }
 }
 
-function showMessage(text, type) {
+function postViaIframe(payload) {
+  return new Promise((resolve, reject) => {
+    const frameName = `gwmSubmitFrame_${Date.now()}`;
+    const iframe = document.createElement('iframe');
+    iframe.name = frameName;
+    iframe.style.display = 'none';
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = APPS_SCRIPT_URL;
+    form.target = frameName;
+    form.enctype = 'application/x-www-form-urlencoded';
+    form.style.display = 'none';
+
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'payload';
+    input.value = JSON.stringify(payload);
+    form.appendChild(input);
+
+    let complete = false;
+    const cleanup = () => {
+      window.removeEventListener('message', onMessage);
+      setTimeout(() => {
+        iframe.remove();
+        form.remove();
+      }, 1000);
+    };
+    const timer = window.setTimeout(() => {
+      if (complete) return;
+      complete = true;
+      cleanup();
+      reject(new Error('No confirmation was received from Apps Script. Check the Sheet before resubmitting.'));
+    }, RESPONSE_TIMEOUT_MS);
+
+    function onMessage(event) {
+      const data = event.data || {};
+      if (!data || data.source !== 'gwm-daily-reporting') return;
+      if (complete) return;
+      complete = true;
+      window.clearTimeout(timer);
+      cleanup();
+      resolve(data.payload);
+    }
+
+    window.addEventListener('message', onMessage);
+    document.body.appendChild(iframe);
+    document.body.appendChild(form);
+    form.submit();
+  });
+}
+
+function showReceipt(result) {
+  const receipt = `
+    <div class="receipt">
+      <strong>Submission received</strong>
+      <p><b>Receipt:</b> ${escapeHtml(result.submission_id || 'Not supplied')}</p>
+      <p><b>Dealer:</b> ${escapeHtml(result.dealer_code || '')} | ${escapeHtml(result.dealer_name || '')}</p>
+      <p><b>Report date:</b> ${displayDate(result.report_date || $('reportDate').value)}</p>
+      <p><b>Rows written:</b> ${Number(result.rows_written || 0)} current rows and ${Number(result.audit_rows_written || 0)} audit rows</p>
+      <p><b>Revision:</b> ${Number(result.revision || 1)}</p>
+      <p><b>Late flag:</b> ${result.is_late ? 'TRUE' : 'FALSE'}</p>
+    </div>`;
+  showMessage(receipt, 'success', true);
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+}
+
+function showMessage(content, type, allowHtml) {
   const box = $('message');
-  box.textContent = text;
+  if (allowHtml) box.innerHTML = content;
+  else box.textContent = content;
   box.className = `message ${type || 'info'}`;
   box.hidden = false;
 }
