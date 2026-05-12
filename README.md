@@ -1,56 +1,66 @@
-# GWM Daily Sales Reporting, simplified testing build
+# GWM Daily Sales Reporting, simplified testing build v2
 
-## What this build does
+## Purpose
 
-This package strips the reporting tool back to the safest pilot version:
+This package strips the daily reporting tool back to the safest pilot version.
 
-1. Dealers use `index.html` only.
-2. `index.html` posts flat model rows to Google Apps Script.
-3. Google Apps Script writes those rows to the `submissions` tab in Google Sheets.
-4. Power BI connects directly to the Google Sheet CSV export URL.
+Dealers submit through `index.html`. The page posts flat model rows to Google Apps Script. Apps Script writes those rows to the `submissions` tab in Google Sheets. Power BI connects directly to the Google Sheet CSV export URL.
 
-There is no internal dashboard, no dashboard configuration drawer, no Chart.js dependency, no reopen workflow, and no missed-day enforcement.
+## Removed from this testing build
 
-## Files to deploy
+- Internal dashboard page
+- Dashboard configuration drawer
+- Chart.js dashboard dependency
+- Reopen workflow
+- Missed-day lock/enforcement
+- Dashboard CSV/export controls
+- Old setup requirements linked to the dashboard
 
-Upload these files to GitHub Pages or your static host:
+## Included files
 
-- `index.html`
-- `styles.css`
-- `gwm-wordmark.png`
+- `index.html` — dealer-facing input page
+- `styles.css` — simplified shared styling
+- `code.gs` — Google Apps Script backend
+- `gwm-wordmark.png` — GWM header asset
+- `setup-guide.html` — deployment and Power BI setup guide
+- `dealer-user-guide.html` — simple dealer-facing usage guide
+- `submissions_header_template.csv` — header reference for the Google Sheet
 
-Paste `code.gs` into the Google Sheet's Apps Script project and deploy it as a Web App.
+## Critical Google Sheet reset note
 
-## Apps Script setup
+The actual Google Sheet is not automatically reset by downloading this package. That is deliberate.
 
-1. Create or open the Google Sheet.
-2. Add a tab named `submissions`, or let the script create it.
-3. Go to Extensions > Apps Script.
-4. Paste the contents of `code.gs`.
-5. Replace `YOUR_GOOGLE_SHEET_ID_HERE` with your Google Sheet ID. If the script is bound to the sheet, you can leave it as-is.
-6. Deploy > New deployment > Web app.
-7. Execute as: Me.
-8. Who has access: Anyone.
-9. Copy the Web App URL.
-10. Paste that URL into `APPS_SCRIPT_URL` near the top of the script block in `index.html`.
+To reset the live testing sheet, paste `code.gs` into Apps Script, then manually run:
 
-## Power BI connection
+```text
+resetSubmissionsForTesting
+```
 
-Use this format in Power BI Desktop via Get Data > Web:
+That clears the `submissions` tab and rebuilds the correct headers only.
+
+If old data should be retained before clearing, manually run this first:
+
+```text
+archiveSubmissionsBeforeReset
+```
+
+## Deployment summary
+
+1. Upload `index.html`, `styles.css`, and `gwm-wordmark.png` to GitHub Pages or your static host.
+2. Paste `code.gs` into the Google Sheet's Apps Script project.
+3. Replace `YOUR_GOOGLE_SHEET_ID_HERE` with the actual Sheet ID, or leave it unchanged if the script is bound to the Sheet.
+4. Run `archiveSubmissionsBeforeReset` if required.
+5. Run `resetSubmissionsForTesting` for a clean pilot sheet.
+6. Deploy Apps Script as a Web App.
+7. Paste the Web App URL into `APPS_SCRIPT_URL` in `index.html`.
+8. In Power BI, connect to the Google Sheet CSV URL for the `submissions` tab.
+
+## Power BI CSV format
 
 ```text
 https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/gviz/tq?tqx=out:csv&sheet=submissions
 ```
 
-Set column types:
+## Pilot behaviour
 
-- `submitted_at`: Date/Time
-- `report_date`: Date
-- `is_late`: True/False
-- `enquiry`, `test_drives`, `new_sold`, `fleet_5_plus`, `demo_sold`, `forecast`: Whole Number
-
-## Testing notes
-
-During pilot testing, submitting the same dealer and report date again replaces the earlier rows for that dealer/date. This is deliberate because the dashboard reopen function has been removed.
-
-For production, decide whether this behaviour should remain or whether duplicate protection should be added back.
+Submitting the same dealer and report date again replaces the earlier rows for that dealer/date. This is deliberate for testing because the dashboard reopen function has been removed.

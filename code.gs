@@ -36,7 +36,7 @@ function doPost(e) {
     const body = JSON.parse(bodyText);
 
     if (ACCESS_CODE && body.code !== ACCESS_CODE) {
-      return jsonResponse({ success: false, error: 'Unauthorized' }, 403);
+      return jsonResponse({ success: false, error: 'Unauthorized' });
     }
 
     const rows = Array.isArray(body.rows) ? body.rows : [];
@@ -52,7 +52,7 @@ function doPost(e) {
     ensureHeaders(sheet);
 
     // Testing-safe behaviour: resubmitting the same dealer/date replaces prior rows.
-    // This removes the need for a dashboard reopen function during pilot testing.
+    // This removes the need for dashboard reopen controls during the pilot.
     deleteRowsForDealerDate(sheet, dealerCode, reportDate);
 
     const output = rows.map(row => COLUMNS.map(col => valueForColumn(row, col, dealerCode, reportDate)));
@@ -63,7 +63,7 @@ function doPost(e) {
     SpreadsheetApp.flush();
     return jsonResponse({ success: true, rows_written: output.length, dealer_code: dealerCode, report_date: reportDate });
   } catch (err) {
-    return jsonResponse({ success: false, error: err.message }, 500);
+    return jsonResponse({ success: false, error: err.message });
   }
 }
 
@@ -71,6 +71,29 @@ function doGet(e) {
   const params = e && e.parameter ? e.parameter : {};
   if (params.format === 'csv') return csvResponse();
   return jsonResponse({ success: true, message: 'GWM simplified reporting endpoint is live', sheet: SHEET_NAME });
+}
+
+// Run this manually once before pilot testing if you want a clean Google Sheet.
+// Apps Script menu: select resetSubmissionsForTesting, press Run, then authorise.
+function resetSubmissionsForTesting() {
+  const sheet = getSubmissionSheet();
+  sheet.clear();
+  sheet.getRange(1, 1, 1, COLUMNS.length).setValues([COLUMNS]);
+  styleHeader(sheet);
+  sheet.autoResizeColumns(1, COLUMNS.length);
+  SpreadsheetApp.flush();
+  return 'Reset complete. The submissions tab now contains headers only.';
+}
+
+// Optional safety copy before reset. Run this before resetSubmissionsForTesting if old data needs to be retained.
+function archiveSubmissionsBeforeReset() {
+  const spreadsheet = getSpreadsheet();
+  const source = getSubmissionSheet();
+  const stamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd_HHmmss');
+  const copy = source.copyTo(spreadsheet).setName('submissions_archive_' + stamp);
+  spreadsheet.setActiveSheet(copy);
+  SpreadsheetApp.flush();
+  return 'Archive created: ' + copy.getName();
 }
 
 function valueForColumn(row, col, dealerCode, reportDate) {
@@ -83,10 +106,15 @@ function valueForColumn(row, col, dealerCode, reportDate) {
   return row[col] === undefined || row[col] === null ? '' : row[col];
 }
 
+function getSpreadsheet() {
+  if (SHEET_ID && SHEET_ID !== 'YOUR_GOOGLE_SHEET_ID_HERE') {
+    return SpreadsheetApp.openById(SHEET_ID);
+  }
+  return SpreadsheetApp.getActiveSpreadsheet();
+}
+
 function getSubmissionSheet() {
-  const spreadsheet = SHEET_ID && SHEET_ID !== 'YOUR_GOOGLE_SHEET_ID_HERE'
-    ? SpreadsheetApp.openById(SHEET_ID)
-    : SpreadsheetApp.getActiveSpreadsheet();
+  const spreadsheet = getSpreadsheet();
   let sheet = spreadsheet.getSheetByName(SHEET_NAME);
   if (!sheet) sheet = spreadsheet.insertSheet(SHEET_NAME);
   return sheet;

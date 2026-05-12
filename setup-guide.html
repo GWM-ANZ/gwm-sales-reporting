@@ -1,401 +1,122 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Setup Guide – GWM Daily Sales Reporting Tool</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Setup Guide | GWM Daily Reporting Simplified Testing Build</title>
   <link rel="stylesheet" href="styles.css">
   <style>
-    /* ── Knox brandbar header ── */
-    .site-header {
-      height: auto; padding: 0; flex-direction: column;
-      align-items: stretch; border-bottom: none; box-shadow: none;
-    }
-    .header-top-strip {
-      display: flex; align-items: center; justify-content: flex-end;
-      gap: 10px; padding: 6px 24px; background: #000;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-    }
-    .header-brandbar {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 24px; background: #000;
-      border-bottom: 1px solid rgba(255,255,255,0.12);
-    }
-    .brandbar-left { display: flex; align-items: center; gap: 16px; }
-    .gwm-wordmark-img { height: 34px; width: auto; opacity: .95; }
-    .brand-url { color: #8b8b8b; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
-    .header-brand-right { text-align: right; }
-    .header-brand-label {
-      font-size: 10px; font-weight: 700; letter-spacing: 0.14em;
-      text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 4px;
-    }
-    .header-brand-region {
-      font-size: 13px; font-weight: 700; letter-spacing: 0.1em;
-      text-transform: uppercase; color: rgba(255,255,255,0.85);
-    }
-    .header-red-line { height: 3px; background: #C41230; }
-    .header-actions { display: flex; gap: 8px; align-items: center; }
-  
-
-    .guide-header {
-      background: var(--black); color: #fff;
-      border-radius: var(--radius); padding: 28px 28px 24px;
-      margin-bottom: 24px;
-    }
-    .guide-header h1 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
-    .guide-header p  { font-size: 13px; color: var(--gray-400); line-height: 1.6; }
-
-    .step-card {
-      background: #fff; border-radius: var(--radius);
-      box-shadow: var(--shadow); margin-bottom: 16px;
-      overflow: hidden;
-    }
-    .step-head {
-      display: flex; align-items: center; gap: 14px;
-      padding: 16px 20px; cursor: pointer;
-      user-select: none;
-    }
-    .step-head:hover { background: var(--gray-50); }
-    .step-num {
-      width: 30px; height: 30px; border-radius: 50%;
-      background: var(--red); color: #fff;
-      font-size: 13px; font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-    .step-num.done { background: var(--success); }
-    .step-title { font-size: 14px; font-weight: 600; flex: 1; }
-    .step-toggle { font-size: 18px; color: var(--gray-400); transition: transform 0.2s; }
-    .step-toggle.open { transform: rotate(180deg); }
-    .step-body { padding: 0 20px 20px; display: none; }
-    .step-body.open { display: block; }
-
-    h3 { font-size: 12px; font-weight: 700; text-transform: uppercase;
-         letter-spacing: 0.09em; color: var(--gray-600); margin: 16px 0 8px; }
-    h3:first-child { margin-top: 0; }
-
-    ol, ul { padding-left: 20px; font-size: 13px; line-height: 1.8; color: var(--gray-800); }
-    li { margin-bottom: 2px; }
-    li strong { color: var(--black); }
-
-    code {
-      font-family: 'Menlo', 'Courier New', monospace;
-      font-size: 12px; background: var(--gray-100);
-      padding: 2px 6px; border-radius: 3px; color: #C41230;
-    }
-
-    pre {
-      background: var(--gray-800); color: #E8E8E8;
-      border-radius: var(--radius); padding: 16px;
-      font-family: 'Menlo', 'Courier New', monospace;
-      font-size: 12px; line-height: 1.7;
-      overflow-x: auto; margin: 10px 0;
-      white-space: pre;
-    }
-
-    .note {
-      background: #FFF3E0; border: 1px solid #FFCC80;
-      color: #7B4800; padding: 10px 14px;
-      border-radius: var(--radius); font-size: 12px;
-      line-height: 1.6; margin: 10px 0;
-    }
-
-    .tip {
-      background: var(--success-bg); border: 1px solid #A5D6A7;
-      color: #1B5E20; padding: 10px 14px;
-      border-radius: var(--radius); font-size: 12px;
-      line-height: 1.6; margin: 10px 0;
-    }
-
-    .schema-table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 8px 0; }
-    .schema-table th {
-      background: var(--gray-50); text-align: left;
-      padding: 7px 10px; font-size: 10px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.08em;
-      color: var(--gray-600); border-bottom: 2px solid var(--gray-200);
-    }
-    .schema-table td { padding: 7px 10px; border-bottom: 1px solid var(--gray-100); }
-    .schema-table tr:last-child td { border-bottom: none; }
-
-    .nav-links { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
-    .file-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: var(--gray-100); border: 1px solid var(--gray-200);
-      border-radius: 3px; padding: 6px 12px; font-size: 12px;
-      font-family: 'Menlo', 'Courier New', monospace;
-      color: var(--gray-800); text-decoration: none;
-    }
-    .file-badge:hover { background: #FEF2F4; border-color: var(--red); color: var(--red); }
+    .doc { max-width: 900px; margin: 0 auto; padding: 24px 16px 64px; }
+    .hero { background:#050505; color:#fff; border-bottom:4px solid #C41230; padding:28px; margin-bottom:18px; }
+    .hero img { height:32px; margin-bottom:22px; }
+    .hero h1 { margin:0 0 8px; font-size:26px; line-height:1.15; }
+    .hero p { margin:0; color:rgba(255,255,255,.62); }
+    .step { background:#fff; border:1px solid #DCDCDC; padding:18px; margin-bottom:14px; }
+    .step h2 { margin:0 0 12px; font-size:13px; text-transform:uppercase; letter-spacing:.14em; }
+    .step p, .step li { font-size:14px; line-height:1.6; color:#333; }
+    .step ol, .step ul { margin:0; padding-left:20px; }
+    code, pre { font-family: Menlo, Consolas, monospace; }
+    code { background:#EFEFEF; padding:2px 5px; }
+    pre { background:#111; color:#fff; overflow:auto; padding:14px; font-size:12px; }
+    .warn { border-left:5px solid #C41230; background:#FFF5F6; padding:12px 14px; font-weight:800; }
+    .ok { border-left:5px solid #2E7D32; background:#E8F5E9; padding:12px 14px; font-weight:800; }
   </style>
 </head>
 <body>
-
-<header class="site-header">
-  <div class="header-top-strip">
-    <div class="header-actions">
-      <a href="index.html" class="btn btn-secondary" style="height:28px;padding:0 12px;font-size:11px;">Input Form</a>
-      <a href="dashboard.html" class="btn btn-outline" style="height:28px;padding:0 12px;font-size:11px;">Dashboard</a>
+  <header class="brand-header">
+    <div class="brand-main">
+      <div class="brand-left"><img src="gwm-wordmark.png" alt="GWM" class="brand-logo"><span class="brand-url">GWMANZ.COM.AU</span></div>
+      <div class="brand-right"><span>Setup Guide</span><strong>Simplified Testing Build</strong></div>
     </div>
-  </div>
-  <div class="header-brandbar">
-    <div class="brandbar-left">
-      <img src="gwm-wordmark.png" class="gwm-wordmark-img" alt="GWM Australia">
-      <div class="brand-url">GWMANZ.COM.AU</div>
-    </div>
-    <div class="header-brand-right">
-      <div class="header-brand-label">Technical Setup</div>
-      <div class="header-brand-region">Southern Region</div>
-    </div>
-  </div>
-  <div class="header-red-line"></div>
-</header>
+    <div class="brand-redline"></div>
+  </header>
 
-<div class="guide-wrap">
+  <main class="doc">
+    <section class="hero">
+      <img src="gwm-wordmark.png" alt="GWM">
+      <h1>GWM Daily Sales Reporting, simplified setup</h1>
+      <p>Dealer input page to Google Sheets to Power BI. No dashboard layer.</p>
+    </section>
 
-  <div class="guide-header">
-    <h1>Deployment Guide — GWM Daily Sales Reporting Tool</h1>
-    <p>Follow these five steps to go live: create your Google Sheet, deploy the Apps Script backend, host on GitHub Pages, connect the dashboard, then optionally wire up Power BI. Each step takes 5–10 minutes.</p>
-  </div>
-
-  <!-- Step 1 -->
-  <div class="step-card">
-    <div class="step-head" onclick="toggleStep(1)">
-      <div class="step-num" id="num1">1</div>
-      <div class="step-title">Create the Google Sheet</div>
-      <div class="step-toggle" id="tog1">▾</div>
-    </div>
-    <div class="step-body" id="body1">
-      <ol>
-        <li>Go to <strong>sheets.google.com</strong> and create a new blank spreadsheet.</li>
-        <li>Name it: <strong>GWM Daily Sales – Southern Region</strong></li>
-        <li>Copy the URL — find the long ID between <code>/d/</code> and <code>/edit</code>. This is your <code>SHEET_ID</code>.</li>
-        <li>The Apps Script will auto-create or safely upgrade the correct tab and header row on first run. You do not need to add headers manually.</li>
-      </ol>
-
-      <h3>Google Sheet Column Schema</h3>
-      <div class="note">Do not rename or reorder columns manually. The Apps Script now safely upgrades older sheet headers and preserves existing historical rows by header name.</div>
-      <table class="schema-table">
-        <thead><tr><th>#</th><th>Column Name</th><th>Type</th><th>Notes</th></tr></thead>
-        <tbody>
-          <tr><td>A</td><td><code>submitted_at</code></td><td>ISO datetime</td><td>UTC timestamp of submission</td></tr>
-          <tr><td>B</td><td><code>report_date</code></td><td>YYYY-MM-DD</td><td>Reporting day, rolls over at 7:00 AM local</td></tr>
-          <tr><td>C</td><td><code>is_late</code></td><td>TRUE / FALSE</td><td>Submitted after 10:00 AM local</td></tr>
-          <tr><td>D</td><td><code>dealer_code</code></td><td>Text</td><td>e.g. H3100</td></tr>
-          <tr><td>E</td><td><code>dealer_name</code></td><td>Text</td><td>e.g. Berwick GWM</td></tr>
-          <tr><td>F</td><td><code>region</code></td><td>Text</td><td>Southern Region</td></tr>
-          <tr><td>G</td><td><code>submitted_by</code></td><td>Text</td><td>Name entered by dealer user</td></tr>
-          <tr><td>H</td><td><code>direction</code></td><td>Up / Flat / Down</td><td>Direction vs yesterday</td></tr>
-          <tr><td>I</td><td><code>is_complete_submission</code></td><td>TRUE / FALSE</td><td>Completion quality flag</td></tr>
-          <tr><td>J</td><td><code>input_method</code></td><td>Text</td><td>activity / grid / mixed / no_activity</td></tr>
-          <tr><td>K</td><td><code>submission_duration_seconds</code></td><td>Integer</td><td>Form open to submit</td></tr>
-          <tr><td>L</td><td><code>last_updated_at</code></td><td>ISO datetime</td><td>Last edit time before submit</td></tr>
-          <tr><td>M</td><td><code>model_bucket</code></td><td>Text</td><td>e.g. Jolion ICE</td></tr>
-          <tr><td>N</td><td><code>enquiry</code></td><td>Integer / blank</td><td></td></tr>
-          <tr><td>O</td><td><code>test_drives</code></td><td>Integer / blank</td><td></td></tr>
-          <tr><td>P</td><td><code>new_sold</code></td><td>Integer / blank</td><td></td></tr>
-          <tr><td>Q</td><td><code>fleet_5_plus</code></td><td>Integer / blank</td><td>Fleet deals ≥5 units</td></tr>
-          <tr><td>R</td><td><code>demo_sold</code></td><td>Integer / blank</td><td></td></tr>
-          <tr><td>S</td><td><code>forecast</code></td><td>Integer / blank</td><td>Monthly forecast, protected from blank overwrite</td></tr>
-        </tbody>
-      </table>
-      <div class="tip">A second tab named <code>submission_controls</code> is created automatically when OEM reopens a dealer submission from the dashboard.</div>
-    </div>
-  </div>
-
-  <!-- Step 2 -->
-  <div class="step-card">
-    <div class="step-head" onclick="toggleStep(2)">
-      <div class="step-num" id="num2">2</div>
-      <div class="step-title">Deploy the Google Apps Script Web App</div>
-      <div class="step-toggle" id="tog2">▾</div>
-    </div>
-    <div class="step-body" id="body2">
-      <ol>
-        <li>Open your Google Sheet → click <strong>Extensions → Apps Script</strong>.</li>
-        <li>Delete any existing code in <code>Code.gs</code>.</li>
-        <li>Paste the entire contents of <strong>code.gs</strong> (from this project).</li>
-        <li>Find line 10 and replace <code>YOUR_GOOGLE_SHEET_ID_HERE</code> with your actual Sheet ID:
-          <pre>const SHEET_ID = '1BxiM..........XYZ';</pre>
-        </li>
-        <li>Optionally set an <code>ACCESS_CODE</code> on line 12 for basic link protection.</li>
-        <li>Click <strong>Save</strong> (Ctrl+S / Cmd+S).</li>
-        <li>Click <strong>Deploy → New deployment</strong>.</li>
-        <li>Type: <strong>Web app</strong></li>
-        <li>Execute as: <strong>Me</strong></li>
-        <li>Who has access: <strong>Anyone</strong> (this allows dealer phones to POST without login)</li>
-        <li>Click <strong>Deploy</strong> → authorise when prompted → copy the <strong>Web app URL</strong>.</li>
-      </ol>
-
-      <div class="tip">
-        <strong>✓ Test it:</strong> In the Apps Script editor, select the function <code>testSetup</code> and click Run. Check the Logs — it should say "Sheet ready".
-      </div>
-      <div class="note">
-        Every time you edit code.gs you must <strong>Deploy → Manage deployments → Edit → New version</strong> to publish changes. Existing URL stays the same.
-      </div>
-    </div>
-  </div>
-
-  <!-- Step 3 -->
-  <div class="step-card">
-    <div class="step-head" onclick="toggleStep(3)">
-      <div class="step-num" id="num3">3</div>
-      <div class="step-title">Host on GitHub Pages</div>
-      <div class="step-toggle" id="tog3">▾</div>
-    </div>
-    <div class="step-body" id="body3">
-      <ol>
-        <li>Create a new repository at <strong>github.com</strong> — name it e.g. <code>gwm-sales-reporting</code>.</li>
-        <li>Upload these four files to the root of the repository:
-          <ul>
-            <li><code>index.html</code></li>
-            <li><code>dashboard.html</code></li>
-            <li><code>styles.css</code></li>
-            <li><code>app.js</code></li>
-          </ul>
-        </li>
-        <li>Go to repository <strong>Settings → Pages</strong>.</li>
-        <li>Source: <strong>Deploy from a branch</strong> → Branch: <code>main</code> → folder: <code>/ (root)</code>.</li>
-        <li>Click <strong>Save</strong>. GitHub will provide a URL like:<br>
-          <code>https://your-org.github.io/gwm-sales-reporting/</code>
-        </li>
-        <li>The site is live in 1–2 minutes. Share <code>index.html</code> with dealers and <code>dashboard.html</code> with internal GWM staff.</li>
-      </ol>
-      <div class="tip">
-        <strong>Optional:</strong> Set a custom domain (e.g. <code>gwm-reports.yourdomain.com.au</code>) via the GitHub Pages custom domain setting + a CNAME DNS record.
-      </div>
-
-      <h3>Paste the Apps Script URL into app.js</h3>
-      <p style="font-size:13px;color:var(--gray-600);line-height:1.6;margin-bottom:8px;">
-        Open <code>app.js</code>, find line 9, and replace the empty string with your Web App URL:
-      </p>
-      <pre>const GWM_CONFIG = {
-  scriptUrl: 'https://script.google.com/macros/s/XXXXX/exec',
-  region: 'Southern Region',
-  cutoffHour: 10,
-};</pre>
-      <p style="font-size:13px;color:var(--gray-600);margin-top:8px;">Commit and push. Alternatively, paste the URL directly in the dashboard's <strong>⚙ Configure</strong> button (bottom-right) — this stores it in the browser's localStorage so you don't need to rebuild.</p>
-    </div>
-  </div>
-
-  <!-- Step 4 -->
-  <div class="step-card">
-    <div class="step-head" onclick="toggleStep(4)">
-      <div class="step-num" id="num4">4</div>
-      <div class="step-title">Verify the Dashboard</div>
-      <div class="step-toggle" id="tog4">▾</div>
-    </div>
-    <div class="step-body" id="body4">
-      <ol>
-        <li>Open <code>dashboard.html</code> in your browser.</li>
-        <li>Click the <strong>⚙</strong> button (bottom-right) and paste your Apps Script URL.</li>
-        <li>Click <strong>Save & Reload</strong> — the demo ribbon should disappear and live data should load.</li>
-        <li>Submit a test report from <code>index.html</code> using any dealer.</li>
-        <li>Return to the dashboard and click <strong>↻ Refresh</strong> — confirm the dealer now shows as "Submitted" in the Dealer Compliance table.</li>
-        <li>Check your Google Sheet — you should see 19 new rows (one per model bucket).</li>
-      </ol>
-      <div class="tip">
-        <strong>Late flag test:</strong> Temporarily change <code>cutoffHour: 10</code> to <code>cutoffHour: 0</code> in app.js to force all submissions to be flagged late. Revert after testing.
-      </div>
-    </div>
-  </div>
-
-  <!-- Step 5 -->
-  <div class="step-card">
-    <div class="step-head" onclick="toggleStep(5)">
-      <div class="step-num" id="num5">5</div>
-      <div class="step-title">Connect to Power BI</div>
-      <div class="step-toggle" id="tog5">▾</div>
-    </div>
-    <div class="step-body" id="body5">
-
-      <h3>Option A — Google Sheets Connector (live refresh)</h3>
-      <ol>
-        <li>Open Power BI Desktop → <strong>Get Data → Web</strong>.</li>
-        <li>Use the Google Sheets direct CSV export URL format:<br>
-          <pre>https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/gviz/tq?tqx=out:csv&sheet=submissions</pre>
-        </li>
-        <li>Power BI will load a flat CSV. Set the <strong>first row as headers</strong>.</li>
-        <li>Set column types:
-          <ul>
-            <li><code>submitted_at</code> → Date/Time</li>
-            <li><code>report_date</code>  → Date</li>
-            <li><code>is_late</code>      → True/False</li>
-            <li><code>enquiry, test_drives, new_sold, fleet_5_plus, demo_sold, forecast</code> → Whole Number</li>
-          </ul>
-        </li>
-        <li>Click <strong>Close & Apply</strong>.</li>
-        <li>Set refresh schedule in Power BI Service: <strong>Daily</strong> or <strong>Hourly</strong>.</li>
-      </ol>
-      <div class="note">
-        The Google Sheet must be shared as <strong>"Anyone with the link can view"</strong> for Power BI to access it without OAuth.
-      </div>
-
-      <h3>Option B — CSV Export (manual / scheduled)</h3>
-      <ol>
-        <li>In the dashboard, set your date filter and click <strong>⬇ Export CSV</strong>.</li>
-        <li>In Power BI Desktop → <strong>Get Data → Text/CSV</strong> → select your downloaded file.</li>
-        <li>For scheduled automation: use a Power Automate flow to call your Apps Script <code>GET</code> endpoint daily and save the result as a CSV to SharePoint or OneDrive, then connect Power BI to that file.</li>
-      </ol>
-
-      <h3>Recommended Power BI Measures</h3>
-      <pre>Compliance % =
-DIVIDE(
-  DISTINCTCOUNT(submissions[dealer_code]),
-  30   -- total dealer count
-) * 100
-
-Conversion Rate =
-DIVIDE(
-  SUM(submissions[new_sold]),
-  SUM(submissions[enquiry])
-) * 100
-
-Late Submissions =
-CALCULATE(
-  DISTINCTCOUNT(submissions[dealer_code]),
-  submissions[is_late] = TRUE
-)</pre>
-
-      <h3>Suggested Visuals</h3>
+    <section class="step">
+      <h2>1. What changed</h2>
       <ul>
-        <li><strong>Card visuals</strong> — Submissions Today, Compliance %, Total Enquiries, New Sold</li>
-        <li><strong>Bar chart</strong> — New Sold by Model Bucket (filter to current month)</li>
-        <li><strong>Line chart</strong> — Daily Enquiry Trend (date on X axis)</li>
-        <li><strong>Matrix</strong> — Dealer × Model Bucket (values: New Sold)</li>
-        <li><strong>Donut</strong> — Direction Split (Up / Flat / Down)</li>
-        <li><strong>Table</strong> — Dealer Compliance with conditional formatting on is_late</li>
+        <li>The dealer-facing page is now the only live front end.</li>
+        <li>Submissions write straight to the Google Sheet tab named <code>submissions</code>.</li>
+        <li>Power BI reads from the Google Sheet CSV export.</li>
+        <li>The dashboard, reopen workflow, missed-day lock and dashboard setup requirements have been removed for testing.</li>
       </ul>
-    </div>
-  </div>
+    </section>
 
-  <!-- Quick file reference -->
-  <div class="card" style="margin-top:24px;">
-    <div class="card-title">File Reference</div>
-    <div class="nav-links">
-      <a href="index.html"    class="file-badge">📋 index.html — Dealer Input</a>
-      <a href="dashboard.html" class="file-badge">📊 dashboard.html — Dashboard</a>
-      <a href="styles.css"    class="file-badge" target="_blank">🎨 styles.css</a>
-      <a href="app.js"        class="file-badge" target="_blank">⚙ app.js</a>
-      <a href="code.gs"       class="file-badge" target="_blank">☁ code.gs — Apps Script</a>
-    </div>
-  </div>
+    <section class="step">
+      <h2>2. Files to publish</h2>
+      <ol>
+        <li>Upload <code>index.html</code>, <code>styles.css</code> and <code>gwm-wordmark.png</code> to GitHub Pages or the chosen static host.</li>
+        <li>Do not publish <code>dashboard.html</code>. It is not part of this build.</li>
+        <li>Keep <code>setup-guide.html</code> and <code>dealer-user-guide.html</code> for internal handover or link them only if required.</li>
+      </ol>
+    </section>
 
-  <p style="font-size:11px;color:var(--gray-400);text-align:center;margin-top:24px;">
-    GWM Australia · Daily Sales Reporting Tool · Southern Region
-  </p>
+    <section class="step">
+      <h2>3. Google Sheet setup</h2>
+      <ol>
+        <li>Open the testing Google Sheet.</li>
+        <li>Create a tab named <code>submissions</code>, or allow the script to create it.</li>
+        <li>Open <strong>Extensions &gt; Apps Script</strong>.</li>
+        <li>Paste the full contents of <code>code.gs</code>.</li>
+        <li>Replace <code>YOUR_GOOGLE_SHEET_ID_HERE</code> with the actual Google Sheet ID, unless the script is bound to the Sheet.</li>
+        <li>Save the script project.</li>
+      </ol>
+    </section>
 
-</div><!-- /guide-wrap -->
+    <section class="step">
+      <h2>4. Reset the sheet for testing</h2>
+      <p class="warn">The actual Google Sheet is not reset by the zip file. Reset must be run manually in Apps Script.</p>
+      <ol>
+        <li>If old data needs to be kept, run <code>archiveSubmissionsBeforeReset</code> first.</li>
+        <li>Then run <code>resetSubmissionsForTesting</code>.</li>
+        <li>The <code>submissions</code> tab should now contain headers only.</li>
+      </ol>
+      <p class="ok">This reset is deliberate and manual so live or historical data is not accidentally deleted.</p>
+    </section>
 
-<script>
-function toggleStep(n) {
-  const body = document.getElementById('body' + n);
-  const tog  = document.getElementById('tog'  + n);
-  const isOpen = body.classList.contains('open');
-  body.classList.toggle('open', !isOpen);
-  tog.classList.toggle('open', !isOpen);
-}
-// Open step 1 by default
-toggleStep(1);
-</script>
+    <section class="step">
+      <h2>5. Deploy Apps Script Web App</h2>
+      <ol>
+        <li>Go to <strong>Deploy &gt; New deployment</strong>.</li>
+        <li>Choose <strong>Web app</strong>.</li>
+        <li>Set <strong>Execute as</strong> to <strong>Me</strong>.</li>
+        <li>Set <strong>Who has access</strong> to <strong>Anyone</strong>.</li>
+        <li>Deploy and copy the Web App URL.</li>
+        <li>Open <code>index.html</code> and replace the value of <code>APPS_SCRIPT_URL</code> with the deployed URL.</li>
+      </ol>
+    </section>
+
+    <section class="step">
+      <h2>6. Power BI connection</h2>
+      <p>Use Power BI Desktop &gt; Get Data &gt; Web with the Google Sheet CSV URL:</p>
+      <pre>https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/gviz/tq?tqx=out:csv&amp;sheet=submissions</pre>
+      <p>Recommended column types:</p>
+      <ul>
+        <li><code>submitted_at</code>: Date/Time</li>
+        <li><code>report_date</code>: Date</li>
+        <li><code>is_late</code>: True/False</li>
+        <li><code>enquiry</code>, <code>test_drives</code>, <code>new_sold</code>, <code>fleet_5_plus</code>, <code>demo_sold</code>, <code>forecast</code>: Whole Number</li>
+      </ul>
+    </section>
+
+    <section class="step">
+      <h2>7. Test process</h2>
+      <ol>
+        <li>Open <code>index.html</code>.</li>
+        <li>Select a dealer, submitted-by name, report date and direction.</li>
+        <li>Enter a small test quantity for one or two model buckets.</li>
+        <li>Submit.</li>
+        <li>Confirm exactly 19 model rows appear in the <code>submissions</code> tab.</li>
+        <li>Submit the same dealer/date again and confirm the previous 19 rows are replaced.</li>
+        <li>Refresh Power BI and confirm the rows appear.</li>
+      </ol>
+    </section>
+  </main>
 </body>
 </html>
