@@ -29,7 +29,7 @@
 <main class="page">
   <section class="status-strip">
     <span>Report date: <strong id="reportDateLabel">--</strong></span>
-    <span>Daily dealer reporting</span>
+    <span>Prior-day activity only</span>
     <span>Southern Region live form</span>
   </section>
 
@@ -72,7 +72,7 @@
     <div class="grid-head">
       <div>
         <div class="card-title tight">Model bucket grid</div>
-        <p>Enter completed activity for the selected report date. Blank daily activity fields submit as zero. Forecast is not collected in this daily activity form.</p>
+        <p>Enter completed activity for the selected report date. Blank daily activity fields submit as zero. Forecast is deliberately removed from the daily grid to prevent accidental forecast wipe.</p>
       </div>
       <button type="button" class="ghost-btn" id="clearGrid">Clear grid</button>
     </div>
@@ -96,7 +96,7 @@
 
     <div class="review-panel" aria-live="polite">
       <strong>Before submit</strong>
-      <p id="reviewText">Select dealer, report date and activity. You will see a final confirmation before the report is submitted.</p>
+      <p id="reviewText">Select dealer, report date and activity. The final confirmation will show the dealer, date and total activity before anything is sent.</p>
     </div>
 
     <div id="message" class="message" hidden></div>
@@ -118,7 +118,9 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTwjaxraZrTlZR
 const REGION = 'Southern Region';
 const CUTOFF_HOUR = 10;
 const ALLOW_TODAY_FOR_TESTING = false;
-const RESPONSE_TIMEOUT_MS = 30000;
+const RESPONSE_TIMEOUT_MS = 12000;
+const STATUS_POLL_INTERVAL_MS = 1500;
+const STATUS_POLL_TIMEOUT_MS = 22000;
 const SOFT_MAX_METRIC = 100;
 
 const DEALERS = [
@@ -171,6 +173,7 @@ const METRICS = [
 ];
 
 const startedAt = Date.now();
+let activeStatusMessageShown = false;
 const urlParams = new URLSearchParams(window.location.search);
 const dealerToken = urlParams.get('token') || '';
 const dealerFromUrl = urlParams.get('dealer') || '';
@@ -388,11 +391,14 @@ async function submitReport(event) {
   const submitBtn = $('submitBtn');
   submitBtn.disabled = true;
   submitBtn.textContent = 'Submitting...';
-  showMessage('Submitting your daily report. Please wait before closing this page.', 'info');
+  showMessage('Submitting daily report. Please wait for confirmation before closing this page.', 'info');
 
   try {
+    const clientSubmissionId = buildClientSubmissionId();
+    activeStatusMessageShown = false;
     const payload = {
       return_mode: 'iframe',
+      client_submission_id: clientSubmissionId,
       rows,
       code: '',
       dealer_token: dealerToken,
@@ -401,76 +407,169 @@ async function submitReport(event) {
       user_agent: navigator.userAgent
     };
 
-    const result = await postViaIframe(payload);
+    const result = await postAndVerifySubmission(payload, clientSubmissionId);
     if (!result || result.success !== true) {
-      throw new Error((result && result.error) || 'Submission was rejected by Apps Script.');
+      throw new Error((result && result.error) || 'Submission was rejected by GWM reporting.');
     }
 
     localStorage.setItem('gwm_submitted_by', clean($('submittedBy').value));
     localStorage.setItem('gwm_dealer_code', getDealer().code);
     showReceipt(result);
   } catch (err) {
-    if (String(err.message || '').includes('No confirmation was received')) {
-      showPendingReceipt(rows, totals);
-    } else {
-      showMessage(`Submit failed: ${err.message}`, 'error');
-    }
+    showMessage(`Confirmation took longer than expected. Please do not submit again immediately. GWM can verify your submission in the reporting log. Details: ${err.message}`, 'error');
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submit Daily Report';
   }
 }
 
-function postViaIframe(payload) {
+function buildClientSubmissionId() {
+  const dealer = getDealer();
+  const dealerCode = dealer ? dealer.code : 'unknown';
+  const date = $('reportDate').value || todayISO();
+  const random = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `${dealerCode}-${date.replace(/-/g, '')}-${Date.now()}-${random}`;
+}
+
+function postAndVerifySubmission(payload, clientSubmissionId) {
   return new Promise((resolve, reject) => {
-    const frameName = `gwmSubmitFrame_${Date.now()}`;
-    const iframe = document.createElement('iframe');
-    iframe.name = frameName;
-    iframe.style.display = 'none';
-
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = APPS_SCRIPT_URL;
-    form.target = frameName;
-    form.enctype = 'application/x-www-form-urlencoded';
-    form.style.display = 'none';
-
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'payload';
-    input.value = JSON.stringify(payload);
-    form.appendChild(input);
-
     let complete = false;
-    const cleanup = () => {
-      window.removeEventListener('message', onMessage);
-      setTimeout(() => {
-        iframe.remove();
-        form.remove();
-      }, 1000);
-    };
-    const timer = window.setTimeout(() => {
-      if (complete) return;
-      complete = true;
-      cleanup();
-      reject(new Error('Confirmation took longer than expected. Please do not submit again immediately. GWM can verify your submission in the reporting log.'));
-    }, RESPONSE_TIMEOUT_MS);
+    let iframeCleanup = null;
+    let pollTimer = null;
+    const started = Date.now();
 
-    function onMessage(event) {
-      const data = event.data || {};
-      if (!data || data.source !== 'gwm-daily-reporting') return;
+    const finish = (fn, value) => {
       if (complete) return;
       complete = true;
-      window.clearTimeout(timer);
+      if (pollTimer) window.clearTimeout(pollTimer);
+      if (iframeCleanup) iframeCleanup();
+      fn(value);
+    };
+
+    iframeCleanup = postViaIframeNonBlocking(payload, result => {
+      if (!result) return;
+      if (result.success === true) finish(resolve, result);
+      else finish(reject, new Error(result.error || 'Submission was rejected by GWM reporting.'));
+    });
+
+    const poll = async () => {
+      if (complete) return;
+      try {
+        const status = await getSubmissionStatus(clientSubmissionId);
+        if (status && status.found && status.status === 'completed') {
+          finish(resolve, normaliseStatusAsReceipt(status));
+          return;
+        }
+        if (status && status.found && status.status === 'failed') {
+          finish(reject, new Error(status.error || status.message || 'Submission was rejected by GWM reporting.'));
+          return;
+        }
+        if (status && status.found && status.status === 'processing' && !activeStatusMessageShown) {
+          activeStatusMessageShown = true;
+          showMessage('Submission received by GWM. Finalising confirmation now...', 'info');
+        }
+      } catch (err) {
+        // Keep polling until timeout. Temporary status lookup errors should not cause duplicate submissions.
+      }
+
+      if (Date.now() - started >= STATUS_POLL_TIMEOUT_MS) {
+        finish(reject, new Error('Status lookup timed out. The report may still have been received. Check the Sheet/reporting log before resubmitting.'));
+        return;
+      }
+      pollTimer = window.setTimeout(poll, STATUS_POLL_INTERVAL_MS);
+    };
+
+    pollTimer = window.setTimeout(poll, 800);
+  });
+}
+
+function postViaIframeNonBlocking(payload, onResult) {
+  const frameName = `gwmSubmitFrame_${Date.now()}`;
+  const iframe = document.createElement('iframe');
+  iframe.name = frameName;
+  iframe.style.display = 'none';
+
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = APPS_SCRIPT_URL;
+  form.target = frameName;
+  form.enctype = 'application/x-www-form-urlencoded';
+  form.style.display = 'none';
+
+  const input = document.createElement('input');
+  input.type = 'hidden';
+  input.name = 'payload';
+  input.value = JSON.stringify(payload);
+  form.appendChild(input);
+
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    window.removeEventListener('message', onMessage);
+    setTimeout(() => {
+      iframe.remove();
+      form.remove();
+    }, 1000);
+  };
+
+  function onMessage(event) {
+    const data = event.data || {};
+    if (!data || data.source !== 'gwm-daily-reporting') return;
+    onResult(data.payload);
+  }
+
+  window.addEventListener('message', onMessage);
+  document.body.appendChild(iframe);
+  document.body.appendChild(form);
+  form.submit();
+  return cleanup;
+}
+
+function getSubmissionStatus(clientSubmissionId) {
+  return new Promise((resolve, reject) => {
+    const callbackName = `gwmStatusCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const script = document.createElement('script');
+    const timeout = window.setTimeout(() => {
       cleanup();
-      resolve(data.payload);
+      reject(new Error('Status request timed out.'));
+    }, 5000);
+
+    function cleanup() {
+      window.clearTimeout(timeout);
+      try { delete window[callbackName]; } catch (err) { window[callbackName] = undefined; }
+      script.remove();
     }
 
-    window.addEventListener('message', onMessage);
-    document.body.appendChild(iframe);
-    document.body.appendChild(form);
-    form.submit();
+    window[callbackName] = payload => {
+      cleanup();
+      resolve(payload);
+    };
+
+    script.onerror = () => {
+      cleanup();
+      reject(new Error('Status request failed.'));
+    };
+
+    script.src = `${APPS_SCRIPT_URL}?status=${encodeURIComponent(clientSubmissionId)}&callback=${encodeURIComponent(callbackName)}&_=${Date.now()}`;
+    document.body.appendChild(script);
   });
+}
+
+function normaliseStatusAsReceipt(status) {
+  return {
+    success: true,
+    version: '2.2',
+    submission_id: status.submission_id,
+    dealer_code: status.dealer_code,
+    dealer_name: status.dealer_name,
+    report_date: status.report_date,
+    rows_written: status.rows_written,
+    audit_rows_written: status.audit_rows_written,
+    revision: status.revision,
+    is_late: status.is_late,
+    total_activity: status.total_activity
+  };
 }
 
 function showReceipt(result) {
@@ -480,25 +579,11 @@ function showReceipt(result) {
       <p><b>Receipt:</b> ${escapeHtml(result.submission_id || 'Not supplied')}</p>
       <p><b>Dealer:</b> ${escapeHtml(result.dealer_code || '')} | ${escapeHtml(result.dealer_name || '')}</p>
       <p><b>Report date:</b> ${displayDate(result.report_date || $('reportDate').value)}</p>
-      <p><b>Rows processed:</b> ${Number(result.rows_written || 0)}</p>
+      <p><b>Rows written:</b> ${Number(result.rows_written || 0)} current rows and ${Number(result.audit_rows_written || 0)} audit rows</p>
       <p><b>Revision:</b> ${Number(result.revision || 1)}</p>
-      <p><b>Status:</b> ${result.is_late ? 'Late submission' : 'Submitted on time'}</p>
+      <p><b>Late flag:</b> ${result.is_late ? 'TRUE' : 'FALSE'}</p>
     </div>`;
   showMessage(receipt, 'success', true);
-}
-
-function showPendingReceipt(rows, totals) {
-  const dealer = getDealer();
-  const receipt = `
-    <div class="receipt">
-      <strong>Submission sent for processing</strong>
-      <p>Your daily report has been sent to GWM for processing.</p>
-      <p><b>Dealer:</b> ${escapeHtml(dealer ? dealer.code : '')} | ${escapeHtml(dealer ? dealer.name : '')}</p>
-      <p><b>Report date:</b> ${displayDate($('reportDate').value)}</p>
-      <p><b>Total daily activity:</b> ${Number(totals.total_activity || 0)}</p>
-      <p><b>Important:</b> Please do not submit again immediately. GWM will monitor the reporting log. If you need confirmation, contact your GWM regional contact.</p>
-    </div>`;
-  showMessage(receipt, 'info', true);
 }
 
 function escapeHtml(value) {
