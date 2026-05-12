@@ -1,1490 +1,334 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#000000">
-  <title>GWM Daily Sales Input – Southern Region</title>
+  <title>GWM Daily Sales Input | Southern Region</title>
   <link rel="stylesheet" href="styles.css">
-  <style>
-    /* ── Exact Knox brandbar header ── */
-    .site-header {
-      height: auto;
-      padding: 0;
-      flex-direction: column;
-      align-items: stretch;
-      border-bottom: none;
-      box-shadow: none;
-    }
-    .header-top-strip {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 10px;
-      padding: 6px 24px;
-      background: #000;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-    }
-    .header-brandbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 24px 14px;
-      background: #000;
-      border-bottom: 1px solid rgba(255,255,255,0.12);
-    }
-    .brandbar-left { display: flex; align-items: center; gap: 16px; }
-    .gwm-wordmark-img { height: 34px; width: auto; opacity: .95; }
-    .brand-url {
-      color: #8b8b8b;
-      font-size: 12px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-    .header-brand-right {
-      text-align: right;
-    }
-    .header-brand-label {
-      font-size: 10px; font-weight: 700; letter-spacing: 0.14em;
-      text-transform: uppercase; color: rgba(255,255,255,0.4);
-      line-height: 1; margin-bottom: 4px;
-    }
-    .header-brand-region {
-      font-size: 13px; font-weight: 700; letter-spacing: 0.1em;
-      text-transform: uppercase; color: rgba(255,255,255,0.85);
-    }
-    /* Red accent line below brandbar */
-    .header-red-line {
-      height: 3px;
-      background: #C41230;
-    }
-    .totals-sticky {
-      position: sticky;
-      top: 95px;
-      z-index: 50;
-      margin: 0 -16px 16px;
-      padding: 0 16px;
-    }
-    @media (min-width: 480px) {
-      .totals-sticky { margin: 0 0 16px; }
-    }
-
-    /* Mobile scroll fix */
-    @media (max-width: 599px) {
-      .model-grid thead th { position: static; }
-      .totals-sticky { position: relative; top: auto; }
-      .grid-scroll-wrap {
-        overflow-x: scroll;
-        -webkit-overflow-scrolling: touch;
-        touch-action: pan-y;
-      }
-    }
-
-    /* ── OEM Polish ── */
-    body { background: #EFEFEF; }
-
-    /* Sharp corners throughout */
-    .card { border-radius: 0; border: 1px solid #DCDCDC; box-shadow: none; }
-    .form-input, .form-select { border-radius: 0; }
-    .btn { border-radius: 0; letter-spacing: 0.06em; text-transform: uppercase; font-size: 13px; }
-    .btn-primary { background: #111; color: #fff; font-size: 14px; font-weight: 800; letter-spacing: 0.1em; }
-    .btn-primary:hover { background: #C41230; }
-    .direction-group { border-radius: 0; }
-
-    /* Card titles — sharp, tracked */
-    .card-title {
-      font-size: 9px; font-weight: 800; letter-spacing: 0.2em;
-      color: #999; text-transform: uppercase;
-      border-bottom: 1px solid #EFEFEF;
-      padding-bottom: 12px; margin-bottom: 18px;
-    }
-
-    /* Form labels */
-    .form-label {
-      font-size: 9px; font-weight: 800;
-      letter-spacing: 0.16em; color: #666;
-    }
-
-    /* Input focus — red left accent */
-    .form-input:focus, .form-select:focus {
-      border-color: #DCDCDC;
-      border-left: 3px solid #C41230;
-      box-shadow: none;
-      padding-left: 10px;
-    }
-
-    /* Grid column headers: black bg, bold white */
-    .model-grid thead th {
-      position: static !important;
-      background: #111 !important;
-      color: #fff !important;
-      font-size: 9px;
-      font-weight: 800;
-      letter-spacing: 0.14em;
-      border-bottom: 2px solid #000 !important;
-      padding: 10px 8px;
-    }
-
-    /* Model group section labels */
-    .grid-section-label {
-      font-size: 9px !important; font-weight: 800 !important;
-      text-transform: uppercase; letter-spacing: 0.16em;
-      color: #fff !important;
-      padding: 7px 8px !important;
-      background: #333 !important;
-      border-top: none !important;
-    }
-
-    .row-total-head {
-      font-size: 9px; font-weight: 800;
-      text-transform: uppercase; letter-spacing: 0.1em;
-      color: #fff; text-align: center; white-space: nowrap;
-    }
-
-    /* Totals bar */
-    .totals-bar { background: #111; border-radius: 0; }
-    .total-label { color: rgba(255,255,255,0.4); font-size: 9px; letter-spacing: 0.14em; }
-    .total-value { color: #fff; }
-    .total-item.highlight .total-value { color: #C41230; }
-    .total-item { border-right-color: rgba(255,255,255,0.08); }
-
-    /* Grid inputs */
-    .grid-input { border-radius: 0; }
-    .grid-input:focus { border-color: #C41230; box-shadow: none; }
-
-    /* Late warning */
-    .alert.warning {
-      background: #fff8e1; border: 1px solid #ffe082;
-      color: #7B4800; border-left: 3px solid #C41230;
-      border-radius: 0;
-    }
-
-    /* Submit area */
-    .submit-area { margin-top: 24px; }
-
-    /* Success screen */
-    .success-screen { text-align: center; padding: 56px 20px; }
-    .success-icon {
-      width: 56px; height: 56px; background: #E8F5E9;
-      border-radius: 0; display: flex; align-items: center;
-      justify-content: center; margin: 0 auto 20px; font-size: 24px;
-    }
-    .success-screen h2 { font-size: 18px; font-weight: 800; letter-spacing: 0.04em; margin-bottom: 8px; }
-    .success-screen p  { font-size: 13px; color: #666; margin-bottom: 28px; }
-  
-
-    /* ── Mobile-only usability fixes: header + input grid ── */
-    @media (max-width: 599px) {
-      body { overflow-x: hidden; }
-
-      .header-top-strip {
-        justify-content: space-between;
-        padding: 6px 14px;
-      }
-
-      .header-brandbar {
-        display: block;
-        padding: 12px 14px 10px;
-      }
-
-      .brandbar-left {
-        width: 100%;
-        gap: 10px;
-        justify-content: space-between;
-      }
-
-      .gwm-wordmark-img {
-        height: 28px;
-        max-width: 70vw;
-        object-fit: contain;
-      }
-
-      .brand-url { display: none; }
-
-      .header-brand-right {
-        margin-top: 8px;
-        text-align: left;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-      }
-
-      .header-brand-label {
-        margin-bottom: 0;
-        font-size: 9px;
-        letter-spacing: 0.12em;
-      }
-
-      .header-brand-region {
-        font-size: 11px;
-        letter-spacing: 0.08em;
-        white-space: nowrap;
-      }
-
-      .main-content {
-        padding: 14px 12px 32px;
-      }
-
-      .main-content > div[style*="Report Date"] {
-        padding: 10px 12px !important;
-        align-items: flex-start !important;
-        flex-direction: column !important;
-        gap: 5px !important;
-      }
-
-      .card {
-        padding: 18px 14px;
-        margin-bottom: 14px;
-      }
-
-      .form-row,
-      .form-row.three {
-        grid-template-columns: 1fr !important;
-        gap: 14px;
-      }
-
-      .form-input,
-      .form-select {
-        height: 50px;
-        font-size: 16px;
-      }
-
-      .direction-group {
-        height: auto;
-        display: grid;
-        grid-template-columns: 1fr;
-        border: none;
-        gap: 8px;
-      }
-
-      .direction-btn {
-        height: 46px;
-        border: 1px solid #DCDCDC !important;
-      }
-
-      .totals-bar {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .total-item {
-        min-width: 0;
-        padding: 12px 8px;
-        border-bottom: 1px solid rgba(255,255,255,0.08);
-      }
-
-      .total-label {
-        font-size: 8px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .total-value { font-size: 24px; }
-
-      .grid-scroll-wrap {
-        overflow-x: visible;
-        margin: 0;
-        padding: 0;
-      }
-
-      .model-grid {
-        min-width: 0 !important;
-        width: 100%;
-        display: block;
-      }
-
-      .model-grid thead { display: none; }
-      .model-grid tbody { display: block; }
-
-      .model-grid tr {
-        display: block;
-        margin-bottom: 12px;
-        border: 1px solid #E3E3E3;
-        background: #fff;
-      }
-
-      .model-grid td {
-        display: grid;
-        grid-template-columns: 1fr 112px;
-        align-items: center;
-        gap: 10px;
-        width: 100%;
-        padding: 10px 12px;
-        border-bottom: 1px solid #EFEFEF;
-        background: #fff !important;
-      }
-
-      .model-grid td.model-name {
-        display: block;
-        width: 100%;
-        padding: 12px;
-        font-size: 16px;
-        font-weight: 800;
-        background: #F5F5F5 !important;
-      }
-
-      .grid-section-label {
-        display: block !important;
-        width: 100% !important;
-        padding: 10px 12px !important;
-      }
-
-      .model-grid td:nth-child(2)::before { content: 'Enquiry'; }
-      .model-grid td:nth-child(3)::before { content: 'Test Drives'; }
-      .model-grid td:nth-child(4)::before { content: 'New Sold'; }
-      .model-grid td:nth-child(5)::before { content: 'Fleet (5+)'; }
-      .model-grid td:nth-child(6)::before { content: 'Demo Sold'; }
-      .model-grid td:nth-child(7)::before { content: 'Forecast'; }
-      .model-grid td.row-total::before { content: 'Total'; }
-
-      .model-grid td:not(.model-name)::before,
-      .model-grid td.row-total::before {
-        font-size: 10px;
-        color: #666;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        font-weight: 900;
-      }
-
-      .grid-input {
-        min-width: 0;
-        width: 112px;
-        height: 44px;
-        font-size: 17px;
-      }
-
-      .row-total {
-        text-align: right;
-        font-weight: 900;
-        color: #111;
-        background: #F4F4F4 !important;
-      }
-    }
-
-    /* ── Activity Feed Layer (matches current OEM styling) ── */
-    .quick-entry-card { border-top: 3px solid #111; }
-    .quick-entry-grid { display:grid; grid-template-columns:1.35fr 1fr 92px 116px 116px; gap:10px; align-items:end; }
-    .quick-entry-actions { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
-    .quick-btn { height:44px; border:1px solid #DCDCDC; background:#fff; color:#111; font-family:var(--font); font-size:12px; font-weight:900; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; border-radius:0; }
-    .quick-btn:hover { border-color:#C41230; color:#C41230; }
-    .quick-btn.primary { background:#111; color:#fff; border-color:#111; }
-    .quick-btn.primary:hover { background:#C41230; border-color:#C41230; color:#fff; }
-    .quick-btn.danger { color:#C41230; }
-    .quick-summary { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:12px; padding-top:12px; border-top:1px solid #EFEFEF; font-size:11px; color:#777; }
-    .quick-summary strong { color:#111; }
-    .draft-pill { display:inline-flex; align-items:center; gap:6px; padding:3px 8px; background:#F5F5F5; color:#666; font-size:10px; font-weight:900; letter-spacing:0.08em; text-transform:uppercase; }
-    .activity-log { margin-top:10px; display:grid; gap:6px; max-height:138px; overflow:auto; }
-    .activity-log-row { display:grid; grid-template-columns:1fr auto auto; gap:8px; align-items:center; background:#F7F7F7; border:1px solid #EFEFEF; padding:7px 9px; font-size:12px; }
-    .activity-log-main { font-weight:800; color:#111; }
-    .activity-log-meta { color:#777; font-size:11px; }
-    .activity-log-empty { color:#999; font-size:12px; padding:4px 0; }
-    .quick-jump-note { font-size:12px; color:#777; margin:4px 0 0; line-height:1.45; }
-    @media (max-width:900px) { .quick-entry-grid { grid-template-columns:1fr 1fr; } }
-    @media (max-width:599px) {
-      .quick-entry-grid { grid-template-columns:1fr !important; gap:12px; }
-      .quick-entry-actions { grid-template-columns:1fr 1fr; }
-      .quick-btn { height:48px; font-size:14px; }
-      .quick-summary { align-items:flex-start; flex-direction:column; }
-      .activity-log-row { grid-template-columns:1fr; }
-      .mobile-summary-bar { display:flex !important; position:sticky; bottom:0; z-index:70; background:#111; color:#fff; border-top:3px solid #C41230; padding:10px 12px; justify-content:space-between; gap:8px; font-size:11px; font-weight:900; letter-spacing:0.06em; text-transform:uppercase; }
-      .mobile-summary-bar span { color:rgba(255,255,255,0.55); }
-      .mobile-summary-bar strong { color:#fff; }
-      .model-grid-collapsed .grid-scroll-wrap { display:none; }
-      .grid-toggle-mobile { display:block !important; width:100%; height:46px; margin:12px 0 0; }
-    }
-
-    .mobile-summary-bar { display:none; }
-    .grid-toggle-mobile { display:none; }
-    .unlock-banner { display:none; background:#FFF3E0; border:1px solid #FFCC80; border-left:4px solid #C84B00; color:#7B4800; padding:12px 16px; font-size:12px; font-weight:800; margin-bottom:14px; letter-spacing:0.02em; }
-    .missing-banner { display:none; background:#fff; border:1px solid #DCDCDC; border-left:4px solid #C41230; color:#111; padding:14px 16px; margin-bottom:14px; box-shadow:none; }
-    .missing-banner-title { display:flex; align-items:center; gap:8px; font-size:10px; font-weight:900; letter-spacing:0.16em; text-transform:uppercase; color:#C41230; margin-bottom:6px; }
-    .missing-banner-body { font-size:13px; font-weight:800; line-height:1.45; color:#111; }
-    .missing-banner-meta { margin-top:6px; font-size:11px; font-weight:700; color:#777; letter-spacing:0.04em; text-transform:uppercase; }
-    .submitted-banner { display:none; background:#E8F5E9; border:1px solid #A5D6A7; border-left:4px solid #2E7D32; color:#1B5E20; padding:12px 16px; font-size:12px; font-weight:800; margin-bottom:14px; }
-</style>
 </head>
 <body>
-
-<!-- ── Header ───────────────────────────────────────────── -->
-<header class="site-header">
-  <div class="header-top-strip">
-    <span class="header-clock" id="live-clock">--:-- --</span>
-    <span class="late-badge" id="late-badge">LATE</span>
+<header class="brand-header">
+  <div class="brand-top">
+    <span id="clock">--:--</span>
+    <span id="lateBadge" class="late-badge">LATE</span>
   </div>
-  <div class="header-brandbar">
-    <div class="brandbar-left">
-      <img src="gwm-wordmark.png" class="gwm-wordmark-img" alt="GWM Australia">
-      <div class="brand-url">GWMANZ.COM.AU</div>
+  <div class="brand-main">
+    <div class="brand-left">
+      <img src="gwm-wordmark.png" alt="GWM" class="brand-logo">
+      <span class="brand-url">GWMANZ.COM.AU</span>
     </div>
-    <div class="header-brand-right">
-      <div class="header-brand-label">Daily Sales Report</div>
-      <div class="header-brand-region">Southern Region</div>
+    <div class="brand-right">
+      <span>Daily Sales Report</span>
+      <strong>Southern Region</strong>
     </div>
   </div>
-  <div class="header-red-line"></div>
+  <div class="brand-redline"></div>
 </header>
 
-<!-- ── Main ─────────────────────────────────────────────── -->
-<main class="main-content" id="main-content">
+<main class="page">
+  <section class="status-strip">
+    <span>Report date: <strong id="reportDateLabel">--</strong></span>
+    <span>Google Sheets input only</span>
+  </section>
 
-  <!-- Date context bar -->
-  <div style="background:#111;color:rgba(255,255,255,0.45);font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:7px 20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
-    <span>Report Date: <strong style="color:#fff;" id="ctx-report-date">—</strong></span>
-    <span style="color:rgba(255,255,255,0.3);font-weight:500;letter-spacing:0.06em;text-transform:none;font-size:11px;">Submit before 10:00 AM</span>
-  </div>
+  <form id="reportForm" class="card" autocomplete="off">
+    <div class="card-title">Dealer report details</div>
 
-  <!-- Alert banner (validation / late warning) -->
-  <div class="alert hidden" id="alert-banner" role="alert"></div>
-
-  <!-- Success screen (shown after submit) -->
-  <div class="hidden" id="success-screen">
-    <div class="card success-screen">
-      <div class="success-icon">✓</div>
-      <h2>Report Submitted</h2>
-      <p id="success-msg">Your daily sales data has been recorded successfully.</p>
-      <button class="btn btn-primary" style="max-width:280px;margin:0 auto;" onclick="resetForm()">
-        Submit Another Report
-      </button>
-    </div>
-  </div>
-
-  <!-- ── Form ───────────────────────────────────────────── -->
-  <form id="sales-form" novalidate>
-    <div class="missing-banner" id="missing-banner"></div>
-    <div class="unlock-banner" id="unlock-banner">OEM has reopened this dealer/date. Existing data has been restored, update and resubmit to overwrite the prior version.</div>
-    <div class="submitted-banner" id="submitted-banner">✓ Submitted. Contact OEM to reopen if changes are required.</div>
-
-    <!-- Dealer details card -->
-    <div class="card">
-      <div class="card-title">Report Details</div>
-
-      <div class="form-row">
-        <div class="form-field">
-          <label class="form-label" for="dealer-select">Dealer <span class="required">*</span></label>
-          <select class="form-select" id="dealer-select" required>
-            <option value="">— Select dealer —</option>
-          </select>
-        </div>
-        <div class="form-field">
-          <label class="form-label" for="submitted-by">Submitted By <span class="required">*</span></label>
-          <input class="form-input" type="text" id="submitted-by" placeholder="Full name" maxlength="60" autocomplete="name" required>
-        </div>
-      </div>
-
-      <div class="form-row three">
-        <div class="form-field">
-          <label class="form-label" for="report-date">Report Date</label>
-          <input class="form-input" type="text" id="report-date" readonly>
-        </div>
-        <div class="form-field">
-          <label class="form-label" for="submit-time">Timestamp</label>
-          <input class="form-input" type="text" id="submit-time" readonly>
-        </div>
-        <div class="form-field">
-          <label class="form-label">Region</label>
-          <input class="form-input" type="text" value="Southern Region" readonly>
-        </div>
-      </div>
-
-      <div class="form-row single">
-        <div class="form-field">
-          <label class="form-label">Direction vs Yesterday <span class="required">*</span></label>
-          <div class="direction-group" id="direction-group" role="group" aria-label="Direction vs Yesterday">
-            <button type="button" class="direction-btn" data-val="Up"   onclick="setDirection('Up')">▲ Up</button>
-            <button type="button" class="direction-btn" data-val="Flat" onclick="setDirection('Flat')">— Flat</button>
-            <button type="button" class="direction-btn" data-val="Down" onclick="setDirection('Down')">▼ Down</button>
-          </div>
-          <input type="hidden" id="direction-val" value="">
-        </div>
-      </div>
+    <div class="form-grid three">
+      <label class="field">
+        <span>Dealer</span>
+        <select id="dealer" required></select>
+      </label>
+      <label class="field">
+        <span>Submitted by</span>
+        <input id="submittedBy" type="text" maxlength="80" placeholder="Full name" required>
+      </label>
+      <label class="field">
+        <span>Report date</span>
+        <input id="reportDate" type="date" required>
+      </label>
     </div>
 
-
-    <!-- Quick Activity Entry -->
-    <div class="card quick-entry-card" id="quick-entry-card">
-      <div class="card-title" style="margin-bottom:8px;">Quick Activity Entry</div>
-      <p class="quick-jump-note">Fast mode: select the model and activity, then add the quantity. The model grid below updates automatically, so dealers can use either method. Leave this page open all day, it autosaves locally until you submit.</p>
-      <div class="quick-entry-grid" style="margin-top:14px;">
-        <div class="form-field"><label class="form-label" for="quick-model">Model Bucket</label><select class="form-select" id="quick-model"><option value="">— Select model —</option></select></div>
-        <div class="form-field"><label class="form-label" for="quick-metric">Activity Type</label><select class="form-select" id="quick-metric"><option value="enquiry">Enquiry</option><option value="test_drives">Test Drives</option><option value="new_sold">New Sold</option><option value="fleet">Fleet (5+)</option><option value="demo_sold">Demo Sold</option><option value="forecast">Forecast</option></select></div>
-        <div class="form-field"><label class="form-label" for="quick-qty">Qty</label><input class="form-input" type="number" id="quick-qty" min="0" step="1" value="1" inputmode="numeric"></div>
-        <div class="quick-entry-actions"><button type="button" class="quick-btn" id="quick-minus">−1</button><button type="button" class="quick-btn" id="quick-plus">+1</button></div>
-        <div class="quick-entry-actions"><button type="button" class="quick-btn primary" id="quick-add">Add</button><button type="button" class="quick-btn danger" id="quick-clear">Clear</button></div>
+    <div class="direction-wrap">
+      <div class="field-label">Daily direction</div>
+      <div class="direction-group" role="radiogroup" aria-label="Daily direction">
+        <button type="button" class="direction-btn" data-direction="Up">Up</button>
+        <button type="button" class="direction-btn" data-direction="Flat">Flat</button>
+        <button type="button" class="direction-btn" data-direction="Down">Down</button>
       </div>
-      <div class="quick-summary"><div><strong id="quick-active-count">0</strong> active model buckets today · <strong id="quick-entry-count">0</strong> quick entries logged</div><div class="draft-pill" id="draft-status">Draft not saved yet</div></div>
-      <div class="activity-log" id="activity-log"><div class="activity-log-empty">No quick activity entered yet.</div></div>
+      <input id="direction" type="hidden" required>
     </div>
 
-    <!-- Live totals (sticky) -->
-    <div class="totals-sticky">
-      <div class="totals-bar" id="totals-bar">
-        <div class="total-item highlight">
-          <div class="total-label">Enquiries</div>
-          <div class="total-value" id="tot-enquiry">0</div>
-        </div>
-        <div class="total-item">
-          <div class="total-label">Test Drives</div>
-          <div class="total-value" id="tot-td">0</div>
-        </div>
-        <div class="total-item">
-          <div class="total-label">New Sold</div>
-          <div class="total-value" id="tot-sold">0</div>
-        </div>
-        <div class="total-item">
-          <div class="total-label">Fleet</div>
-          <div class="total-value" id="tot-fleet">0</div>
-        </div>
-        <div class="total-item">
-          <div class="total-label">Demo Sold</div>
-          <div class="total-value" id="tot-demo">0</div>
-        </div>
-        <div class="total-item">
-          <div class="total-label">Forecast</div>
-          <div class="total-value" id="tot-forecast">0</div>
-        </div>
-      </div>
+    <div class="totals-bar" aria-label="Live totals">
+      <div><span>Enquiry</span><strong id="total-enquiry">0</strong></div>
+      <div><span>Test drives</span><strong id="total-test_drives">0</strong></div>
+      <div><span>New sold</span><strong id="total-new_sold">0</strong></div>
+      <div><span>Fleet 5+</span><strong id="total-fleet_5_plus">0</strong></div>
+      <div><span>Demo sold</span><strong id="total-demo_sold">0</strong></div>
+      <div><span>Forecast</span><strong id="total-forecast">0</strong></div>
     </div>
 
-    <!-- Model bucket grid -->
-    <div class="card" style="padding-bottom:8px;">
-      <div class="card-title" style="margin-bottom:4px;">Model Bucket Activity</div>
-      <p style="font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:12px;">
-        Enter today's figures per model. Use Tab to move between cells. Blank means not entered, 0 means true zero.
-      </p>
-      <button type="button" class="quick-btn grid-toggle-mobile" id="grid-toggle-mobile" onclick="toggleMobileGrid()">Show Full Model Breakdown</button>
-
-      <div class="grid-scroll-wrap">
-        <table class="model-grid" id="model-grid">
-          <thead>
-            <tr>
-              <th>Model</th>
-              <th>Enquiry</th>
-              <th>Test Drives</th>
-              <th>New Sold</th>
-              <th>Fleet (5+)</th>
-              <th>Demo Sold</th>
-              <th>Forecast</th>
-              <th class="row-total-head">Total</th>
-            </tr>
-          </thead>
-          <tbody id="grid-body">
-            <!-- Rows injected by JS -->
-          </tbody>
-        </table>
+    <div class="grid-head">
+      <div>
+        <div class="card-title tight">Model bucket grid</div>
+        <p>Enter completed activity for the selected report date. Blank fields submit as zero.</p>
       </div>
+      <button type="button" class="ghost-btn" id="clearGrid">Clear grid</button>
     </div>
 
-    <!-- Submit -->
-    <div class="submit-area">
-      <div class="alert warning hidden" id="late-warning">
-        <strong>⚠ Late submission</strong> — this report is being submitted after 10:00 AM and will be flagged accordingly.
-      </div>
-      <button type="submit" class="btn btn-primary" id="submit-btn">
-        <span id="submit-label">Submit Daily Report</span>
-        <div class="spinner" id="submit-spinner"></div>
-      </button>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);text-align:center;margin-top:8px;">
-        Submitting as <strong style="color:rgba(255,255,255,0.55);" id="submit-preview-dealer">—</strong> · <span id="submit-preview-date">—</span>
-      </p>
+    <div class="table-wrap">
+      <table class="model-table">
+        <thead>
+          <tr>
+            <th>Model bucket</th>
+            <th>Enquiry</th>
+            <th>Test drives</th>
+            <th>New sold</th>
+            <th>Fleet 5+</th>
+            <th>Demo sold</th>
+            <th>Forecast</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody id="modelBody"></tbody>
+      </table>
     </div>
 
-  </form><!-- /sales-form -->
+    <div id="message" class="message" hidden></div>
 
-  <div class="mobile-summary-bar" id="mobile-summary-bar">
-    <div><span>Enq</span> <strong id="mob-enq">0</strong></div>
-    <div><span>TD</span> <strong id="mob-td">0</strong></div>
-    <div><span>Sold</span> <strong id="mob-sold">0</strong></div>
-    <div><span>Fcst</span> <strong id="mob-forecast">0</strong></div>
-  </div>
-
+    <div class="submit-panel">
+      <div>
+        <strong>Testing build</strong>
+        <p>No dashboard, no reopen controls, no missed-day enforcement. Submission rows write directly to Google Sheets.</p>
+      </div>
+      <button type="submit" class="primary-btn" id="submitBtn">Submit to Google Sheets</button>
+    </div>
+  </form>
 </main>
 
-<!-- ── Toast ─────────────────────────────────────────────── -->
-<div class="toast" id="gwm-toast"></div>
-
-<!-- ── Scripts ───────────────────────────────────────────── -->
-<script src="app.js"></script>
 <script>
 'use strict';
 
-/* ── Model bucket group labels ───────────────────────────── */
-const MODEL_GROUPS = {
-  'Jolion ICE':          'Jolion',
-  'Jolion HEV':          null,
-  'H6 Petrol':           'H6',
-  'H6 HEV':             null,
-  'H6 PHEV':            null,
-  'H6 GT Petrol':        'H6 GT',
-  'H6 GT PHEV':         null,
-  'H7 HEV':             'H7',
-  'Tank 300 Petrol':     'Tank 300',
-  'Tank 300 Diesel':     null,
-  'Tank 300 PHEV':      null,
-  'Tank 500 Hybrid':     'Tank 500',
-  'Tank 500 PHEV':      null,
-  'Tank 500 Diesel':    null,
-  'Cannon Diesel':       'Cannon',
-  'Cannon Alpha Diesel': 'Cannon Alpha',
-  'Cannon Alpha PHEV':  null,
-  'Ora':                 'Ora',
-  'Ora 5':              null,
-};
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxh7-IUcOe6tGrkCqK1sYrzb4LBhPoiwwePqkEd_sab2vAUGihrEGIer2Gm5VlUFH14sA/exec';
+const REGION = 'Southern Region';
+const CUTOFF_HOUR = 10;
+const ALLOW_TODAY_FOR_TESTING = false;
 
-let selectedDirection = '';
-let gridData = {};   // { modelName: { enquiry:0, test_drives:0, ... } }
-let submittedDealerCodes = new Set();
-let unlockedDealerCodes = new Set();
-let existingSubmissionCache = {};
-let dealerRequiredDateMap = {};
-let unlockedSubmissionKeys = new Set();
-let quickActivityLog = [];
-let activeReportDate = reportingDateISO();
-let draftSaveTimer = null;
-let formOpenedAt = Date.now();
-let manualGridEditCount = 0;
-let lastUpdatedAt = null;
+const DEALERS = [
+  { code: 'H3100', name: 'Berwick GWM' },
+  { code: 'H3101', name: 'Doncaster GWM' },
+  { code: 'H3104', name: 'Astoria GWM' },
+  { code: 'H3107', name: 'Melton GWM' },
+  { code: 'H3128', name: 'Werribee GWM' },
+  { code: 'H3161', name: 'Peninsula GWM' },
+  { code: 'H3163', name: 'Ringwood GWM' },
+  { code: 'H3182', name: "Ralph D'Silva GWM" },
+  { code: 'H3167', name: 'Essendon GWM' },
+  { code: 'H3318', name: 'Thompson GWM (Shepparton)' },
+  { code: 'H3315', name: 'Valley GWM' },
+  { code: 'H7215', name: 'Hobart GWM' },
+  { code: 'H7309', name: 'Launceston GWM' },
+  { code: 'H3230', name: 'Geelong GWM' },
+  { code: 'H3236', name: 'Bendigo GWM' },
+  { code: 'H3176', name: 'South Morang GWM' },
+  { code: 'H3179', name: 'Burwood GWM' },
+  { code: 'H3185', name: 'Knox GWM' },
+  { code: 'H3196', name: 'Western GWM' },
+  { code: 'H3195', name: 'Pakenham GWM' },
+  { code: 'H3239', name: 'Ballarat GWM' },
+  { code: 'H3336', name: 'Thompson GWM (Echuca)' },
+  { code: 'H3342', name: 'Horsham GWM' },
+  { code: 'H3188', name: 'Blackburn GWM' },
+  { code: 'H3191', name: 'Lilydale GWM' },
+  { code: 'H3333', name: 'Blacklocks GWM (Albury)' },
+  { code: 'H3330', name: 'Warrnambool GWM' },
+  { code: 'H3110', name: 'Dandenong GWM' },
+  { code: 'H3345', name: 'Peter Dullard GWM (Bairnsdale)' },
+  { code: 'H3111', name: 'Melbourne CBD' }
+];
 
-/* ── Init ────────────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', init);
+const MODELS = [
+  'Jolion ICE', 'Jolion HEV', 'H6 Petrol', 'H6 HEV', 'H6 PHEV',
+  'H6 GT Petrol', 'H6 GT PHEV', 'H7 HEV', 'Tank 300 Petrol',
+  'Tank 300 Diesel', 'Tank 300 PHEV', 'Tank 500 Hybrid',
+  'Tank 500 PHEV', 'Tank 500 Diesel', 'Cannon Diesel',
+  'Cannon Alpha Diesel', 'Cannon Alpha PHEV', 'Ora', 'Ora 5'
+];
+
+const METRICS = [
+  { key: 'enquiry', label: 'Enquiry' },
+  { key: 'test_drives', label: 'Test drives' },
+  { key: 'new_sold', label: 'New sold' },
+  { key: 'fleet_5_plus', label: 'Fleet 5+' },
+  { key: 'demo_sold', label: 'Demo sold' },
+  { key: 'forecast', label: 'Forecast' }
+];
+
+const $ = id => document.getElementById(id);
+
+function pad(n) { return String(n).padStart(2, '0'); }
+function toISODate(date) { return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`; }
+function todayISO() { return toISODate(new Date()); }
+function yesterdayISO() { const d = new Date(); d.setDate(d.getDate() - 1); return toISODate(d); }
+function displayDate(iso) { if (!iso) return '--'; const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; }
+function safeInt(value) { const n = parseInt(value, 10); return Number.isFinite(n) && n > 0 ? n : 0; }
+function isLateNow() { return new Date().getHours() >= CUTOFF_HOUR; }
 
 function init() {
-  buildModelGrid();
-  initQuickEntry();
-  initialiseMobileGridState();
-  setDateFields();
-  startClock();
-  checkLateStatus();
+  const dealerSelect = $('dealer');
+  dealerSelect.innerHTML = '<option value="">Select dealer</option>' + DEALERS.map(d => `<option value="${d.code}">${d.code} | ${d.name}</option>`).join('');
 
-  const savedName = localStorage.getItem('gwm_name');
-  if (savedName) document.getElementById('submitted-by').value = savedName;
+  $('submittedBy').value = localStorage.getItem('gwm_submitted_by') || '';
+  $('reportDate').value = yesterdayISO();
+  $('reportDate').max = ALLOW_TODAY_FOR_TESTING ? todayISO() : yesterdayISO();
+  $('reportDate').addEventListener('change', updateDateLabel);
+  updateDateLabel();
 
-  populateDealerDropdown();
-  refreshAvailableDealers().then(() => {
-    const savedDealer = localStorage.getItem('gwm_dealer');
-    const sel = document.getElementById('dealer-select');
-    if (savedDealer && Array.from(sel.options).some(o => o.value === savedDealer)) {
-      sel.value = savedDealer;
-      loadForecastForSelectedDealer().then(loadExistingSubmissionIfUnlocked).then(unlocked => { if (!unlocked) return loadDraftForSelectedDealer(); });
-    }
-    updateSubmitPreview();
-  });
-
-  document.getElementById('dealer-select').addEventListener('change', () => {
-    prepareDealerWorkspace();
-    updateSubmitPreview();
-    loadForecastForSelectedDealer().then(loadExistingSubmissionIfUnlocked).then(unlocked => { if (!unlocked) return loadDraftForSelectedDealer(); });
-  });
-  document.getElementById('submitted-by').addEventListener('input', () => { updateSubmitPreview(); queueDraftSave(); });
-  document.getElementById('sales-form').addEventListener('submit', handleSubmit);
-  scheduleDealerResetRefresh();
-}
-
-/* ── Dealer dropdown ─────────────────────────────────────── */
-function populateDealerDropdown() {
-  const sel = document.getElementById('dealer-select');
-  const current = sel.value;
-  sel.innerHTML = '<option value="">— Select dealer —</option>';
-
-  DEALERS
-    .filter(d => dealerRequiredDateMap[d.code])
-    .forEach(d => {
-      const opt = document.createElement('option');
-      opt.value = d.code;
-      const requiredDate = dealerRequiredDateMap[d.code];
-      const reopened = unlockedSubmissionKeys.has(`${d.code}|${requiredDate}`);
-      opt.textContent = `${d.code} – ${d.name} · ${reopened ? 'REOPENED' : 'Required'} ${formatDate(requiredDate)}`;
-      sel.appendChild(opt);
-    });
-
-  if (current && Array.from(sel.options).some(o => o.value === current)) sel.value = current;
-}
-
-async function refreshAvailableDealers() {
-  const currentReportDate = reportingDateISO();
-  const startDate = reportingStartDateISO();
-  let rows = [];
-  let unlockedByDate = {};
-
-  try {
-    if (GWM_CONFIG.scriptUrl) {
-      const data = await fetchRows({ start: startDate, end: currentReportDate, include_controls: '1' });
-      rows = Array.isArray(data) ? data : (data.rows || []);
-      unlockedByDate = data?.unlockedByDate || {};
-    } else {
-      rows = JSON.parse(localStorage.getItem('gwm_submissions') || '[]')
-        .filter(r => r.report_date >= startDate && r.report_date <= currentReportDate);
-      unlockedByDate = getLocalUnlockedByDate(startDate, currentReportDate);
-    }
-  } catch (err) {
-    console.warn('Dealer availability check failed:', err);
-    rows = JSON.parse(localStorage.getItem('gwm_submissions') || '[]')
-      .filter(r => r.report_date >= startDate && r.report_date <= currentReportDate);
-    unlockedByDate = getLocalUnlockedByDate(startDate, currentReportDate);
-  }
-
-  const submittedByDealer = {};
-  existingSubmissionCache = {};
-  rows.forEach(r => {
-    const code = String(r.dealer_code || '').trim();
-    const date = String(r.report_date || '').trim();
-    if (!code || !date) return;
-    if (!submittedByDealer[code]) submittedByDealer[code] = new Set();
-    submittedByDealer[code].add(date);
-    const key = `${code}|${date}`;
-    if (!existingSubmissionCache[key]) existingSubmissionCache[key] = [];
-    existingSubmissionCache[key].push(r);
-  });
-
-  unlockedSubmissionKeys = new Set();
-  Object.keys(unlockedByDate || {}).forEach(date => {
-    (unlockedByDate[date] || []).forEach(code => unlockedSubmissionKeys.add(`${String(code).trim()}|${date}`));
-  });
-
-  dealerRequiredDateMap = {};
-  DEALERS.forEach(d => {
-    const submittedDates = submittedByDealer[d.code] ? Array.from(submittedByDealer[d.code]) : [];
-    const unlockedDates = Array.from(unlockedSubmissionKeys)
-      .filter(k => k.startsWith(d.code + '|'))
-      .map(k => k.split('|')[1])
-      .sort();
-
-    // Reopened submissions take priority so the dealer can correct and resubmit.
-    if (unlockedDates.length) {
-      dealerRequiredDateMap[d.code] = unlockedDates[0];
-      return;
-    }
-
-    const missing = firstMissingReportDate(d.code, submittedDates, startDate, currentReportDate);
-    if (missing) dealerRequiredDateMap[d.code] = missing;
-  });
-
-  submittedDealerCodes = new Set(DEALERS.filter(d => !dealerRequiredDateMap[d.code]).map(d => d.code));
-  unlockedDealerCodes = new Set(Array.from(unlockedSubmissionKeys).map(k => k.split('|')[0]));
-
-  populateDealerDropdown();
-  updateSubmitPreview();
-}
-
-function getLocalUnlockedByDate(startDate, endDate) {
-  const out = {};
-  let cur = startDate;
-  while (cur <= endDate) {
-    out[cur] = getLocalUnlockedDealers(cur);
-    cur = isoOffset(cur, 1);
-  }
-  return out;
-}
-
-function getLocalUnlockedDealers(reportDate) {
-  try { return JSON.parse(localStorage.getItem(`gwm_unlocked_${reportDate}`) || '[]'); }
-  catch (_) { return []; }
-}
-
-function setLocalUnlock(dealerCode, reportDate, shouldUnlock) {
-  const key = `gwm_unlocked_${reportDate}`;
-  const set = new Set(getLocalUnlockedDealers(reportDate));
-  if (shouldUnlock) set.add(dealerCode); else set.delete(dealerCode);
-  localStorage.setItem(key, JSON.stringify(Array.from(set)));
-}
-
-function scheduleDealerResetRefresh() {
-  const now = new Date();
-  const next = new Date(now);
-  next.setHours(0, 5, 0, 0);
-  if (next <= now) next.setDate(next.getDate() + 1);
-  setTimeout(() => {
-    setDateFields();
-    refreshAvailableDealers();
-    scheduleDealerResetRefresh();
-  }, next - now + 1000);
-}
-
-/* ── Model grid builder ──────────────────────────────────── */
-function buildModelGrid() {
-  const tbody = document.getElementById('grid-body');
-  let lastGroup = null;
-
-  MODEL_BUCKETS.forEach((model, rowIdx) => {
-    // Insert group separator row if new group starts
-    const groupLabel = MODEL_GROUPS[model];
-    if (groupLabel !== null && groupLabel !== lastGroup) {
-      lastGroup = groupLabel;
-      const sepRow = document.createElement('tr');
-      const sepTd  = document.createElement('td');
-      sepTd.colSpan = 8;
-      sepTd.className = 'grid-section-label';
-      sepTd.textContent = groupLabel;
-      sepRow.appendChild(sepTd);
-      tbody.appendChild(sepRow);
-    }
-
-    // Init data store
-    gridData[model] = {};
-    GRID_COLS.forEach(c => { gridData[model][c.key] = null; });
-
-    // Build row
-    const tr = document.createElement('tr');
-    tr.setAttribute('data-model', model);
-
-    // Model name cell
-    const nameTd = document.createElement('td');
-    nameTd.className = 'model-name';
-    nameTd.textContent = model;
-    tr.appendChild(nameTd);
-
-    // Input cells
-    GRID_COLS.forEach((col, colIdx) => {
-      const td    = document.createElement('td');
-      const input = document.createElement('input');
-      input.type        = 'number';
-      input.min         = '0';
-      input.step        = '1';
-      input.value       = '';
-      input.className   = 'grid-input';
-      input.setAttribute('data-model', model);
-      input.setAttribute('data-col',   col.key);
-      input.setAttribute('aria-label', `${model} ${col.label}`);
-
-      // Tab navigation order (row-major)
-      input.tabIndex = rowIdx * GRID_COLS.length + colIdx + 1;
-
-      input.addEventListener('focus',  e => e.target.select());
-      input.addEventListener('input',  () => onGridInput(input, model, col.key));
-      input.addEventListener('keydown', onGridKeyDown);
-
-      td.appendChild(input);
-      tr.appendChild(td);
-    });
-
-    // Row total cell
-    const totalTd = document.createElement('td');
-    totalTd.className  = 'row-total';
-    totalTd.id         = `rowtot-${model.replace(/\s+/g,'_')}`;
-    totalTd.textContent = '0';
-    tr.appendChild(totalTd);
-
-    tbody.appendChild(tr);
-  });
-}
-
-/* ── Grid input handler ──────────────────────────────────── */
-function readGridInputValue(input) {
-  const raw = String(input.value ?? '').trim();
-  return raw === '' ? null : safeInt(raw);
-}
-
-function onGridInput(input, model, col) {
-  const val = readGridInputValue(input);
-  input.value = val === null ? '' : String(val);
-  input.classList.toggle('nonzero', safeInt(val) > 0);
-  gridData[model][col] = val;
-  manualGridEditCount += 1;
-  lastUpdatedAt = nowTimestamp();
-  updateRowTotal(model);
-  updateLiveTotals();
-  updateQuickSummary();
-  queueDraftSave();
-  if (col === 'forecast' && val !== null) saveForecastForSelectedDealer();
-}
-
-function updateRowTotal(model) {
-  const sum = GRID_COLS.reduce((acc, c) => acc + safeInt(gridData[model][c.key]), 0);
-  const el = document.getElementById(`rowtot-${model.replace(/\s+/g,'_')}`);
-  if (el) el.textContent = sum;
-}
-
-/* ── Keyboard navigation in grid ─────────────────────────── */
-function onGridKeyDown(e) {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    // Move down one row, same column
-    const inputs = Array.from(document.querySelectorAll('.grid-input'));
-    const idx    = inputs.indexOf(e.target);
-    const nextRow = inputs[idx + GRID_COLS.length];
-    if (nextRow) nextRow.focus();
-    else inputs[0] && inputs[0].focus();
-  }
-}
-
-/* ── Live totals ─────────────────────────────────────────── */
-function clearGridData(options = {}) {
-  const includeForecast = options.includeForecast !== false;
-  MODEL_BUCKETS.forEach(model => {
-    GRID_COLS.forEach(col => {
-      if (!includeForecast && col.key === 'forecast') return;
-      if (gridData[model]) gridData[model][col.key] = null;
-      const inp = Array.from(document.querySelectorAll('.grid-input')).find(el => el.getAttribute('data-model') === model && el.getAttribute('data-col') === col.key);
-      if (inp) { inp.value = ''; inp.classList.remove('nonzero'); }
-    });
-    updateRowTotal(model);
-  });
-  updateLiveTotals();
-  updateQuickSummary();
-}
-
-function prepareDealerWorkspace() {
-  clearGridData({ includeForecast: true });
-  quickActivityLog = [];
-  renderActivityLog();
-  updateQuickSummary();
-  manualGridEditCount = 0;
-  lastUpdatedAt = null;
-  formOpenedAt = Date.now();
-  const unlockBanner = document.getElementById('unlock-banner');
-  if (unlockBanner) unlockBanner.style.display = 'none';
-  const missingBanner = document.getElementById('missing-banner');
-  if (missingBanner) missingBanner.style.display = 'none';
-  setDraftStatus('Select dealer to enable draft save');
-}
-
-function updateLiveTotals() {
-  const totals = {};
-  GRID_COLS.forEach(c => { totals[c.key] = 0; });
-  MODEL_BUCKETS.forEach(m => {
-    GRID_COLS.forEach(c => { totals[c.key] += safeInt(gridData[m][c.key]); });
-  });
-  document.getElementById('tot-enquiry').textContent = totals.enquiry;
-  document.getElementById('tot-td').textContent      = totals.test_drives;
-  document.getElementById('tot-sold').textContent    = totals.new_sold;
-  document.getElementById('tot-fleet').textContent   = totals.fleet;
-  document.getElementById('tot-demo').textContent    = totals.demo_sold;
-  document.getElementById('tot-forecast').textContent = totals.forecast;
-  const mob = { 'mob-enq': totals.enquiry, 'mob-td': totals.test_drives, 'mob-sold': totals.new_sold, 'mob-forecast': totals.forecast };
-  Object.keys(mob).forEach(id => { const el = document.getElementById(id); if (el) el.textContent = mob[id]; });
-}
-
-/* ── Direction selector ──────────────────────────────────── */
-function setDirection(val) {
-  selectedDirection = val;
-  document.getElementById('direction-val').value = val;
   document.querySelectorAll('.direction-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.val === val);
+    btn.addEventListener('click', () => setDirection(btn.dataset.direction));
   });
-  queueDraftSave();
+
+  renderModelGrid();
+  $('clearGrid').addEventListener('click', clearGrid);
+  $('reportForm').addEventListener('submit', submitReport);
+  setInterval(updateClock, 1000);
+  updateClock();
 }
 
-/* ── Date / clock ────────────────────────────────────────── */
-function setDateFields() {
-  const code = document.getElementById('dealer-select')?.value || '';
-  const today = dealerRequiredDateMap[code] || reportingDateISO();
-  document.getElementById('report-date').value  = formatDate(today);
-  document.getElementById('submit-time').value  = new Date().toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: true });
-  const ctx = document.getElementById('ctx-report-date');
-  if (ctx) ctx.textContent = formatDate(today);
+function setDirection(value) {
+  $('direction').value = value;
+  document.querySelectorAll('.direction-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.direction === value));
 }
 
-function startClock() {
-  function tick() {
-    const t = new Date().toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: true });
-    const el = document.getElementById('live-clock');
-    if (el) el.textContent = t;
-  }
-  tick();
-  setInterval(tick, 1000);
+function updateDateLabel() {
+  $('reportDateLabel').textContent = displayDate($('reportDate').value);
 }
 
-function checkLateStatus() {
-  const late = isLate();
-  const badge   = document.getElementById('late-badge');
-  const warning = document.getElementById('late-warning');
-  if (badge)   badge.classList.toggle('visible', late);
-  if (warning) warning.classList.toggle('hidden', !late);
+function updateClock() {
+  const now = new Date();
+  $('clock').textContent = now.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: true });
+  $('lateBadge').classList.toggle('visible', isLateNow());
 }
 
-/* ── Submit preview text ─────────────────────────────────── */
-function updateSubmitPreview() {
-  const code = document.getElementById('dealer-select').value;
-  const dealer = DEALERS.find(d => d.code === code);
-  document.getElementById('submit-preview-dealer').textContent =
-    dealer ? `${dealer.code} – ${dealer.name}` : '—';
-  document.getElementById('submit-preview-date').textContent = formatDate(dealerRequiredDateMap[code] || reportingDateISO());
-  setDateFields();
-  updateComplianceBanners();
-}
-
-/* ── Form validation ─────────────────────────────────────── */
-function validate() {
-  const errors = [];
-  const dealerEl = document.getElementById('dealer-select');
-  const nameEl   = document.getElementById('submitted-by');
-
-  if (!dealerEl.value) {
-    errors.push('Please select a dealer.');
-    dealerEl.classList.add('error');
-  } else if (!dealerRequiredDateMap[dealerEl.value]) {
-    errors.push('This dealer has no open reporting day. Contact GWM to reopen if changes are required.');
-    dealerEl.classList.add('error');
-  } else { dealerEl.classList.remove('error'); }
-
-  const reportDate = dealerRequiredDateMap[dealerEl.value];
-  if (reportDate && reportDate >= todayISO()) {
-    errors.push("Reporting is retrospective only. Today's date cannot be submitted.");
-  }
-
-  if (!nameEl.value.trim()) {
-    errors.push('Please enter your name in "Submitted By".');
-    nameEl.classList.add('error');
-  } else { nameEl.classList.remove('error'); }
-
-  if (!selectedDirection) {
-    errors.push('Please select a direction (Up / Flat / Down).');
-  }
-  return errors;
-}
-
-/* ── Build submission rows ───────────────────────────────── */
-function buildRows() {
-  const dealerCode = document.getElementById('dealer-select').value;
-  const dealer     = DEALERS.find(d => d.code === dealerCode);
-  const ts         = nowTimestamp();
-  const date       = dealerRequiredDateMap[dealerCode] || reportingDateISO();
-  const late       = isLate();
-  const name       = document.getElementById('submitted-by').value.trim();
-  const direction  = selectedDirection;
-  const inputMethod = getInputMethod();
-  const durationSeconds = Math.max(0, Math.round((Date.now() - formOpenedAt) / 1000));
-  const updatedAt = lastUpdatedAt || ts;
-
-  return MODEL_BUCKETS.map(model => ({
-    submitted_at: ts,
-    report_date:  date,
-    is_late:      late,
-    dealer_code:  dealerCode,
-    dealer_name:  dealer ? dealer.name : '',
-    region:       GWM_CONFIG.region,
-    submitted_by: name,
-    direction:    direction,
-    is_complete_submission: isCompleteSubmission(),
-    input_method: inputMethod,
-    submission_duration_seconds: durationSeconds,
-    last_updated_at: updatedAt,
-    model_bucket: model,
-    enquiry:      gridData[model].enquiry === null ? 0 : gridData[model].enquiry,
-    test_drives:  gridData[model].test_drives === null ? 0 : gridData[model].test_drives,
-    new_sold:     gridData[model].new_sold === null ? 0 : gridData[model].new_sold,
-    fleet:        gridData[model].fleet === null ? 0 : gridData[model].fleet,
-    demo_sold:    gridData[model].demo_sold === null ? 0 : gridData[model].demo_sold,
-    forecast:     gridData[model].forecast === null ? '' : gridData[model].forecast,
-  }));
-}
-
-/* ── Submit handler ──────────────────────────────────────── */
-async function handleSubmit(e) {
-  e.preventDefault();
-
-  const errors = validate();
-  const alertEl = document.getElementById('alert-banner');
-
-  if (errors.length) {
-    alertEl.className = 'alert error';
-    alertEl.innerHTML = errors.map(e => `• ${e}`).join('<br>');
-    alertEl.scrollIntoView({ block: 'nearest' });
-    return;
-  }
-
-  alertEl.className = 'alert hidden';
-
-  const btn     = document.getElementById('submit-btn');
-  const label   = document.getElementById('submit-label');
-  const spinner = document.getElementById('submit-spinner');
-
-  btn.disabled        = true;
-  label.textContent   = 'Submitting…';
-  spinner.classList.add('visible');
-
-  const rows = buildRows();
-
-  try {
-    if (!GWM_CONFIG.scriptUrl) {
-      // Offline / demo mode — simulate latency
-      await new Promise(r => setTimeout(r, 900));
-      handleSuccess(rows);
-    } else {
-      await postRows(rows);
-      handleSuccess(rows);
-    }
-  } catch (err) {
-    btn.disabled       = false;
-    label.textContent  = 'Submit Daily Report';
-    spinner.classList.remove('visible');
-    alertEl.className  = 'alert error';
-    alertEl.textContent = `Submission failed: ${err.message}. Please try again or contact support.`;
-    alertEl.scrollIntoView({ block: 'nearest' });
-  }
-}
-
-function handleSuccess(rows) {
-  // Save dealer & name for next visit
-  localStorage.setItem('gwm_dealer', document.getElementById('dealer-select').value);
-  localStorage.setItem('gwm_name',   document.getElementById('submitted-by').value.trim());
-  saveForecastForSelectedDealer();
-  clearDraftForSelectedDealer();
-  formOpenedAt = Date.now();
-  const submittedDealer = document.getElementById('dealer-select').value;
-  submittedDealerCodes.add(submittedDealer);
-  unlockedDealerCodes.delete(submittedDealer);
-  setLocalUnlock(submittedDealer, rows[0].report_date, false);
-
-  // Save to local history (for offline dashboard demo)
-  let history = JSON.parse(localStorage.getItem('gwm_submissions') || '[]');
-  const date = rows[0].report_date;
-  history = history.filter(r => !(r.report_date === date && r.dealer_code === submittedDealer));
-  rows.forEach(r => history.push(r));
-  // Keep last 2000 rows
-  if (history.length > 2000) history.splice(0, history.length - 2000);
-  localStorage.setItem('gwm_submissions', JSON.stringify(history));
-  populateDealerDropdown();
-
-  document.getElementById('sales-form').classList.add('hidden');
-  const totEnq  = rows.reduce((a,r) => a + safeInt(r.enquiry), 0);
-  const totSold = rows.reduce((a,r) => a + safeInt(r.new_sold), 0);
-  document.getElementById('success-msg').textContent =
-    `Submitted ${rows.length} model rows — ${totEnq} enquiries, ${totSold} new sold. ` +
-    (rows[0].is_late ? '(Flagged as late submission)' : '');
-  document.getElementById('success-screen').classList.remove('hidden');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-/* ── Forecast persistence ────────────────────────────────── */
-function forecastStorageKey(dealerCode) {
-  const date = dealerRequiredDateMap[dealerCode] || reportingDateISO();
-  return `gwm_forecast_${monthKeyFromISO(date)}_${dealerCode}`;
-}
-
-function getForecastInputs() {
-  return Array.from(document.querySelectorAll('.grid-input[data-col="forecast"]'));
-}
-
-function collectCurrentForecast() {
-  const out = {};
-  getForecastInputs().forEach(inp => {
-    const model = inp.getAttribute('data-model');
-    const val = readGridInputValue(inp);
-    if (val !== null) out[model] = val;
-  });
-  return out;
-}
-
-function applyForecastMap(map) {
-  if (!map) return;
-  getForecastInputs().forEach(inp => {
-    const model = inp.getAttribute('data-model');
-    if (!Object.prototype.hasOwnProperty.call(map, model)) return;
-    const raw = map[model];
-    if (raw === '' || raw === null || raw === undefined) return;
-    const val = safeInt(raw);
-    inp.value = String(val);
-    inp.classList.toggle('nonzero', val > 0);
-    if (gridData[model]) gridData[model].forecast = val;
-    updateRowTotal(model);
-  });
-  updateLiveTotals();
-}
-
-function saveForecastForSelectedDealer() {
-  const dealerCode = document.getElementById('dealer-select').value;
-  if (!dealerCode) return;
-  localStorage.setItem(forecastStorageKey(dealerCode), JSON.stringify(collectCurrentForecast()));
-}
-
-async function loadForecastForSelectedDealer() {
-  const dealerCode = document.getElementById('dealer-select').value;
-  if (!dealerCode) return;
-
-  let forecast = null;
-  try {
-    const local = localStorage.getItem(forecastStorageKey(dealerCode));
-    if (local) forecast = JSON.parse(local);
-  } catch (_) {}
-
-  try {
-    if (GWM_CONFIG.scriptUrl) {
-      const data = await fetchRows({ dealer: dealerCode });
-      const rows = Array.isArray(data) ? data : (data.rows || []);
-      const monthKey = monthKeyFromISO(dealerRequiredDateMap[dealerCode] || reportingDateISO());
-      const latest = {};
-      rows
-        .filter(r => String(r.report_date || '').slice(0, 7) === monthKey)
-        .forEach(r => {
-          const model = r.model_bucket;
-          const ts = new Date(r.submitted_at || 0).getTime() || 0;
-          if (r.forecast !== '' && r.forecast !== null && r.forecast !== undefined && (!latest[model] || ts >= latest[model].ts)) latest[model] = { ts, val: safeInt(r.forecast) };
-        });
-      const serverForecast = {};
-      Object.keys(latest).forEach(model => { serverForecast[model] = latest[model].val; });
-      if (Object.keys(serverForecast).length) forecast = serverForecast;
-    }
-  } catch (err) {
-    console.warn('Forecast preload failed:', err);
-  }
-
-  applyForecastMap(forecast || {});
-}
-
-
-
-function loadExistingSubmissionIfUnlocked() {
-  const dealerCode = document.getElementById('dealer-select').value;
-  const reportDate = dealerRequiredDateMap[dealerCode];
-  const banner = document.getElementById('unlock-banner');
-  const isUnlocked = Boolean(dealerCode && reportDate && unlockedSubmissionKeys.has(`${dealerCode}|${reportDate}`));
-  if (!dealerCode || !reportDate || !isUnlocked) {
-    if (banner) banner.style.display = 'none';
-    updateComplianceBanners();
-    return Promise.resolve(false);
-  }
-  const rows = existingSubmissionCache[`${dealerCode}|${reportDate}`] || [];
-  if (banner) banner.style.display = 'block';
-  if (!rows.length) return Promise.resolve(true);
-  rows.forEach(r => {
-    const model = r.model_bucket;
-    if (!gridData[model]) return;
-    ['enquiry','test_drives','new_sold','fleet','fleet_5_plus','demo_sold','forecast'].forEach(k => {
-      const col = k === 'fleet_5_plus' ? 'fleet' : k;
-      if (!GRID_COLS.some(c => c.key === col)) return;
-      const raw = r[k];
-      if (raw === '' || raw === null || raw === undefined) return;
-      setGridValue(model, col, safeInt(raw), false);
-    });
-  });
-  const first = rows[0] || {};
-  if (first.submitted_by) document.getElementById('submitted-by').value = first.submitted_by;
-  if (first.direction) setDirection(first.direction);
-  manualGridEditCount = 0;
-  quickActivityLog = [];
-  renderActivityLog();
-  updateQuickSummary();
-  updateComplianceBanners();
-  setDraftStatus('Reopened submission restored');
-  return Promise.resolve(true);
-}
-
-function updateComplianceBanners() {
-  const dealerCode = document.getElementById('dealer-select')?.value || '';
-  const reportDate = dealerRequiredDateMap[dealerCode];
-  const missingBanner = document.getElementById('missing-banner');
-  if (!missingBanner) return;
-  if (!dealerCode || !reportDate) {
-    missingBanner.style.display = 'none';
-    return;
-  }
-  const isUnlocked = unlockedSubmissionKeys.has(`${dealerCode}|${reportDate}`);
-  const current = reportingDateISO();
-  if (!isUnlocked && reportDate < current) {
-    missingBanner.innerHTML = `<div class="missing-banner-title">⚠ Reporting action required</div><div class="missing-banner-body">Complete ${formatDate(reportDate)} first. ${formatDate(current)} reporting will unlock automatically after submission.</div><div class="missing-banner-meta">Oldest incomplete reporting day is enforced first</div>`;
-    missingBanner.style.display = 'block';
-  } else {
-    missingBanner.style.display = 'none';
-  }
-}
-
-function initialiseMobileGridState() {
-  const card = document.getElementById('model-grid')?.closest('.card');
-  if (card && window.matchMedia('(max-width: 599px)').matches) card.classList.add('model-grid-collapsed');
-}
-
-function toggleMobileGrid() {
-  const card = document.getElementById('model-grid')?.closest('.card');
-  const btn = document.getElementById('grid-toggle-mobile');
-  if (!card || !btn) return;
-  const collapsed = card.classList.toggle('model-grid-collapsed');
-  btn.textContent = collapsed ? 'Show Full Model Breakdown' : 'Hide Full Model Breakdown';
-}
-
-/* ── Quick activity entry + live draft ───────────────────── */
-function initQuickEntry() {
-  const modelSel = document.getElementById('quick-model');
-  MODEL_BUCKETS.forEach(model => {
-    const opt = document.createElement('option');
-    opt.value = model;
-    opt.textContent = model;
-    modelSel.appendChild(opt);
-  });
-  document.getElementById('quick-add').addEventListener('click', addQuickActivity);
-  document.getElementById('quick-plus').addEventListener('click', () => bumpQuickQty(1));
-  document.getElementById('quick-minus').addEventListener('click', () => bumpQuickQty(-1));
-  document.getElementById('quick-clear').addEventListener('click', clearQuickEntryFields);
-  document.getElementById('quick-qty').addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); addQuickActivity(); }
-  });
-  updateQuickSummary();
-  renderActivityLog();
-  scheduleReportingDayWatcher();
-}
-function bumpQuickQty(delta) {
-  const qtyEl = document.getElementById('quick-qty');
-  qtyEl.value = String(Math.max(0, safeInt(qtyEl.value) + delta));
-}
-function clearQuickEntryFields() {
-  document.getElementById('quick-model').value = '';
-  document.getElementById('quick-metric').value = 'enquiry';
-  document.getElementById('quick-qty').value = '1';
-}
-function addQuickActivity() {
-  const model = document.getElementById('quick-model').value;
-  const metric = document.getElementById('quick-metric').value;
-  const qty = safeInt(document.getElementById('quick-qty').value);
-  if (!model) { showToast('Select a model bucket first.', 'error'); document.getElementById('quick-model').focus(); return; }
-  if (qty <= 0) { showToast('Enter a quantity greater than zero.', 'error'); document.getElementById('quick-qty').focus(); return; }
-  const current = gridData[model][metric] === null ? null : safeInt(gridData[model][metric]);
-  const next = metric === 'forecast' ? qty : safeInt(current) + qty;
-  setGridValue(model, metric, next, true);
-  quickActivityLog.unshift({ model, metric, qty, before: current, after: next, mode: metric === 'forecast' ? 'set' : 'add', ts: new Date().toISOString() });
-  quickActivityLog = quickActivityLog.slice(0, 20);
-  renderActivityLog();
-  updateQuickSummary();
-  queueDraftSave();
-  if (metric === 'forecast') saveForecastForSelectedDealer();
-  showToast(metric === 'forecast' ? 'Forecast updated.' : 'Activity added.', 'success', 1800);
-}
-function setGridValue(model, col, value, focusRow) {
-  if (!gridData[model]) return;
-  const val = (value === '' || value === null || value === undefined) ? null : Math.max(0, safeInt(value));
-  gridData[model][col] = val;
-  const inp = Array.from(document.querySelectorAll('.grid-input')).find(el => el.getAttribute('data-model') === model && el.getAttribute('data-col') === col);
-  if (inp) { inp.value = val === null ? '' : String(val); inp.classList.toggle('nonzero', safeInt(val) > 0); }
-  lastUpdatedAt = nowTimestamp();
-  updateRowTotal(model);
-  updateLiveTotals();
-  updateQuickSummary();
-  if (focusRow) flashModelRow(model);
-}
-function flashModelRow(model) {
-  const row = Array.from(document.querySelectorAll('tr[data-model]')).find(el => el.getAttribute('data-model') === model);
-  if (!row) return;
-  row.style.outline = '2px solid #C41230'; row.style.outlineOffset = '-2px';
-  clearTimeout(row._flashTimer);
-  row._flashTimer = setTimeout(() => { row.style.outline = ''; row.style.outlineOffset = ''; }, 900);
-}
-function metricLabel(metric) {
-  const found = GRID_COLS.find(c => c.key === metric);
-  return found ? found.label : metric;
-}
-function renderActivityLog() {
-  const el = document.getElementById('activity-log');
-  if (!el) return;
-  if (!quickActivityLog.length) { el.innerHTML = '<div class="activity-log-empty">No quick activity entered yet.</div>'; return; }
-  el.innerHTML = quickActivityLog.map(item => {
-    const time = formatTime(item.ts);
-    const action = item.mode === 'set' ? 'set to ' : '+';
-    return `<div class="activity-log-row"><div><div class="activity-log-main">${escapeHtml(item.model)}</div><div class="activity-log-meta">${escapeHtml(metricLabel(item.metric))} ${action}${item.qty}</div></div><div class="activity-log-meta">${time}</div><button type="button" class="quick-btn danger" style="height:30px;padding:0 8px;font-size:10px;" onclick="removeActivityLogItem('${item.ts}')">Remove</button></div>`;
+function renderModelGrid() {
+  const body = $('modelBody');
+  body.innerHTML = MODELS.map((model, modelIndex) => {
+    const cells = METRICS.map(metric => `
+      <td data-label="${metric.label}">
+        <input class="grid-input" inputmode="numeric" min="0" step="1" type="number" data-model-index="${modelIndex}" data-key="${metric.key}" placeholder="0">
+      </td>`).join('');
+    return `<tr><td class="model-name" data-label="Model">${model}</td>${cells}<td class="row-total" data-label="Total" id="rowTotal-${modelIndex}">0</td></tr>`;
   }).join('');
-}
-function removeActivityLogItem(ts) {
-  const item = quickActivityLog.find(x => x.ts === ts);
-  if (!item) return;
-  setGridValue(item.model, item.metric, item.before, true);
-  quickActivityLog = quickActivityLog.filter(x => x.ts !== ts);
-  renderActivityLog();
-  updateQuickSummary();
-  queueDraftSave();
-  if (item.metric === 'forecast') saveForecastForSelectedDealer();
-  showToast('Quick entry removed and grid value restored.', 'success', 1800);
-}
-function updateQuickSummary() {
-  const active = MODEL_BUCKETS.filter(model => GRID_COLS.some(col => col.key !== 'forecast' && safeInt(gridData[model]?.[col.key]) > 0)).length;
-  const activeEl = document.getElementById('quick-active-count');
-  const entryEl = document.getElementById('quick-entry-count');
-  if (activeEl) activeEl.textContent = String(active);
-  if (entryEl) entryEl.textContent = String(quickActivityLog.length);
-}
-function escapeHtml(value) {
-  return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-}
-function draftStorageKey(dealerCode) { return `gwm_draft_${dealerRequiredDateMap[dealerCode] || reportingDateISO()}_${dealerCode || 'no_dealer'}`; }
-function queueDraftSave() { clearTimeout(draftSaveTimer); draftSaveTimer = setTimeout(saveDraftForSelectedDealer, 250); }
-function saveDraftForSelectedDealer() {
-  const dealerCode = document.getElementById('dealer-select').value;
-  if (!dealerCode) return;
-  const payload = { report_date: dealerRequiredDateMap[dealerCode] || reportingDateISO(), dealer_code: dealerCode, submitted_by: document.getElementById('submitted-by').value.trim(), direction: selectedDirection, gridData, quickActivityLog, manualGridEditCount, formOpenedAt, lastUpdatedAt, saved_at: new Date().toISOString() };
-  localStorage.setItem(draftStorageKey(dealerCode), JSON.stringify(payload));
-  setDraftStatus('Draft saved ' + new Date().toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit', hour12:true }));
-}
-function loadDraftForSelectedDealer() {
-  const dealerCode = document.getElementById('dealer-select').value;
-  if (!dealerCode) { setDraftStatus('Select dealer to enable draft save'); return Promise.resolve(); }
-  try {
-    const raw = localStorage.getItem(draftStorageKey(dealerCode));
-    if (!raw) { quickActivityLog = []; renderActivityLog(); updateQuickSummary(); setDraftStatus('No draft for today'); return Promise.resolve(); }
-    const draft = JSON.parse(raw);
-    if (draft.submitted_by) document.getElementById('submitted-by').value = draft.submitted_by;
-    if (draft.direction) setDirection(draft.direction);
-    MODEL_BUCKETS.forEach(model => GRID_COLS.forEach(col => setGridValue(model, col.key, draft.gridData?.[model]?.[col.key] ?? null, false)));
-    manualGridEditCount = safeInt(draft.manualGridEditCount);
-    formOpenedAt = draft.formOpenedAt || Date.now();
-    lastUpdatedAt = draft.lastUpdatedAt || null;
-    quickActivityLog = Array.isArray(draft.quickActivityLog) ? draft.quickActivityLog : [];
-    renderActivityLog(); updateQuickSummary(); setDraftStatus('Draft restored');
-  } catch (err) { console.warn('Draft restore failed:', err); setDraftStatus('Draft restore failed'); }
-  return Promise.resolve();
-}
-function clearDraftForSelectedDealer() {
-  const dealerCode = document.getElementById('dealer-select').value;
-  if (!dealerCode) return;
-  localStorage.removeItem(draftStorageKey(dealerCode));
-  setDraftStatus('Submitted. Draft cleared');
-}
-function setDraftStatus(text) { const el = document.getElementById('draft-status'); if (el) el.textContent = text; }
-function hasAnyDailyActivity() {
-  return MODEL_BUCKETS.some(model => GRID_COLS.some(col => col.key !== 'forecast' && gridData[model]?.[col.key] !== null));
-}
-function isCompleteSubmission() {
-  return Boolean(document.getElementById('dealer-select').value && document.getElementById('submitted-by').value.trim() && selectedDirection && MODEL_BUCKETS.every(model => gridData[model]));
-}
-function getInputMethod() {
-  const hasQuick = quickActivityLog.length > 0;
-  const hasManual = manualGridEditCount > 0;
-  if (hasQuick && hasManual) return 'mixed';
-  if (hasQuick) return 'activity';
-  if (hasManual) return 'grid';
-  return 'no_activity';
-}
-function scheduleReportingDayWatcher() {
-  setInterval(() => {
-    const current = reportingDateISO();
-    if (current === activeReportDate) return;
-    activeReportDate = current;
-    resetDailyActivityForNewReportDate();
-  }, 60000);
-}
-function resetDailyActivityForNewReportDate() {
-  MODEL_BUCKETS.forEach(model => GRID_COLS.forEach(col => { if (col.key !== 'forecast') setGridValue(model, col.key, null, false); }));
-  quickActivityLog = [];
-  renderActivityLog(); updateQuickSummary(); setDateFields(); refreshAvailableDealers();
-  setDraftStatus('New report day started. Daily activity reset.');
+  document.querySelectorAll('.grid-input').forEach(input => input.addEventListener('input', updateTotals));
 }
 
-/* ── Reset form ──────────────────────────────────────────── */
-function resetForm() {
-  selectedDirection = '';
-  document.querySelectorAll('.direction-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('direction-val').value = '';
-  document.querySelectorAll('.grid-input').forEach(inp => {
-    inp.value = '';
-    inp.classList.remove('nonzero');
-  });
-  MODEL_BUCKETS.forEach(m => {
-    GRID_COLS.forEach(c => { gridData[m][c.key] = null; });
-    updateRowTotal(m);
-  });
-  quickActivityLog = [];
-  renderActivityLog();
-  updateLiveTotals();
-  updateQuickSummary();
-  document.getElementById('submitted-by').value = localStorage.getItem('gwm_name') || '';
-  document.getElementById('submit-btn').disabled = false;
-  document.getElementById('submit-label').textContent = 'Submit Daily Report';
-  document.getElementById('submit-spinner').classList.remove('visible');
-  document.getElementById('sales-form').classList.remove('hidden');
-  document.getElementById('success-screen').classList.add('hidden');
-  document.getElementById('alert-banner').className = 'alert hidden';
-  setDateFields();
-  checkLateStatus();
-  updateSubmitPreview();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+function getDealer() {
+  const code = $('dealer').value;
+  return DEALERS.find(d => d.code === code) || null;
 }
+
+function collectRows() {
+  const dealer = getDealer();
+  const ts = new Date().toISOString();
+  const reportDate = $('reportDate').value;
+  const submittedBy = $('submittedBy').value.trim();
+  const direction = $('direction').value;
+
+  return MODELS.map((model, modelIndex) => {
+    const row = {
+      submitted_at: ts,
+      report_date: reportDate,
+      is_late: isLateNow(),
+      dealer_code: dealer.code,
+      dealer_name: dealer.name,
+      region: REGION,
+      submitted_by: submittedBy,
+      direction,
+      is_complete_submission: true,
+      input_method: 'single_index_testing',
+      submission_duration_seconds: '',
+      last_updated_at: ts,
+      model_bucket: model
+    };
+    METRICS.forEach(metric => {
+      const input = document.querySelector(`[data-model-index="${modelIndex}"][data-key="${metric.key}"]`);
+      row[metric.key] = safeInt(input.value);
+    });
+    return row;
+  });
+}
+
+function updateTotals() {
+  const totals = Object.fromEntries(METRICS.map(m => [m.key, 0]));
+  MODELS.forEach((model, modelIndex) => {
+    let rowTotal = 0;
+    METRICS.forEach(metric => {
+      const input = document.querySelector(`[data-model-index="${modelIndex}"][data-key="${metric.key}"]`);
+      const val = safeInt(input.value);
+      totals[metric.key] += val;
+      if (metric.key !== 'forecast') rowTotal += val;
+    });
+    $(`rowTotal-${modelIndex}`).textContent = rowTotal;
+  });
+  METRICS.forEach(metric => { $(`total-${metric.key}`).textContent = totals[metric.key]; });
+}
+
+function clearGrid() {
+  document.querySelectorAll('.grid-input').forEach(input => input.value = '');
+  updateTotals();
+  showMessage('Grid cleared. Nothing has been submitted.', 'info');
+}
+
+function validateForm() {
+  if (!getDealer()) return 'Select a dealer.';
+  if (!$('submittedBy').value.trim()) return 'Enter submitted by.';
+  if (!$('direction').value) return 'Select Up, Flat or Down.';
+  if (!$('reportDate').value) return 'Select a report date.';
+  if (!ALLOW_TODAY_FOR_TESTING && $('reportDate').value >= todayISO()) return 'Reporting is retrospective. Select yesterday or an earlier date.';
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('PASTE_')) return 'Paste the deployed Apps Script Web App URL into APPS_SCRIPT_URL.';
+  return '';
+}
+
+async function submitReport(event) {
+  event.preventDefault();
+  const error = validateForm();
+  if (error) {
+    showMessage(error, 'error');
+    return;
+  }
+
+  const submitBtn = $('submitBtn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Submitting...';
+
+  try {
+    const rows = collectRows();
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ rows })
+    });
+
+    localStorage.setItem('gwm_submitted_by', $('submittedBy').value.trim());
+    showMessage(`Submitted ${rows.length} model rows for ${getDealer().name} on ${displayDate($('reportDate').value)}. Check the Google Sheet to confirm.`, 'success');
+  } catch (err) {
+    showMessage('Submit failed. Check the Apps Script URL, deployment access, and Sheet ID.', 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit to Google Sheets';
+  }
+}
+
+function showMessage(text, type) {
+  const box = $('message');
+  box.textContent = text;
+  box.className = `message ${type || 'info'}`;
+  box.hidden = false;
+}
+
+init();
 </script>
 </body>
 </html>
