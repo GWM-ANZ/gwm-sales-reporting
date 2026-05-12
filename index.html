@@ -30,7 +30,7 @@
   <section class="status-strip">
     <span>Report date: <strong id="reportDateLabel">--</strong></span>
     <span>Google Sheets input only</span>
-    <span>v2.1 pilot-safe build</span>
+    <span>v2.1.1 pilot-safe build</span>
   </section>
 
   <form id="reportForm" class="card" autocomplete="off">
@@ -410,7 +410,11 @@ async function submitReport(event) {
     localStorage.setItem('gwm_dealer_code', getDealer().code);
     showReceipt(result);
   } catch (err) {
-    showMessage(`Submit failed: ${err.message}`, 'error');
+    if (String(err.message || '').includes('No confirmation was received')) {
+      showPendingReceipt(rows, totals);
+    } else {
+      showMessage(`Submit failed: ${err.message}`, 'error');
+    }
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submit to Google Sheets';
@@ -481,6 +485,20 @@ function showReceipt(result) {
       <p><b>Late flag:</b> ${result.is_late ? 'TRUE' : 'FALSE'}</p>
     </div>`;
   showMessage(receipt, 'success', true);
+}
+
+function showPendingReceipt(rows, totals) {
+  const dealer = getDealer();
+  const receipt = `
+    <div class="receipt">
+      <strong>Submission sent</strong>
+      <p>The form reached the Google Apps Script endpoint, but the browser did not receive the visual receipt back in time.</p>
+      <p><b>Dealer:</b> ${escapeHtml(dealer ? dealer.code : '')} | ${escapeHtml(dealer ? dealer.name : '')}</p>
+      <p><b>Report date:</b> ${displayDate($('reportDate').value)}</p>
+      <p><b>Total daily activity:</b> ${Number(totals.total_activity || 0)}</p>
+      <p><b>Important:</b> Do not submit again immediately. Check the Google Sheet first. If 19 rows are visible in submissions_current and submissions_audit, the submission worked.</p>
+    </div>`;
+  showMessage(receipt, 'info', true);
 }
 
 function escapeHtml(value) {
