@@ -60,6 +60,9 @@ td { border-bottom: 1px solid #EFEFEF; padding: 8px; vertical-align: middle; }
 .model-name { font-weight: 900; min-width: 180px; }
 .grid-input { height: 38px; min-width: 84px; text-align: center; font-weight: 800; padding: 0 8px; }
 .row-total { font-weight: 900; text-align: center; background: #F7F7F7; }
+.model-table tr.has-activity td { background: #FFF9F0; }
+.model-table tr.has-activity .model-name { border-left: 4px solid var(--red); padding-left: 4px; }
+.model-table tr.has-activity .row-total { background: #111; color: #fff; }
 
 .mobile-activity { display: none; }
 .mobile-helper { color: var(--muted); font-size: 12px; line-height: 1.45; margin: 2px 0 12px; }

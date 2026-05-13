@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#000000">
-  <title>GWM Daily Sales Input | Southern Region</title>
+  <title>GWM Daily Sales Input v2.4 | Southern Region</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -30,6 +30,8 @@
   <section class="status-strip">
     <span>Report date: <strong id="reportDateLabel">--</strong></span>
     <span>Prior-day activity only</span>
+    <span>Dealer deadline: <strong>10:00am</strong></span>
+    <span>Correction window: <strong>until 12:00pm</strong></span>
     <span>Southern Region live form</span>
     <span>System: <strong id="systemStatus">Checking</strong></span>
   </section>
@@ -108,7 +110,7 @@
     <div class="submit-panel">
       <div>
         <strong>Daily reporting</strong>
-        <p>Submit prior-day completed activity only. The latest submission for each dealer/date is used for reporting, with a full audit history retained by GWM.</p>
+        <p>Submit prior-day completed activity before 10:00am. Corrections can be resubmitted until the internal 12:00pm check. The latest dealer/date submission is used for reporting and all versions remain in audit.</p>
       </div>
       <button type="submit" class="primary-btn" id="submitBtn">Submit Daily Report</button>
     </div>
@@ -134,6 +136,7 @@
           <li><b>Test drives:</b> completed drives only, not future bookings.</li>
           <li><b>Sold:</b> new vehicle customer orders or contracts written.</li>
           <li><b>Demo sold:</b> demonstrator vehicle sold. Do not count the same unit again as Sold.</li>
+          <li><b>Important:</b> if one customer enquires, test drives and signs on the same report date, record one in each completed stage. Do not count the same activity twice within the same stage.</li>
         </ul>
       </section>
       <section>
@@ -152,7 +155,8 @@
         <h3>6. What not to do</h3>
         <ul>
           <li>Do not use negative numbers. Submit a corrected full day instead.</li>
-          <li>Do not count one customer activity twice.</li>
+          <li>Do not enter negative numbers for cancellations. Submit the full corrected day instead.</li>
+          <li>Do not count the same activity twice within one stage.</li>
           <li>Do not close the page until the receipt appears.</li>
           <li>Do not use this page for forecast, Fleet 5+ or daily direction.</li>
         </ul>
@@ -170,9 +174,9 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTwjaxraZrTlZR
 const REGION = 'Southern Region';
 const CUTOFF_HOUR = 10;
 const ALLOW_TODAY_FOR_TESTING = false;
-const RESPONSE_TIMEOUT_MS = 12000;
+const RESPONSE_TIMEOUT_MS = 15000;
 const STATUS_POLL_INTERVAL_MS = 1500;
-const STATUS_POLL_TIMEOUT_MS = 22000;
+const STATUS_POLL_TIMEOUT_MS = 45000;
 const SOFT_MAX_METRIC = 100;
 
 const DEALERS = [
@@ -295,7 +299,7 @@ function renderModelGrid() {
       <td data-label="${metric.label}">
         <input class="grid-input" data-view="desktop" inputmode="numeric" min="0" step="1" type="number" data-model-index="${modelIndex}" data-key="${metric.key}" placeholder="0" aria-label="${model} ${metric.label}">
       </td>`).join('');
-    return `<tr><td class="model-name" data-label="Model">${model}</td>${cells}<td class="row-total" data-label="Total" id="rowTotal-${modelIndex}">0</td></tr>`;
+    return `<tr id="modelRow-${modelIndex}"><td class="model-name" data-label="Model">${model}</td>${cells}<td class="row-total" data-label="Total" id="rowTotal-${modelIndex}">0</td></tr>`;
   }).join('');
 
   renderMobileActivity();
@@ -368,7 +372,7 @@ function collectRows() {
       submitted_by: submittedBy,
       direction: '',
       is_complete_submission: true,
-      input_method: 'single_index_v2_3_activity_first',
+      input_method: 'single_index_v2_4_activity_first',
       submission_duration_seconds: duration,
       model_bucket: model
     };
@@ -398,6 +402,8 @@ function updateTotals() {
         rowTotal += val;
       });
       $(`rowTotal-${modelIndex}`).textContent = rowTotal;
+      const tr = $(`modelRow-${modelIndex}`);
+      if (tr) tr.classList.toggle('has-activity', rowTotal > 0);
     });
   } catch (err) {
     showMessage(err.message, 'error');
@@ -460,6 +466,20 @@ function validateForm() {
   return '';
 }
 
+function buildNonZeroLines(rows) {
+  const lines = [];
+  rows.forEach(row => {
+    const parts = METRICS
+      .filter(metric => Number(row[metric.key] || 0) > 0)
+      .map(metric => `${metric.label}: ${row[metric.key]}`);
+    if (parts.length) lines.push(`${row.model_bucket} - ${parts.join(', ')}`);
+  });
+  if (!lines.length) return 'No model activity entered.';
+  const shown = lines.slice(0, 14).join('\n');
+  const extra = lines.length > 14 ? `\n...plus ${lines.length - 14} more model rows with activity.` : '';
+  return shown + extra;
+}
+
 function buildConfirmationText(rows, totals) {
   const dealer = getDealer();
   const warnings = [];
@@ -469,7 +489,8 @@ function buildConfirmationText(rows, totals) {
 
   const activeModels = countActiveModels(rows);
   const metricLines = METRICS.map(metric => `${metric.label}: ${totals[metric.key]}`).join('\n');
-  let text = `Confirm daily report\n\nDealer: ${dealer.code} | ${dealer.name}\nReport date: ${displayDate($('reportDate').value)}\n\n${metricLines}\nActive models: ${activeModels}\nTotal daily activity: ${totals.total_activity}\n\nThis will become the active submission for this dealer/date. A full audit copy will be retained.`;
+  const nonZeroLines = buildNonZeroLines(rows);
+  let text = `Confirm daily report\n\nDealer: ${dealer.code} | ${dealer.name}\nReport date: ${displayDate($('reportDate').value)}\nOfficial dealer deadline: 10:00am\nCorrection window: until 12:00pm\n\n${metricLines}\nActive models: ${activeModels}\nTotal daily activity: ${totals.total_activity}\n\nNon-zero activity check:\n${nonZeroLines}\n\nThis will become the active submission for this dealer/date. A full audit copy will be retained.`;
   if (warnings.length) text += `\n\nHigh total warning:\n${warnings.join('\n')}`;
   return text;
 }
@@ -744,7 +765,7 @@ function getSubmissionStatus(clientSubmissionId) {
 function normaliseStatusAsReceipt(status) {
   return {
     success: true,
-    version: '2.2',
+    version: '2.4',
     submission_id: status.submission_id,
     dealer_code: status.dealer_code,
     dealer_name: status.dealer_name,
@@ -763,7 +784,7 @@ function showReceipt(result) {
   const activeModels = countActiveModels(rows);
   const dealerName = result.dealer_name || (getDealer() ? getDealer().name : 'Dealer');
   const reportDate = displayDate(result.report_date || $('reportDate').value);
-  const summary = `Nice work, ${dealerName}. Your ${reportDate} report is in. We recorded ${formatMetric(totals.enquiry, 'enquiry', 'enquiries')}, ${formatMetric(totals.test_drives, 'test drive', 'test drives')}, ${formatMetric(totals.new_sold, 'sold', 'sold')} and ${formatMetric(totals.demo_sold, 'demo sold', 'demo sold')} across ${activeModels} active model${activeModels === 1 ? '' : 's'}.`;
+  const summary = `Submitted successfully. ${dealerName} daily activity for ${reportDate} has been received. We recorded ${formatMetric(totals.enquiry, 'enquiry', 'enquiries')}, ${formatMetric(totals.test_drives, 'test drive', 'test drives')}, ${formatMetric(totals.new_sold, 'sold', 'sold')} and ${formatMetric(totals.demo_sold, 'demo sold', 'demo sold')} across ${activeModels} active model${activeModels === 1 ? '' : 's'}.`;
   const receipt = `
     <div class="receipt">
       <strong>Report sent</strong>
