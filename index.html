@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#000000">
-  <title>GWM Daily Sales Input v2.4.4 | Southern Region</title>
-  <!-- GWM_INDEX_VERSION: 2.4.4-dealer-safe-receipt -->
+  <title>GWM Daily Sales Input v2.4.5 | Southern Region</title>
+  <!-- GWM_INDEX_VERSION: 2.4.5-concise-receipt -->
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -363,7 +363,7 @@ function collectRows() {
       submitted_by: submittedBy,
       direction: '',
       is_complete_submission: true,
-      input_method: 'single_index_v2_4_4_activity_first',
+      input_method: 'single_index_v2_4_5_activity_first',
       submission_duration_seconds: duration,
       model_bucket: model
     };
@@ -855,37 +855,23 @@ function normaliseStatusAsReceipt(status) {
 }
 
 function showReceipt(result) {
-  const rows = collectRowsSafe();
-  const totals = calculateTotals(rows);
-  const activeModels = countActiveModels(rows);
   const dealerName = result.dealer_name || (getDealer() ? getDealer().name : 'Dealer');
   const reportDate = displayDate(result.report_date || $('reportDate').value);
+  const isLate = result.is_late === true || result.is_late === 'TRUE' || result.is_late === 'true';
 
-  if (result.pending_receipt) {
-    const pendingSummary = `Report received. ${dealerName} daily activity for ${reportDate} has been sent to GWM reporting. We recorded ${formatMetric(totals.enquiry, 'enquiry', 'enquiries')}, ${formatMetric(totals.test_drives, 'test drive', 'test drives')}, ${formatMetric(totals.new_sold, 'sold', 'sold')} and ${formatMetric(totals.demo_sold, 'demo sold', 'demo sold')} across ${activeModels} active model${activeModels === 1 ? '' : 's'}. Please do not submit again unless a correction is required.`;
-    const pendingReceipt = `
-      <div class="receipt">
-        <strong>Report received</strong>
-        <p class="receipt-main">${escapeHtml(pendingSummary)}</p>
-        <p><b>Dealer:</b> ${escapeHtml(dealerName)}</p>
-        <p><b>Report date:</b> ${escapeHtml(reportDate)}</p>
-        <p><b>Total activity:</b> ${Number(totals.total_activity || 0)}</p>
-      </div>`;
-    showMessage(pendingReceipt, 'success', true);
-    return;
-  }
+  const mainLine = `${dealerName} daily activity for ${reportDate} has been sent to GWM reporting.`;
+  const statusLine = isLate
+    ? 'This report was submitted after the 10:00am dealer deadline.'
+    : 'Thank you for submitting on time.';
 
-  const summary = `Submitted successfully. ${dealerName} daily activity for ${reportDate} has been received. We recorded ${formatMetric(totals.enquiry, 'enquiry', 'enquiries')}, ${formatMetric(totals.test_drives, 'test drive', 'test drives')}, ${formatMetric(totals.new_sold, 'sold', 'sold')} and ${formatMetric(totals.demo_sold, 'demo sold', 'demo sold')} across ${activeModels} active model${activeModels === 1 ? '' : 's'}.`;
   const receipt = `
     <div class="receipt">
-      <strong>Report sent</strong>
-      <p class="receipt-main">${escapeHtml(summary)}</p>
-      <p><b>Receipt:</b> ${escapeHtml(result.submission_id || 'Confirmed')}</p>
-      <p><b>Rows written:</b> ${Number(result.rows_written || 0)} current rows and ${Number(result.audit_rows_written || 0)} audit rows</p>
-      <p><b>Revision:</b> ${Number(result.revision || 1)}</p>
-      <p><b>Late flag:</b> ${result.is_late ? 'TRUE' : 'FALSE'}</p>
+      <strong>Report received</strong>
+      <p class="receipt-main">${escapeHtml(mainLine)}</p>
+      <p>${escapeHtml(statusLine)}</p>
     </div>`;
-  showMessage(receipt, 'success', true);
+
+  showMessage(receipt, isLate ? 'info' : 'success', true);
 }
 
 function formatMetric(value, singular, plural) {
