@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#000000">
-  <title>GWM Daily Sales Input v2.4.1 | Southern Region</title>
+  <title>GWM Daily Sales Input v2.4.2 | Southern Region</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -45,7 +45,7 @@
   <form id="reportForm" class="card" autocomplete="off">
     <div class="card-title">Dealer report details</div>
 
-    <div class="form-grid four">
+    <div class="form-grid three">
       <label class="field">
         <span>Dealer</span>
         <select id="dealer" required></select>
@@ -57,10 +57,6 @@
       <label class="field">
         <span>Report date</span>
         <input id="reportDate" type="date" required>
-      </label>
-      <label class="field">
-        <span>Access code <em>if supplied</em></span>
-        <input id="pilotCode" type="text" maxlength="40" placeholder="Optional">
       </label>
     </div>
 
@@ -258,13 +254,11 @@ function init() {
   if (dealerFromUrl && DEALERS.some(d => d.code === dealerFromUrl)) dealerSelect.disabled = true;
 
   $('submittedBy').value = localStorage.getItem('gwm_submitted_by') || '';
-  $('pilotCode').value = localStorage.getItem('gwm_pilot_code') || '';
   $('reportDate').value = yesterdayISO();
   $('reportDate').max = ALLOW_TODAY_FOR_TESTING ? todayISO() : yesterdayISO();
   $('reportDate').addEventListener('change', updateDateLabel);
   $('dealer').addEventListener('change', updateReviewText);
   $('submittedBy').addEventListener('input', updateReviewText);
-  $('pilotCode').addEventListener('input', () => localStorage.setItem('gwm_pilot_code', clean($('pilotCode').value)));
   setupDealerInfoModal();
   checkEndpointHealth();
   updateDateLabel();
@@ -369,7 +363,7 @@ function collectRows() {
       submitted_by: submittedBy,
       direction: '',
       is_complete_submission: true,
-      input_method: 'single_index_v2_4_1_activity_first',
+      input_method: 'single_index_v2_4_2_activity_first',
       submission_duration_seconds: duration,
       model_bucket: model
     };
@@ -523,7 +517,7 @@ async function submitReport(event) {
       return_mode: 'iframe',
       client_submission_id: clientSubmissionId,
       rows,
-      code: clean($('pilotCode').value),
+      code: '',
       dealer_token: dealerToken,
       confirm_all_zero: confirmedAllZero,
       client_submitted_at: new Date().toISOString(),
@@ -537,7 +531,6 @@ async function submitReport(event) {
 
     localStorage.setItem('gwm_submitted_by', clean($('submittedBy').value));
     localStorage.setItem('gwm_dealer_code', getDealer().code);
-    localStorage.setItem('gwm_pilot_code', clean($('pilotCode').value));
     showReceipt(result);
   } catch (err) {
     showMessage(`We could not confirm the final receipt. Please do not submit again yet. Check the Sheet/reporting log first. Details: ${err.message}`, 'error');
