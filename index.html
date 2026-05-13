@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#000000">
   <title>GWM Daily Sales Input v2.4.2 | Southern Region</title>
+  <!-- GWM_INDEX_VERSION: 2.4.2-live-backend -->
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -163,7 +164,7 @@
 <script>
 'use strict';
 
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTwjaxraZrTlZRmEZ4ybhX8Bq549uNyUUqmiyv6NK_BRtDo4V3ONuPDyoxtOf0pCzLqw/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzxexGjsYhSflPvfvuzBnXWcUK6Zksq9AQ8QLY-2lftBviWn2kt9PZPdWSJ1bitE1Q9mQ/exec';
 const REGION = 'Southern Region';
 const CUTOFF_HOUR = 10;
 const ALLOW_TODAY_FOR_TESTING = false;
@@ -262,7 +263,6 @@ function init() {
   setupDealerInfoModal();
   checkEndpointHealth();
   updateDateLabel();
-
 
   renderModelGrid();
   $('clearGrid').addEventListener('click', clearGrid);
@@ -482,7 +482,7 @@ function buildConfirmationText(rows, totals) {
   const activeModels = countActiveModels(rows);
   const metricLines = METRICS.map(metric => `${metric.label}: ${totals[metric.key]}`).join('\n');
   const nonZeroLines = buildNonZeroLines(rows);
-  let text = `Confirm daily report\n\nDealer: ${dealer.code} | ${dealer.name}\nReport date: ${displayDate($('reportDate').value)}\nOfficial dealer deadline: 10:00am\nCorrection window: until 12:00pm\n\n${metricLines}\nActive models: ${activeModels}\nTotal daily activity: ${totals.total_activity}\n\nNon-zero activity check:\n${nonZeroLines}\n\nThis will become the active submission for this dealer/date. A full audit copy will be retained.`;
+  let text = `GWM - Go With More\n\nReady to submit your daily report?\n\nThank you for keeping your reporting current. Accurate daily reporting helps GWM maintain stronger sales visibility across the Southern Region.\n\nDealer: ${dealer.code} | ${dealer.name}\nReport date: ${displayDate($('reportDate').value)}\nDealer deadline: 10:00am\n\n${metricLines}\nActive models: ${activeModels}\nTotal daily activity: ${totals.total_activity}\n\nNon-zero activity check:\n${nonZeroLines}\n\nThis will become the active submission for this dealer/date. If a correction is needed, resubmit the full corrected day.`;
   if (warnings.length) text += `\n\nHigh total warning:\n${warnings.join('\n')}`;
   return text;
 }
@@ -756,7 +756,7 @@ function getSubmissionStatus(clientSubmissionId) {
 function normaliseStatusAsReceipt(status) {
   return {
     success: true,
-    version: '2.4',
+    version: '2.4.2',
     submission_id: status.submission_id,
     dealer_code: status.dealer_code,
     dealer_name: status.dealer_name,
