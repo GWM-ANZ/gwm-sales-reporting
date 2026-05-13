@@ -31,12 +31,21 @@
     <span>Report date: <strong id="reportDateLabel">--</strong></span>
     <span>Prior-day activity only</span>
     <span>Southern Region live form</span>
+    <span>System: <strong id="systemStatus">Checking</strong></span>
+  </section>
+
+  <section class="dealer-help-strip" aria-label="Dealer instructions">
+    <div>
+      <strong>New to daily reporting?</strong>
+      <span>Open the dealer information guide before entering data. It explains each row, each activity type and how corrections work.</span>
+    </div>
+    <button type="button" class="info-btn" id="openDealerInfo">Dealer information</button>
   </section>
 
   <form id="reportForm" class="card" autocomplete="off">
     <div class="card-title">Dealer report details</div>
 
-    <div class="form-grid three">
+    <div class="form-grid four">
       <label class="field">
         <span>Dealer</span>
         <select id="dealer" required></select>
@@ -49,30 +58,24 @@
         <span>Report date</span>
         <input id="reportDate" type="date" required>
       </label>
+      <label class="field">
+        <span>Access code <em>if supplied</em></span>
+        <input id="pilotCode" type="text" maxlength="40" placeholder="Optional">
+      </label>
     </div>
 
-    <div class="direction-wrap">
-      <div class="field-label">Daily direction</div>
-      <div class="direction-group" role="radiogroup" aria-label="Daily direction">
-        <button type="button" class="direction-btn" data-direction="Up">Up</button>
-        <button type="button" class="direction-btn" data-direction="Flat">Flat</button>
-        <button type="button" class="direction-btn" data-direction="Down">Down</button>
-      </div>
-      <input id="direction" type="hidden" required>
-    </div>
 
     <div class="totals-bar" aria-label="Live totals">
-      <div><span>Enquiry</span><strong id="total-enquiry">0</strong></div>
+      <div><span>Enquiries</span><strong id="total-enquiry">0</strong></div>
       <div><span>Test drives</span><strong id="total-test_drives">0</strong></div>
-      <div><span>New sold</span><strong id="total-new_sold">0</strong></div>
-      <div><span>Fleet 5+</span><strong id="total-fleet_5_plus">0</strong></div>
+      <div><span>Sold</span><strong id="total-new_sold">0</strong></div>
       <div><span>Demo sold</span><strong id="total-demo_sold">0</strong></div>
     </div>
 
     <div class="grid-head">
       <div>
-        <div class="card-title tight">Model bucket grid</div>
-        <p>Enter completed activity for the selected report date. Blank daily activity fields submit as zero. Forecast is deliberately removed from the daily grid to prevent accidental forecast wipe.</p>
+        <div class="card-title tight">Daily activity by model</div>
+        <p>Enter completed activity for the selected report date. On mobile, activity is grouped first, then each model has a number field underneath it.</p>
       </div>
       <button type="button" class="ghost-btn" id="clearGrid">Clear grid</button>
     </div>
@@ -82,10 +85,9 @@
         <thead>
           <tr>
             <th>Model bucket</th>
-            <th>Enquiry</th>
+            <th>Enquiries</th>
             <th>Test drives</th>
-            <th>New sold</th>
-            <th>Fleet 5+</th>
+            <th>Sold</th>
             <th>Demo sold</th>
             <th>Total</th>
           </tr>
@@ -94,9 +96,11 @@
       </table>
     </div>
 
+    <div id="mobileActivity" class="mobile-activity" aria-label="Mobile activity entry"></div>
+
     <div class="review-panel" aria-live="polite">
       <strong>Before submit</strong>
-      <p id="reviewText">Select dealer, report date and activity. The final confirmation will show the dealer, date and total activity before anything is sent.</p>
+      <p id="reviewText">Select dealer, report date and activity. The final check will show the dealer, date, total activity and active model count before anything is sent.</p>
     </div>
 
     <div id="message" class="message" hidden></div>
@@ -110,6 +114,54 @@
     </div>
   </form>
 </main>
+
+<div id="dealerInfoModal" class="modal-backdrop" hidden>
+  <div class="dealer-info-modal" role="dialog" aria-modal="true" aria-labelledby="dealerInfoTitle">
+    <button type="button" class="modal-close" id="closeDealerInfo" aria-label="Close dealer information">×</button>
+    <div class="modal-kicker">Dealer handover guide</div>
+    <h2 id="dealerInfoTitle">How to use the daily sales report</h2>
+    <p class="modal-lead">This form captures yesterday's completed dealer activity by model. It is designed so a sales manager, stock controller or delegated admin can complete the report without needing extra context.</p>
+
+    <div class="info-grid">
+      <section>
+        <h3>1. What day to report</h3>
+        <p>Submit completed activity for the selected report date only. The default is yesterday. Do not enter today's activity and do not enter expected future activity.</p>
+      </section>
+      <section>
+        <h3>2. What each activity means</h3>
+        <ul>
+          <li><b>Enquiries:</b> genuine customer enquiries requiring sales follow-up.</li>
+          <li><b>Test drives:</b> completed drives only, not future bookings.</li>
+          <li><b>Sold:</b> new vehicle customer orders or contracts written.</li>
+          <li><b>Demo sold:</b> demonstrator vehicle sold. Do not count the same unit again as Sold.</li>
+        </ul>
+      </section>
+      <section>
+        <h3>3. How to enter data</h3>
+        <p>On desktop, use the model grid. On mobile, open each activity section first, then enter the number against each model. Blank fields submit as zero.</p>
+      </section>
+      <section>
+        <h3>4. Corrections</h3>
+        <p>To fix a mistake, submit the full corrected day again for the same dealer and date. The latest version becomes active and the earlier version stays in the audit history.</p>
+      </section>
+      <section>
+        <h3>5. Before submitting</h3>
+        <p>Check dealer, submitted-by name, report date, top totals and active model count. If everything is zero, only continue if it was genuinely a zero-activity day.</p>
+      </section>
+      <section>
+        <h3>6. What not to do</h3>
+        <ul>
+          <li>Do not use negative numbers. Submit a corrected full day instead.</li>
+          <li>Do not count one customer activity twice.</li>
+          <li>Do not close the page until the receipt appears.</li>
+          <li>Do not use this page for forecast, Fleet 5+ or daily direction.</li>
+        </ul>
+      </section>
+    </div>
+
+    <div class="modal-footer-note">Need proof? Take a screenshot of the receipt after submission.</div>
+  </div>
+</div>
 
 <script>
 'use strict';
@@ -165,10 +217,9 @@ const MODELS = [
 ];
 
 const METRICS = [
-  { key: 'enquiry', label: 'Enquiry' },
+  { key: 'enquiry', label: 'Enquiries' },
   { key: 'test_drives', label: 'Test drives' },
-  { key: 'new_sold', label: 'New sold' },
-  { key: 'fleet_5_plus', label: 'Fleet 5+' },
+  { key: 'new_sold', label: 'Sold' },
   { key: 'demo_sold', label: 'Demo sold' }
 ];
 
@@ -206,28 +257,23 @@ function init() {
   if (dealerFromUrl && DEALERS.some(d => d.code === dealerFromUrl)) dealerSelect.disabled = true;
 
   $('submittedBy').value = localStorage.getItem('gwm_submitted_by') || '';
+  $('pilotCode').value = localStorage.getItem('gwm_pilot_code') || '';
   $('reportDate').value = yesterdayISO();
   $('reportDate').max = ALLOW_TODAY_FOR_TESTING ? todayISO() : yesterdayISO();
   $('reportDate').addEventListener('change', updateDateLabel);
   $('dealer').addEventListener('change', updateReviewText);
   $('submittedBy').addEventListener('input', updateReviewText);
+  $('pilotCode').addEventListener('input', () => localStorage.setItem('gwm_pilot_code', clean($('pilotCode').value)));
+  setupDealerInfoModal();
+  checkEndpointHealth();
   updateDateLabel();
 
-  document.querySelectorAll('.direction-btn').forEach(btn => {
-    btn.addEventListener('click', () => setDirection(btn.dataset.direction));
-  });
 
   renderModelGrid();
   $('clearGrid').addEventListener('click', clearGrid);
   $('reportForm').addEventListener('submit', submitReport);
   setInterval(updateClock, 1000);
   updateClock();
-  updateReviewText();
-}
-
-function setDirection(value) {
-  $('direction').value = value;
-  document.querySelectorAll('.direction-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.direction === value));
   updateReviewText();
 }
 
@@ -247,13 +293,61 @@ function renderModelGrid() {
   body.innerHTML = MODELS.map((model, modelIndex) => {
     const cells = METRICS.map(metric => `
       <td data-label="${metric.label}">
-        <input class="grid-input" inputmode="numeric" min="0" step="1" type="number" data-model-index="${modelIndex}" data-key="${metric.key}" placeholder="0" aria-label="${model} ${metric.label}">
+        <input class="grid-input" data-view="desktop" inputmode="numeric" min="0" step="1" type="number" data-model-index="${modelIndex}" data-key="${metric.key}" placeholder="0" aria-label="${model} ${metric.label}">
       </td>`).join('');
     return `<tr><td class="model-name" data-label="Model">${model}</td>${cells}<td class="row-total" data-label="Total" id="rowTotal-${modelIndex}">0</td></tr>`;
   }).join('');
-  document.querySelectorAll('.grid-input').forEach(input => input.addEventListener('input', updateTotals));
+
+  renderMobileActivity();
+  document.querySelectorAll('.grid-input').forEach(input => input.addEventListener('input', handleGridInput));
 }
 
+function renderMobileActivity() {
+  const mobile = $('mobileActivity');
+  if (!mobile) return;
+  mobile.innerHTML = `
+    <div class="mobile-helper">Choose the activity first, then enter the number beside each model.</div>
+    ${METRICS.map((metric, metricIndex) => `
+      <details class="metric-section" ${metricIndex === 0 ? 'open' : ''}>
+        <summary>
+          <span>${metric.label}</span>
+          <strong id="mobile-total-${metric.key}">0</strong>
+        </summary>
+        <div class="metric-model-list">
+          ${MODELS.map((model, modelIndex) => `
+            <label class="metric-model-row">
+              <span>${model}</span>
+              <input class="grid-input" data-view="mobile" inputmode="numeric" min="0" step="1" type="number" data-model-index="${modelIndex}" data-key="${metric.key}" placeholder="0" aria-label="${metric.label} ${model}">
+            </label>
+          `).join('')}
+        </div>
+      </details>
+    `).join('')}
+  `;
+}
+
+function handleGridInput(event) {
+  syncMatchingInputs(event.target);
+  updateTotals();
+}
+
+function syncMatchingInputs(source) {
+  const modelIndex = source.dataset.modelIndex;
+  const key = source.dataset.key;
+  document.querySelectorAll(`.grid-input[data-model-index="${modelIndex}"][data-key="${key}"]`).forEach(input => {
+    if (input !== source) input.value = source.value;
+  });
+}
+
+function getMetricInput(modelIndex, key) {
+  return document.querySelector(`.grid-input[data-view="desktop"][data-model-index="${modelIndex}"][data-key="${key}"]`) ||
+    document.querySelector(`.grid-input[data-model-index="${modelIndex}"][data-key="${key}"]`);
+}
+
+function getMetricValue(modelIndex, key) {
+  const input = getMetricInput(modelIndex, key);
+  return safeWholeNumber(input ? input.value : '');
+}
 function getDealer() {
   const code = $('dealer').value;
   return DEALERS.find(d => d.code === code) || null;
@@ -263,7 +357,6 @@ function collectRows() {
   const dealer = getDealer();
   const reportDate = $('reportDate').value;
   const submittedBy = clean($('submittedBy').value);
-  const direction = $('direction').value;
   const duration = Math.max(0, Math.round((Date.now() - startedAt) / 1000));
 
   return MODELS.map((model, modelIndex) => {
@@ -273,16 +366,16 @@ function collectRows() {
       dealer_name: dealer.name,
       region: REGION,
       submitted_by: submittedBy,
-      direction,
+      direction: '',
       is_complete_submission: true,
-      input_method: 'single_index_v2_1',
+      input_method: 'single_index_v2_3_activity_first',
       submission_duration_seconds: duration,
       model_bucket: model
     };
     METRICS.forEach(metric => {
-      const input = document.querySelector(`[data-model-index="${modelIndex}"][data-key="${metric.key}"]`);
-      row[metric.key] = safeWholeNumber(input.value);
+      row[metric.key] = getMetricValue(modelIndex, metric.key);
     });
+    row.fleet_5_plus = 0;
     return row;
   });
 }
@@ -300,8 +393,7 @@ function updateTotals() {
     MODELS.forEach((model, modelIndex) => {
       let rowTotal = 0;
       METRICS.forEach(metric => {
-        const input = document.querySelector(`[data-model-index="${modelIndex}"][data-key="${metric.key}"]`);
-        const val = safeWholeNumber(input.value);
+        const val = getMetricValue(modelIndex, metric.key);
         totals[metric.key] += val;
         rowTotal += val;
       });
@@ -310,32 +402,44 @@ function updateTotals() {
   } catch (err) {
     showMessage(err.message, 'error');
   }
-  METRICS.forEach(metric => { $(`total-${metric.key}`).textContent = totals[metric.key]; });
+  METRICS.forEach(metric => {
+    const totalBox = $(`total-${metric.key}`);
+    if (totalBox) totalBox.textContent = totals[metric.key];
+    const mobileTotal = $(`mobile-total-${metric.key}`);
+    if (mobileTotal) mobileTotal.textContent = totals[metric.key];
+  });
   updateReviewText();
 }
 
 function updateReviewText() {
   const dealer = getDealer();
-  let total = 0;
+  let totals = Object.fromEntries(METRICS.map(m => [m.key, 0]));
+  totals.total_activity = 0;
+  let activeModels = 0;
   try {
-    total = calculateTotals(collectRowsSafe()).total_activity;
-  } catch (err) {
-    total = 0;
-  }
-  const dealerText = dealer ? `${dealer.code} | ${dealer.name}` : 'No dealer selected';
+    const rows = collectRowsSafe();
+    totals = calculateTotals(rows);
+    activeModels = countActiveModels(rows);
+  } catch (err) {}
   const dateText = displayDate($('reportDate').value);
-  const directionText = $('direction').value || 'No direction selected';
-  $('reviewText').textContent = `${dealerText}. Report date ${dateText}. Direction ${directionText}. Total daily activity ${total}.`;
+  if (!dealer) {
+    $('reviewText').textContent = `Select dealer, report date and activity. Current total daily activity is ${totals.total_activity}.`;
+    return;
+  }
+  $('reviewText').textContent = `${dealer.name}, you are submitting ${totals.total_activity} total activities for ${dateText} across ${activeModels} active model${activeModels === 1 ? '' : 's'}. Please check the activity sections before sending.`;
 }
 
+function countActiveModels(rows) {
+  return rows.filter(row => METRICS.some(metric => Number(row[metric.key] || 0) > 0)).length;
+}
 function collectRowsSafe() {
   const dealer = getDealer() || { code: '', name: '' };
   return MODELS.map((model, modelIndex) => {
     const row = { dealer_code: dealer.code, dealer_name: dealer.name, model_bucket: model };
     METRICS.forEach(metric => {
-      const input = document.querySelector(`[data-model-index="${modelIndex}"][data-key="${metric.key}"]`);
-      row[metric.key] = safeWholeNumber(input ? input.value : '');
+      row[metric.key] = getMetricValue(modelIndex, metric.key);
     });
+    row.fleet_5_plus = 0;
     return row;
   });
 }
@@ -343,13 +447,12 @@ function collectRowsSafe() {
 function clearGrid() {
   document.querySelectorAll('.grid-input').forEach(input => input.value = '');
   updateTotals();
-  showMessage('Grid cleared. Nothing has been submitted.', 'info');
+  showMessage('Entry cleared. Nothing has been submitted.', 'info');
 }
 
 function validateForm() {
   if (!getDealer()) return 'Select a dealer.';
   if (!clean($('submittedBy').value)) return 'Enter submitted by.';
-  if (!$('direction').value) return 'Select Up, Flat or Down.';
   if (!$('reportDate').value) return 'Select a report date.';
   if (!ALLOW_TODAY_FOR_TESTING && $('reportDate').value >= todayISO()) return 'Reporting is retrospective. Select yesterday or an earlier date.';
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('PASTE_DEPLOYED')) return 'Paste the deployed Apps Script Web App URL into APPS_SCRIPT_URL.';
@@ -364,11 +467,12 @@ function buildConfirmationText(rows, totals) {
     if (totals[metric.key] > SOFT_MAX_METRIC) warnings.push(`${metric.label}: ${totals[metric.key]}`);
   });
 
-  let text = `Confirm submission\n\nDealer: ${dealer.code} | ${dealer.name}\nReport date: ${displayDate($('reportDate').value)}\nDirection: ${$('direction').value}\nTotal daily activity: ${totals.total_activity}\n\nThis will become the active submission for this dealer/date. A full audit copy will be retained.`;
+  const activeModels = countActiveModels(rows);
+  const metricLines = METRICS.map(metric => `${metric.label}: ${totals[metric.key]}`).join('\n');
+  let text = `Confirm daily report\n\nDealer: ${dealer.code} | ${dealer.name}\nReport date: ${displayDate($('reportDate').value)}\n\n${metricLines}\nActive models: ${activeModels}\nTotal daily activity: ${totals.total_activity}\n\nThis will become the active submission for this dealer/date. A full audit copy will be retained.`;
   if (warnings.length) text += `\n\nHigh total warning:\n${warnings.join('\n')}`;
   return text;
 }
-
 async function submitReport(event) {
   event.preventDefault();
   const error = validateForm();
@@ -391,7 +495,7 @@ async function submitReport(event) {
   const submitBtn = $('submitBtn');
   submitBtn.disabled = true;
   submitBtn.textContent = 'Submitting...';
-  showMessage('Submitting daily report. Please wait for confirmation before closing this page.', 'info');
+  showMessage('Sending daily report. Keep this page open until the receipt appears.', 'info');
 
   try {
     const clientSubmissionId = buildClientSubmissionId();
@@ -400,7 +504,7 @@ async function submitReport(event) {
       return_mode: 'iframe',
       client_submission_id: clientSubmissionId,
       rows,
-      code: '',
+      code: clean($('pilotCode').value),
       dealer_token: dealerToken,
       confirm_all_zero: confirmedAllZero,
       client_submitted_at: new Date().toISOString(),
@@ -414,13 +518,94 @@ async function submitReport(event) {
 
     localStorage.setItem('gwm_submitted_by', clean($('submittedBy').value));
     localStorage.setItem('gwm_dealer_code', getDealer().code);
+    localStorage.setItem('gwm_pilot_code', clean($('pilotCode').value));
     showReceipt(result);
   } catch (err) {
-    showMessage(`Confirmation took longer than expected. Please do not submit again immediately. GWM can verify your submission in the reporting log. Details: ${err.message}`, 'error');
+    showMessage(`We could not confirm the final receipt. Please do not submit again yet. Check the Sheet/reporting log first. Details: ${err.message}`, 'error');
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submit Daily Report';
   }
+}
+
+
+function setupDealerInfoModal() {
+  const modal = $('dealerInfoModal');
+  const openBtn = $('openDealerInfo');
+  const closeBtn = $('closeDealerInfo');
+  if (!modal || !openBtn || !closeBtn) return;
+
+  const open = () => {
+    modal.hidden = false;
+    document.body.classList.add('modal-open');
+    closeBtn.focus();
+  };
+  const close = () => {
+    modal.hidden = true;
+    document.body.classList.remove('modal-open');
+    openBtn.focus();
+  };
+
+  openBtn.addEventListener('click', open);
+  closeBtn.addEventListener('click', close);
+  modal.addEventListener('click', event => { if (event.target === modal) close(); });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !modal.hidden) close();
+  });
+}
+
+function checkEndpointHealth() {
+  const status = $('systemStatus');
+  if (!status) return;
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('PASTE_DEPLOYED')) {
+    status.textContent = 'Setup needed';
+    status.className = 'status-bad';
+    return;
+  }
+  getEndpointHealth()
+    .then(result => {
+      if (result && result.success) {
+        status.textContent = 'Online';
+        status.className = 'status-ok';
+      } else {
+        status.textContent = 'Check required';
+        status.className = 'status-warn';
+      }
+    })
+    .catch(() => {
+      status.textContent = 'Check required';
+      status.className = 'status-warn';
+    });
+}
+
+function getEndpointHealth() {
+  return new Promise((resolve, reject) => {
+    const callbackName = `gwmHealthCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const script = document.createElement('script');
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      reject(new Error('Health request timed out.'));
+    }, 5000);
+
+    function cleanup() {
+      window.clearTimeout(timeout);
+      try { delete window[callbackName]; } catch (err) { window[callbackName] = undefined; }
+      script.remove();
+    }
+
+    window[callbackName] = payload => {
+      cleanup();
+      resolve(payload);
+    };
+
+    script.onerror = () => {
+      cleanup();
+      reject(new Error('Health request failed.'));
+    };
+
+    script.src = `${APPS_SCRIPT_URL}?health=1&callback=${encodeURIComponent(callbackName)}&_=${Date.now()}`;
+    document.body.appendChild(script);
+  });
 }
 
 function buildClientSubmissionId() {
@@ -466,7 +651,7 @@ function postAndVerifySubmission(payload, clientSubmissionId) {
         }
         if (status && status.found && status.status === 'processing' && !activeStatusMessageShown) {
           activeStatusMessageShown = true;
-          showMessage('Submission received by GWM. Finalising confirmation now...', 'info');
+          showMessage('Report received by GWM. Finalising the receipt now...', 'info');
         }
       } catch (err) {
         // Keep polling until timeout. Temporary status lookup errors should not cause duplicate submissions.
@@ -567,18 +752,23 @@ function normaliseStatusAsReceipt(status) {
     rows_written: status.rows_written,
     audit_rows_written: status.audit_rows_written,
     revision: status.revision,
-    is_late: status.is_late,
+    is_late: status.is_late === true || status.is_late === 'TRUE' || status.is_late === 'true',
     total_activity: status.total_activity
   };
 }
 
 function showReceipt(result) {
+  const rows = collectRowsSafe();
+  const totals = calculateTotals(rows);
+  const activeModels = countActiveModels(rows);
+  const dealerName = result.dealer_name || (getDealer() ? getDealer().name : 'Dealer');
+  const reportDate = displayDate(result.report_date || $('reportDate').value);
+  const summary = `Nice work, ${dealerName}. Your ${reportDate} report is in. We recorded ${formatMetric(totals.enquiry, 'enquiry', 'enquiries')}, ${formatMetric(totals.test_drives, 'test drive', 'test drives')}, ${formatMetric(totals.new_sold, 'sold', 'sold')} and ${formatMetric(totals.demo_sold, 'demo sold', 'demo sold')} across ${activeModels} active model${activeModels === 1 ? '' : 's'}.`;
   const receipt = `
     <div class="receipt">
-      <strong>Submission received</strong>
+      <strong>Report sent</strong>
+      <p class="receipt-main">${escapeHtml(summary)}</p>
       <p><b>Receipt:</b> ${escapeHtml(result.submission_id || 'Not supplied')}</p>
-      <p><b>Dealer:</b> ${escapeHtml(result.dealer_code || '')} | ${escapeHtml(result.dealer_name || '')}</p>
-      <p><b>Report date:</b> ${displayDate(result.report_date || $('reportDate').value)}</p>
       <p><b>Rows written:</b> ${Number(result.rows_written || 0)} current rows and ${Number(result.audit_rows_written || 0)} audit rows</p>
       <p><b>Revision:</b> ${Number(result.revision || 1)}</p>
       <p><b>Late flag:</b> ${result.is_late ? 'TRUE' : 'FALSE'}</p>
@@ -586,6 +776,10 @@ function showReceipt(result) {
   showMessage(receipt, 'success', true);
 }
 
+function formatMetric(value, singular, plural) {
+  const number = Number(value || 0);
+  return `${number} ${number === 1 ? singular : plural}`;
+}
 function escapeHtml(value) {
   return String(value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 }
