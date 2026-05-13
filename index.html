@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#000000">
-  <title>GWM Daily Sales Input v2.4 | Southern Region</title>
+  <title>GWM Daily Sales Input v2.4.1 | Southern Region</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -27,13 +27,11 @@
 </header>
 
 <main class="page">
-  <section class="status-strip">
+  <section class="status-strip clean-status-strip">
     <span>Report date: <strong id="reportDateLabel">--</strong></span>
     <span>Prior-day activity only</span>
     <span>Dealer deadline: <strong>10:00am</strong></span>
-    <span>Correction window: <strong>until 12:00pm</strong></span>
-    <span>Southern Region live form</span>
-    <span>System: <strong id="systemStatus">Checking</strong></span>
+    <span>Southern Region</span>
   </section>
 
   <section class="dealer-help-strip" aria-label="Dealer instructions">
@@ -91,7 +89,6 @@
             <th>Test drives</th>
             <th>Sold</th>
             <th>Demo sold</th>
-            <th>Total</th>
           </tr>
         </thead>
         <tbody id="modelBody"></tbody>
@@ -110,7 +107,7 @@
     <div class="submit-panel">
       <div>
         <strong>Daily reporting</strong>
-        <p>Submit prior-day completed activity before 10:00am. Corrections can be resubmitted until the internal 12:00pm check. The latest dealer/date submission is used for reporting and all versions remain in audit.</p>
+        <p>Submit prior-day completed activity before 10:00am. If a correction is required, resubmit the full corrected day. The latest dealer/date submission is used for reporting and all versions remain in audit.</p>
       </div>
       <button type="submit" class="primary-btn" id="submitBtn">Submit Daily Report</button>
     </div>
@@ -299,7 +296,7 @@ function renderModelGrid() {
       <td data-label="${metric.label}">
         <input class="grid-input" data-view="desktop" inputmode="numeric" min="0" step="1" type="number" data-model-index="${modelIndex}" data-key="${metric.key}" placeholder="0" aria-label="${model} ${metric.label}">
       </td>`).join('');
-    return `<tr id="modelRow-${modelIndex}"><td class="model-name" data-label="Model">${model}</td>${cells}<td class="row-total" data-label="Total" id="rowTotal-${modelIndex}">0</td></tr>`;
+    return `<tr id="modelRow-${modelIndex}"><td class="model-name" data-label="Model">${model}</td>${cells}</tr>`;
   }).join('');
 
   renderMobileActivity();
@@ -372,7 +369,7 @@ function collectRows() {
       submitted_by: submittedBy,
       direction: '',
       is_complete_submission: true,
-      input_method: 'single_index_v2_4_activity_first',
+      input_method: 'single_index_v2_4_1_activity_first',
       submission_duration_seconds: duration,
       model_bucket: model
     };
@@ -401,7 +398,8 @@ function updateTotals() {
         totals[metric.key] += val;
         rowTotal += val;
       });
-      $(`rowTotal-${modelIndex}`).textContent = rowTotal;
+      const rowTotalCell = $(`rowTotal-${modelIndex}`);
+      if (rowTotalCell) rowTotalCell.textContent = rowTotal;
       const tr = $(`modelRow-${modelIndex}`);
       if (tr) tr.classList.toggle('has-activity', rowTotal > 0);
     });
