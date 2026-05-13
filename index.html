@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#000000">
-  <title>GWM Daily Sales Input v2.4.2 | Southern Region</title>
-  <!-- GWM_INDEX_VERSION: 2.4.2-live-backend -->
+  <title>GWM Daily Sales Input v2.4.3 | Southern Region</title>
+  <!-- GWM_INDEX_VERSION: 2.4.3-fast-receipt -->
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -169,8 +169,8 @@ const REGION = 'Southern Region';
 const CUTOFF_HOUR = 10;
 const ALLOW_TODAY_FOR_TESTING = false;
 const RESPONSE_TIMEOUT_MS = 15000;
-const STATUS_POLL_INTERVAL_MS = 1500;
-const STATUS_POLL_TIMEOUT_MS = 45000;
+const STATUS_POLL_INTERVAL_MS = 1200;
+const STATUS_POLL_TIMEOUT_MS = 18000;
 const SOFT_MAX_METRIC = 100;
 
 const DEALERS = [
@@ -363,7 +363,7 @@ function collectRows() {
       submitted_by: submittedBy,
       direction: '',
       is_complete_submission: true,
-      input_method: 'single_index_v2_4_2_activity_first',
+      input_method: 'single_index_v2_4_3_activity_first',
       submission_duration_seconds: duration,
       model_bucket: model
     };
@@ -533,7 +533,12 @@ async function submitReport(event) {
     localStorage.setItem('gwm_dealer_code', getDealer().code);
     showReceipt(result);
   } catch (err) {
-    showMessage(`We could not confirm the final receipt. Please do not submit again yet. Check the Sheet/reporting log first. Details: ${err.message}`, 'error');
+    const msg = String(err && err.message ? err.message : err);
+    if (msg.includes('Receipt is still finalising')) {
+      showMessage('Report sent. The final receipt is still catching up. Please do not submit again. Check the Sheet/reporting log or refresh the report view in a minute.', 'info');
+    } else {
+      showMessage(`Submission not confirmed. Please do not keep resubmitting. Check the Sheet/reporting log first. Details: ${msg}`, 'error');
+    }
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submit Daily Report';
@@ -670,7 +675,16 @@ function postAndVerifySubmission(payload, clientSubmissionId) {
       }
 
       if (Date.now() - started >= STATUS_POLL_TIMEOUT_MS) {
-        finish(reject, new Error('Status lookup timed out. The report may still have been received. Check the Sheet/reporting log before resubmitting.'));
+        try {
+          const verified = await verifyCurrentSubmission(payload);
+          if (verified && verified.found && verified.status === 'completed' && verified.matched_total !== false) {
+            finish(resolve, normaliseStatusAsReceipt(verified));
+            return;
+          }
+        } catch (verifyErr) {
+          // Fall through to pending message below.
+        }
+        finish(reject, new Error('Receipt is still finalising. The report may have been received. Please check the reporting log before resubmitting.'));
         return;
       }
       pollTimer = window.setTimeout(poll, STATUS_POLL_INTERVAL_MS);
@@ -753,10 +767,57 @@ function getSubmissionStatus(clientSubmissionId) {
   });
 }
 
+
+function verifyCurrentSubmission(payload) {
+  const dealer = getDealer();
+  const rows = payload && Array.isArray(payload.rows) ? payload.rows : collectRowsSafe();
+  const totals = calculateTotals(rows);
+  const reportDate = $('reportDate').value;
+
+  return new Promise((resolve, reject) => {
+    const callbackName = `gwmVerifyCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const script = document.createElement('script');
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      reject(new Error('Verification request timed out.'));
+    }, 7000);
+
+    function cleanup() {
+      window.clearTimeout(timeout);
+      try { delete window[callbackName]; } catch (err) { window[callbackName] = undefined; }
+      script.remove();
+    }
+
+    window[callbackName] = payload => {
+      cleanup();
+      resolve(payload);
+    };
+
+    script.onerror = () => {
+      cleanup();
+      reject(new Error('Verification request failed.'));
+    };
+
+    const query = [
+      'verify=1',
+      `dealer=${encodeURIComponent(dealer ? dealer.code : '')}`,
+      `date=${encodeURIComponent(reportDate)}`,
+      `total=${encodeURIComponent(totals.total_activity)}`,
+      `token=${encodeURIComponent(dealerToken)}`,
+      `callback=${encodeURIComponent(callbackName)}`,
+      `_=${Date.now()}`
+    ].join('&');
+
+    script.src = `${APPS_SCRIPT_URL}?${query}`;
+    document.body.appendChild(script);
+  });
+}
+
+
 function normaliseStatusAsReceipt(status) {
   return {
     success: true,
-    version: '2.4.2',
+    version: '2.4.3',
     submission_id: status.submission_id,
     dealer_code: status.dealer_code,
     dealer_name: status.dealer_name,
