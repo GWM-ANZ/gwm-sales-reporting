@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#000000">
-  <title>GWM Daily Sales Input v2.4.5 | Southern Region</title>
-  <!-- GWM_INDEX_VERSION: 2.4.5-concise-receipt -->
+  <title>GWM Daily Sales Input v2.4.6 | Southern Region</title>
+  <!-- GWM_INDEX_VERSION: 2.4.6-same-day-5pm -->
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -30,7 +30,7 @@
 <main class="page">
   <section class="status-strip clean-status-strip">
     <span>Report date: <strong id="reportDateLabel">--</strong></span>
-    <span>Prior-day activity only</span>
+    <span>Prior-day or same-day after 5:00pm</span>
     <span>Dealer deadline: <strong>10:00am</strong></span>
     <span>Southern Region</span>
   </section>
@@ -104,7 +104,7 @@
     <div class="submit-panel">
       <div>
         <strong>Daily reporting</strong>
-        <p>Submit prior-day completed activity before 10:00am. If a correction is required, resubmit the full corrected day. The latest dealer/date submission is used for reporting and all versions remain in audit.</p>
+        <p>Submit completed activity before 10:00am for prior-day reporting. Same-day reporting opens from 5:00pm for dealers who prefer to close out the day. If a correction is required, resubmit the full corrected day.</p>
       </div>
       <button type="submit" class="primary-btn" id="submitBtn">Submit Daily Report</button>
     </div>
@@ -116,20 +116,20 @@
     <button type="button" class="modal-close" id="closeDealerInfo" aria-label="Close dealer information">×</button>
     <div class="modal-kicker">Dealer handover guide</div>
     <h2 id="dealerInfoTitle">How to use the daily sales report</h2>
-    <p class="modal-lead">This form captures yesterday's completed dealer activity by model. It is designed so a sales manager, stock controller or delegated admin can complete the report without needing extra context.</p>
+    <p class="modal-lead">This form captures completed dealer activity by model. Dealers can report the previous day before 10:00am, or close out the current day from 5:00pm once activity is complete.</p>
 
     <div class="info-grid">
       <section>
         <h3>1. What day to report</h3>
-        <p>Submit completed activity for the selected report date only. The default is yesterday. Do not enter today's activity and do not enter expected future activity.</p>
+        <p>Before 5:00pm, submit yesterday's completed activity. From 5:00pm, you can submit today's completed activity if the day is ready to close out. If more activity occurs after submitting, resubmit the full corrected day. Do not enter future activity or expected activity.</p>
       </section>
       <section>
         <h3>2. What each activity means</h3>
         <ul>
-          <li><b>Enquiries:</b> genuine customer enquiries requiring sales follow-up.</li>
-          <li><b>Test drives:</b> completed drives only, not future bookings.</li>
+          <li><b>Enquiries:</b> genuine customer contacts that require sales follow-up.</li>
+          <li><b>Test drives:</b> completed test drives only, not future bookings.</li>
           <li><b>Sold:</b> new vehicle customer orders or contracts written.</li>
-          <li><b>Demo sold:</b> demonstrator vehicle sold. Do not count the same unit again as Sold.</li>
+          <li><b>Demo sold:</b> demonstrator vehicles sold. Do not count the same unit again as Sold.</li>
           <li><b>Important:</b> if one customer enquires, test drives and signs on the same report date, record one in each completed stage. Do not count the same activity twice within the same stage.</li>
         </ul>
       </section>
@@ -139,11 +139,11 @@
       </section>
       <section>
         <h3>4. Corrections</h3>
-        <p>To fix a mistake, submit the full corrected day again for the same dealer and date. The latest version becomes active and the earlier version stays in the audit history.</p>
+        <p>To fix a mistake, submit the full corrected day again for the same dealer and date. The latest version becomes active and the earlier version stays in the audit history. Do not submit only the difference.</p>
       </section>
       <section>
         <h3>5. Before submitting</h3>
-        <p>Check dealer, submitted-by name, report date, top totals and active model count. If everything is zero, only continue if it was genuinely a zero-activity day.</p>
+        <p>Check dealer, submitted-by name, report date and top totals. If everything is zero, only continue if it was genuinely a zero-activity day.</p>
       </section>
       <section>
         <h3>6. What not to do</h3>
@@ -151,7 +151,7 @@
           <li>Do not use negative numbers. Submit a corrected full day instead.</li>
           <li>Do not enter negative numbers for cancellations. Submit the full corrected day instead.</li>
           <li>Do not count the same activity twice within one stage.</li>
-          <li>Do not close the page until the receipt appears.</li>
+          <li>Do not close the page until the Report received message appears.</li>
           <li>Do not use this page for forecast, Fleet 5+ or daily direction.</li>
         </ul>
       </section>
@@ -167,6 +167,7 @@
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzxexGjsYhSflPvfvuzBnXWcUK6Zksq9AQ8QLY-2lftBviWn2kt9PZPdWSJ1bitE1Q9mQ/exec';
 const REGION = 'Southern Region';
 const CUTOFF_HOUR = 10;
+const SAME_DAY_UNLOCK_HOUR = 17;
 const ALLOW_TODAY_FOR_TESTING = false;
 const RESPONSE_TIMEOUT_MS = 15000;
 const STATUS_POLL_INTERVAL_MS = 1000;
@@ -233,7 +234,19 @@ function toISODate(date) { return `${date.getFullYear()}-${pad(date.getMonth() +
 function todayISO() { return toISODate(new Date()); }
 function yesterdayISO() { const d = new Date(); d.setDate(d.getDate() - 1); return toISODate(d); }
 function displayDate(iso) { if (!iso) return '--'; const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; }
-function isLateNow() { return new Date().getHours() >= CUTOFF_HOUR; }
+function isLateNow() { return isReportLateForDate($('reportDate') ? $('reportDate').value : yesterdayISO()); }
+function canReportTodayNow() { return new Date().getHours() >= SAME_DAY_UNLOCK_HOUR; }
+function reportDateMaxISO() { return (ALLOW_TODAY_FOR_TESTING || canReportTodayNow()) ? todayISO() : yesterdayISO(); }
+function reportDateDefaultISO() { return canReportTodayNow() ? todayISO() : yesterdayISO(); }
+function isReportLateForDate(isoDate) {
+  if (!isoDate) return false;
+  const today = todayISO();
+  const yesterday = yesterdayISO();
+  if (isoDate === today && canReportTodayNow()) return false;
+  if (isoDate === yesterday) return new Date().getHours() >= CUTOFF_HOUR;
+  if (isoDate < yesterday) return true;
+  return isoDate > today;
+}
 function clean(value) { return String(value || '').trim(); }
 
 function safeWholeNumber(value) {
@@ -255,8 +268,8 @@ function init() {
   if (dealerFromUrl && DEALERS.some(d => d.code === dealerFromUrl)) dealerSelect.disabled = true;
 
   $('submittedBy').value = localStorage.getItem('gwm_submitted_by') || '';
-  $('reportDate').value = yesterdayISO();
-  $('reportDate').max = ALLOW_TODAY_FOR_TESTING ? todayISO() : yesterdayISO();
+  $('reportDate').value = reportDateDefaultISO();
+  $('reportDate').max = reportDateMaxISO();
   $('reportDate').addEventListener('change', updateDateLabel);
   $('dealer').addEventListener('change', updateReviewText);
   $('submittedBy').addEventListener('input', updateReviewText);
@@ -280,7 +293,15 @@ function updateDateLabel() {
 function updateClock() {
   const now = new Date();
   $('clock').textContent = now.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: true });
-  $('lateBadge').classList.toggle('visible', isLateNow());
+
+  const reportDate = $('reportDate');
+  if (reportDate) {
+    const newMax = reportDateMaxISO();
+    if (reportDate.max !== newMax) reportDate.max = newMax;
+  }
+
+  const late = isLateNow();
+  $('lateBadge').classList.toggle('visible', late);
 }
 
 function renderModelGrid() {
@@ -363,7 +384,7 @@ function collectRows() {
       submitted_by: submittedBy,
       direction: '',
       is_complete_submission: true,
-      input_method: 'single_index_v2_4_5_activity_first',
+      input_method: 'single_index_v2_4_6_activity_first',
       submission_duration_seconds: duration,
       model_bucket: model
     };
@@ -452,7 +473,14 @@ function validateForm() {
   if (!getDealer()) return 'Select a dealer.';
   if (!clean($('submittedBy').value)) return 'Enter submitted by.';
   if (!$('reportDate').value) return 'Select a report date.';
-  if (!ALLOW_TODAY_FOR_TESTING && $('reportDate').value >= todayISO()) return 'Reporting is retrospective. Select yesterday or an earlier date.';
+
+  const selectedDate = $('reportDate').value;
+  if (selectedDate > todayISO()) return 'Future report dates are not allowed.';
+
+  if (!ALLOW_TODAY_FOR_TESTING && selectedDate === todayISO() && !canReportTodayNow()) {
+    return 'Current-day reporting opens from 5:00pm. Select yesterday for prior-day reporting.';
+  }
+
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('PASTE_DEPLOYED')) return 'Paste the deployed Apps Script Web App URL into APPS_SCRIPT_URL.';
   try { collectRows(); } catch (err) { return err.message; }
   return '';
@@ -778,7 +806,7 @@ function buildFallbackReceipt(payload) {
 
   return {
     success: true,
-    version: '2.4.4',
+    version: '2.4.6',
     pending_receipt: true,
     submission_id: '',
     dealer_code: dealer ? dealer.code : '',
@@ -787,7 +815,7 @@ function buildFallbackReceipt(payload) {
     rows_written: MODELS.length,
     audit_rows_written: MODELS.length,
     revision: '',
-    is_late: isLateNow(),
+    is_late: isReportLateForDate(reportDate),
     total_activity: totals.total_activity
   };
 }
