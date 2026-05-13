@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#000000">
-  <title>GWM Daily Sales Input v2.4.6 | Southern Region</title>
-  <!-- GWM_INDEX_VERSION: 2.4.6-same-day-5pm -->
+  <title>GWM Daily Sales Input v2.4.8 | Southern Region</title>
+  <!-- GWM_INDEX_VERSION: 2.4.8-full-dropin-token-receipt-instructions -->
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -30,7 +30,7 @@
 <main class="page">
   <section class="status-strip clean-status-strip">
     <span>Report date: <strong id="reportDateLabel">--</strong></span>
-    <span>Prior-day or same-day after 5:00pm</span>
+    <span>Yesterday before 5:00pm | Today after 5:00pm</span>
     <span>Dealer deadline: <strong>10:00am</strong></span>
     <span>Southern Region</span>
   </section>
@@ -45,7 +45,6 @@
 
   <form id="reportForm" class="card" autocomplete="off">
     <div class="card-title">Dealer report details</div>
-
     <div class="form-grid three">
       <label class="field">
         <span>Dealer</span>
@@ -60,7 +59,6 @@
         <input id="reportDate" type="date" required>
       </label>
     </div>
-
 
     <div class="totals-bar" aria-label="Live totals">
       <div><span>Enquiries</span><strong id="total-enquiry">0</strong></div>
@@ -104,7 +102,7 @@
     <div class="submit-panel">
       <div>
         <strong>Daily reporting</strong>
-        <p>Submit completed activity before 10:00am for prior-day reporting. Same-day reporting opens from 5:00pm for dealers who prefer to close out the day. If a correction is required, resubmit the full corrected day.</p>
+        <p>Before 5:00pm, submit yesterday's completed activity. From 5:00pm, same-day reporting is available if the day is ready to close out. Corrections must be submitted as the full corrected day.</p>
       </div>
       <button type="submit" class="primary-btn" id="submitBtn">Submit Daily Report</button>
     </div>
@@ -116,7 +114,7 @@
     <button type="button" class="modal-close" id="closeDealerInfo" aria-label="Close dealer information">×</button>
     <div class="modal-kicker">Dealer handover guide</div>
     <h2 id="dealerInfoTitle">How to use the daily sales report</h2>
-    <p class="modal-lead">This form captures completed dealer activity by model. Dealers can report the previous day before 10:00am, or close out the current day from 5:00pm once activity is complete.</p>
+    <p class="modal-lead">This form captures completed dealer activity by model. Before 5:00pm, submit yesterday's completed activity. From 5:00pm, submit today's completed activity only when the day is ready to close out.</p>
 
     <div class="info-grid">
       <section>
@@ -126,11 +124,11 @@
       <section>
         <h3>2. What each activity means</h3>
         <ul>
-          <li><b>Enquiries:</b> genuine customer contacts that require sales follow-up.</li>
-          <li><b>Test drives:</b> completed test drives only, not future bookings.</li>
+          <li><b>Enquiries:</b> genuine Non-GWM Direct customer contact points, including walk-in, dealer-direct Meta and phone call activity.</li>
+          <li><b>Test drives:</b> completed test drives.</li>
           <li><b>Sold:</b> new vehicle customer orders or contracts written.</li>
           <li><b>Demo sold:</b> demonstrator vehicles sold. Do not count the same unit again as Sold.</li>
-          <li><b>Important:</b> if one customer enquires, test drives and signs on the same report date, record one in each completed stage. Do not count the same activity twice within the same stage.</li>
+          <li><b>Important:</b> if one customer enquires, test drives and signs on the same report date, record one in each completed stage.</li>
         </ul>
       </section>
       <section>
@@ -148,11 +146,7 @@
       <section>
         <h3>6. What not to do</h3>
         <ul>
-          <li>Do not use negative numbers. Submit a corrected full day instead.</li>
-          <li>Do not enter negative numbers for cancellations. Submit the full corrected day instead.</li>
-          <li>Do not count the same activity twice within one stage.</li>
           <li>Do not close the page until the Report received message appears.</li>
-          <li>Do not use this page for forecast, Fleet 5+ or daily direction.</li>
         </ul>
       </section>
     </div>
@@ -223,159 +217,245 @@ const METRICS = [
 ];
 
 const startedAt = Date.now();
-let activeStatusMessageShown = false;
 const urlParams = new URLSearchParams(window.location.search);
-const dealerToken = urlParams.get('token') || '';
-const dealerFromUrl = urlParams.get('dealer') || '';
+const dealerToken = clean(urlParams.get('token'));
+const dealerFromUrl = clean(urlParams.get('dealer')).toUpperCase();
+let activeStatusMessageShown = false;
+let pendingSubmission = null;
+let pendingIframe = null;
+let pendingForm = null;
+
 const $ = id => document.getElementById(id);
 
 function pad(n) { return String(n).padStart(2, '0'); }
+function clean(value) { return String(value === undefined || value === null ? '' : value).trim(); }
 function toISODate(date) { return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`; }
 function todayISO() { return toISODate(new Date()); }
 function yesterdayISO() { const d = new Date(); d.setDate(d.getDate() - 1); return toISODate(d); }
-function displayDate(iso) { if (!iso) return '--'; const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; }
-function isLateNow() { return isReportLateForDate($('reportDate') ? $('reportDate').value : yesterdayISO()); }
+function displayDate(iso) { if (!iso) return '--'; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; }
 function canReportTodayNow() { return new Date().getHours() >= SAME_DAY_UNLOCK_HOUR; }
 function reportDateMaxISO() { return (ALLOW_TODAY_FOR_TESTING || canReportTodayNow()) ? todayISO() : yesterdayISO(); }
 function reportDateDefaultISO() { return canReportTodayNow() ? todayISO() : yesterdayISO(); }
+function isRealDealerCode(code) { return DEALERS.some(dealer => dealer.code === clean(code).toUpperCase()); }
+function getDealer() { return DEALERS.find(dealer => dealer.code === $('dealer').value); }
+
+function isBadToken(token) {
+  const value = clean(token);
+  if (!value) return true;
+  const upper = value.toUpperCase();
+  if (upper.includes('REAL_') || upper.includes('TEST_TOKEN') || upper.includes('PASTE_')) return true;
+  if (upper === 'TOKEN' || upper === 'DEALER_TOKEN') return true;
+  return value.length < 12;
+}
+
 function isReportLateForDate(isoDate) {
   if (!isoDate) return false;
   const today = todayISO();
   const yesterday = yesterdayISO();
+  const hour = new Date().getHours();
+
   if (isoDate === today && canReportTodayNow()) return false;
-  if (isoDate === yesterday) return new Date().getHours() >= CUTOFF_HOUR;
+  if (isoDate === yesterday) return hour >= CUTOFF_HOUR;
   if (isoDate < yesterday) return true;
   return isoDate > today;
 }
-function clean(value) { return String(value || '').trim(); }
 
 function safeWholeNumber(value) {
   const text = clean(value);
   if (text === '') return 0;
-  if (!/^\d+$/.test(text)) throw new Error('Only whole numbers of zero or above can be submitted.');
-  const number = Number(text);
-  if (!Number.isSafeInteger(number) || number < 0) throw new Error('Only whole numbers of zero or above can be submitted.');
-  return number;
+  if (!/^\d+$/.test(text)) return NaN;
+  return Number(text);
 }
 
-function init() {
-  const dealerSelect = $('dealer');
-  dealerSelect.innerHTML = '<option value="">Select dealer</option>' + DEALERS.map(d => `<option value="${d.code}">${d.code} | ${d.name}</option>`).join('');
-
-  const rememberedDealer = localStorage.getItem('gwm_dealer_code') || '';
-  const initialDealer = dealerFromUrl || rememberedDealer;
-  if (initialDealer && DEALERS.some(d => d.code === initialDealer)) dealerSelect.value = initialDealer;
-  if (dealerFromUrl && DEALERS.some(d => d.code === dealerFromUrl)) dealerSelect.disabled = true;
-
-  $('submittedBy').value = localStorage.getItem('gwm_submitted_by') || '';
-  $('reportDate').value = reportDateDefaultISO();
-  $('reportDate').max = reportDateMaxISO();
-  $('reportDate').addEventListener('change', updateDateLabel);
-  $('dealer').addEventListener('change', updateReviewText);
-  $('submittedBy').addEventListener('input', updateReviewText);
-  setupDealerInfoModal();
-  checkEndpointHealth();
-  updateDateLabel();
-
-  renderModelGrid();
-  $('clearGrid').addEventListener('click', clearGrid);
-  $('reportForm').addEventListener('submit', submitReport);
-  setInterval(updateClock, 1000);
-  updateClock();
-  updateReviewText();
+function makeClientSubmissionId(dealerCode, reportDate) {
+  const stamp = Date.now();
+  const random = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `${dealerCode}-${reportDate.replace(/-/g, '')}-${stamp}-${random}`;
 }
 
-function updateDateLabel() {
-  $('reportDateLabel').textContent = displayDate($('reportDate').value);
-  updateReviewText();
+function showMessage(text, type) {
+  const message = $('message');
+  message.hidden = false;
+  message.className = `message ${type || ''}`.trim();
+  message.innerHTML = text;
 }
 
-function updateClock() {
-  const now = new Date();
-  $('clock').textContent = now.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: true });
+function clearMessage() {
+  const message = $('message');
+  message.hidden = true;
+  message.className = 'message';
+  message.textContent = '';
+}
 
-  const reportDate = $('reportDate');
-  if (reportDate) {
-    const newMax = reportDateMaxISO();
-    if (reportDate.max !== newMax) reportDate.max = newMax;
+function showFatalAccessError(text) {
+  showMessage(text, 'error');
+  $('submitBtn').disabled = true;
+  $('submitBtn').textContent = 'Access link invalid';
+}
+
+function populateDealers() {
+  const select = $('dealer');
+  select.innerHTML = '';
+
+  DEALERS.forEach(dealer => {
+    const option = document.createElement('option');
+    option.value = dealer.code;
+    option.textContent = `${dealer.code} - ${dealer.name}`;
+    select.appendChild(option);
+  });
+
+  const storedDealer = clean(localStorage.getItem('gwm_dealer_code')).toUpperCase();
+  const preferred = isRealDealerCode(dealerFromUrl) ? dealerFromUrl : (isRealDealerCode(storedDealer) ? storedDealer : DEALERS[0].code);
+  select.value = preferred;
+
+  if (dealerFromUrl && isRealDealerCode(dealerFromUrl)) {
+    select.disabled = true;
   }
-
-  const late = isLateNow();
-  $('lateBadge').classList.toggle('visible', late);
 }
 
-function renderModelGrid() {
+function setupDate() {
+  const input = $('reportDate');
+  input.max = reportDateMaxISO();
+  input.value = reportDateDefaultISO();
+  updateDateLabels();
+}
+
+function updateDateLabels() {
+  const dateValue = $('reportDate').value;
+  $('reportDateLabel').textContent = displayDate(dateValue);
+
+  const badge = $('lateBadge');
+  if (isReportLateForDate(dateValue)) {
+    badge.hidden = false;
+    badge.textContent = 'LATE';
+  } else {
+    badge.hidden = true;
+  }
+}
+
+function setupClock() {
+  const tick = () => {
+    const now = new Date();
+    $('clock').textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    updateDateLabels();
+  };
+  tick();
+  setInterval(tick, 30000);
+}
+
+function inputId(modelIndex, metricKey) {
+  return `m-${modelIndex}-${metricKey}`;
+}
+
+function createNumberInput(modelIndex, metric) {
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.min = '0';
+  input.step = '1';
+  input.inputMode = 'numeric';
+  input.pattern = '[0-9]*';
+  input.value = '0';
+  input.id = inputId(modelIndex, metric.key);
+  input.dataset.modelIndex = String(modelIndex);
+  input.dataset.metric = metric.key;
+  input.addEventListener('input', () => {
+    normaliseMetricInput(input);
+    updateTotals();
+  });
+  input.addEventListener('blur', () => {
+    if (clean(input.value) === '') input.value = '0';
+    normaliseMetricInput(input);
+    updateTotals();
+  });
+  return input;
+}
+
+function normaliseMetricInput(input) {
+  const value = safeWholeNumber(input.value);
+  if (Number.isNaN(value) || value < 0) {
+    input.value = '0';
+    return;
+  }
+  input.value = String(value);
+}
+
+function buildGrid() {
   const body = $('modelBody');
-  body.innerHTML = MODELS.map((model, modelIndex) => {
-    const cells = METRICS.map(metric => `
-      <td data-label="${metric.label}">
-        <input class="grid-input" data-view="desktop" inputmode="numeric" min="0" step="1" type="number" data-model-index="${modelIndex}" data-key="${metric.key}" placeholder="0" aria-label="${model} ${metric.label}">
-      </td>`).join('');
-    return `<tr id="modelRow-${modelIndex}"><td class="model-name" data-label="Model">${model}</td>${cells}</tr>`;
-  }).join('');
-
-  renderMobileActivity();
-  document.querySelectorAll('.grid-input').forEach(input => input.addEventListener('input', handleGridInput));
-}
-
-function renderMobileActivity() {
   const mobile = $('mobileActivity');
-  if (!mobile) return;
-  mobile.innerHTML = `
-    <div class="mobile-helper">Choose the activity first, then enter the number beside each model.</div>
-    ${METRICS.map((metric, metricIndex) => `
-      <details class="metric-section" ${metricIndex === 0 ? 'open' : ''}>
-        <summary>
-          <span>${metric.label}</span>
-          <strong id="mobile-total-${metric.key}">0</strong>
-        </summary>
-        <div class="metric-model-list">
-          ${MODELS.map((model, modelIndex) => `
-            <label class="metric-model-row">
-              <span>${model}</span>
-              <input class="grid-input" data-view="mobile" inputmode="numeric" min="0" step="1" type="number" data-model-index="${modelIndex}" data-key="${metric.key}" placeholder="0" aria-label="${metric.label} ${model}">
-            </label>
-          `).join('')}
-        </div>
-      </details>
-    `).join('')}
-  `;
-}
+  body.innerHTML = '';
+  mobile.innerHTML = '';
 
-function handleGridInput(event) {
-  syncMatchingInputs(event.target);
+  MODELS.forEach((model, modelIndex) => {
+    const tr = document.createElement('tr');
+    const modelCell = document.createElement('td');
+    modelCell.textContent = model;
+    tr.appendChild(modelCell);
+
+    METRICS.forEach(metric => {
+      const td = document.createElement('td');
+      td.appendChild(createNumberInput(modelIndex, metric));
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+
+  METRICS.forEach(metric => {
+    const section = document.createElement('section');
+    section.className = 'mobile-metric-card';
+    const title = document.createElement('h3');
+    title.textContent = metric.label;
+    section.appendChild(title);
+
+    MODELS.forEach((model, modelIndex) => {
+      const row = document.createElement('label');
+      row.className = 'mobile-model-row';
+      const span = document.createElement('span');
+      span.textContent = model;
+      const desktopInput = $(inputId(modelIndex, metric.key));
+      const input = desktopInput.cloneNode(true);
+      input.id = `${inputId(modelIndex, metric.key)}-mobile`;
+      input.addEventListener('input', () => {
+        normaliseMetricInput(input);
+        desktopInput.value = input.value || '0';
+        updateTotals();
+      });
+      input.addEventListener('blur', () => {
+        if (clean(input.value) === '') input.value = '0';
+        normaliseMetricInput(input);
+        desktopInput.value = input.value || '0';
+        updateTotals();
+      });
+      desktopInput.addEventListener('input', () => { input.value = desktopInput.value || '0'; });
+      row.appendChild(span);
+      row.appendChild(input);
+      section.appendChild(row);
+    });
+    mobile.appendChild(section);
+  });
+
   updateTotals();
 }
 
-function syncMatchingInputs(source) {
-  const modelIndex = source.dataset.modelIndex;
-  const key = source.dataset.key;
-  document.querySelectorAll(`.grid-input[data-model-index="${modelIndex}"][data-key="${key}"]`).forEach(input => {
-    if (input !== source) input.value = source.value;
-  });
+function getMetricValue(modelIndex, metricKey) {
+  const input = $(inputId(modelIndex, metricKey));
+  const value = safeWholeNumber(input ? input.value : '0');
+  return Number.isNaN(value) ? 0 : value;
 }
 
-function getMetricInput(modelIndex, key) {
-  return document.querySelector(`.grid-input[data-view="desktop"][data-model-index="${modelIndex}"][data-key="${key}"]`) ||
-    document.querySelector(`.grid-input[data-model-index="${modelIndex}"][data-key="${key}"]`);
+function setMetricValue(modelIndex, metricKey, value) {
+  const desktop = $(inputId(modelIndex, metricKey));
+  const mobile = $(`${inputId(modelIndex, metricKey)}-mobile`);
+  if (desktop) desktop.value = String(value);
+  if (mobile) mobile.value = String(value);
 }
 
-function getMetricValue(modelIndex, key) {
-  const input = getMetricInput(modelIndex, key);
-  return safeWholeNumber(input ? input.value : '');
-}
-function getDealer() {
-  const code = $('dealer').value;
-  return DEALERS.find(d => d.code === code) || null;
-}
-
-function collectRows() {
+function getRows() {
   const dealer = getDealer();
-  const reportDate = $('reportDate').value;
   const submittedBy = clean($('submittedBy').value);
-  const duration = Math.max(0, Math.round((Date.now() - startedAt) / 1000));
+  const reportDate = $('reportDate').value;
+  const durationSeconds = Math.round((Date.now() - startedAt) / 1000);
 
-  return MODELS.map((model, modelIndex) => {
+  return MODELS.map((model, index) => {
     const row = {
       report_date: reportDate,
       dealer_code: dealer.code,
@@ -384,191 +464,291 @@ function collectRows() {
       submitted_by: submittedBy,
       direction: '',
       is_complete_submission: true,
-      input_method: 'single_index_v2_4_6_activity_first',
-      submission_duration_seconds: duration,
-      model_bucket: model
+      input_method: 'single_index_v2_4_8_activity_first',
+      submission_duration_seconds: durationSeconds,
+      model_bucket: model,
+      fleet_5_plus: 0
     };
-    METRICS.forEach(metric => {
-      row[metric.key] = getMetricValue(modelIndex, metric.key);
-    });
-    row.fleet_5_plus = 0;
+    METRICS.forEach(metric => { row[metric.key] = getMetricValue(index, metric.key); });
     return row;
   });
 }
 
-function calculateTotals(rows) {
-  const totals = Object.fromEntries(METRICS.map(m => [m.key, 0]));
-  rows.forEach(row => METRICS.forEach(metric => { totals[metric.key] += Number(row[metric.key] || 0); }));
-  totals.total_activity = METRICS.reduce((sum, metric) => sum + totals[metric.key], 0);
-  return totals;
+function totalActivity(rows) {
+  return rows.reduce((total, row) => {
+    return total + METRICS.reduce((sum, metric) => sum + Number(row[metric.key] || 0), 0);
+  }, 0);
 }
 
 function updateTotals() {
-  let totals = Object.fromEntries(METRICS.map(m => [m.key, 0]));
-  try {
-    MODELS.forEach((model, modelIndex) => {
-      let rowTotal = 0;
-      METRICS.forEach(metric => {
-        const val = getMetricValue(modelIndex, metric.key);
-        totals[metric.key] += val;
-        rowTotal += val;
-      });
-      const rowTotalCell = $(`rowTotal-${modelIndex}`);
-      if (rowTotalCell) rowTotalCell.textContent = rowTotal;
-      const tr = $(`modelRow-${modelIndex}`);
-      if (tr) tr.classList.toggle('has-activity', rowTotal > 0);
-    });
-  } catch (err) {
-    showMessage(err.message, 'error');
-  }
+  const totals = {};
+  METRICS.forEach(metric => { totals[metric.key] = 0; });
+
+  MODELS.forEach((model, index) => {
+    METRICS.forEach(metric => { totals[metric.key] += getMetricValue(index, metric.key); });
+  });
+
   METRICS.forEach(metric => {
-    const totalBox = $(`total-${metric.key}`);
-    if (totalBox) totalBox.textContent = totals[metric.key];
-    const mobileTotal = $(`mobile-total-${metric.key}`);
-    if (mobileTotal) mobileTotal.textContent = totals[metric.key];
+    const total = $(`total-${metric.key}`);
+    if (total) total.textContent = String(totals[metric.key]);
   });
-  updateReviewText();
-}
 
-function updateReviewText() {
   const dealer = getDealer();
-  let totals = Object.fromEntries(METRICS.map(m => [m.key, 0]));
-  totals.total_activity = 0;
-  let activeModels = 0;
-  try {
-    const rows = collectRowsSafe();
-    totals = calculateTotals(rows);
-    activeModels = countActiveModels(rows);
-  } catch (err) {}
-  const dateText = displayDate($('reportDate').value);
-  if (!dealer) {
-    $('reviewText').textContent = `Select dealer, report date and activity. Current total daily activity is ${totals.total_activity}.`;
-    return;
-  }
-  $('reviewText').textContent = `${dealer.name}, you are submitting ${totals.total_activity} total activities for ${dateText} across ${activeModels} active model${activeModels === 1 ? '' : 's'}. Please check the activity sections before sending.`;
+  const activeModels = MODELS.filter((model, index) => METRICS.some(metric => getMetricValue(index, metric.key) > 0)).length;
+  const allActivity = Object.values(totals).reduce((a, b) => a + b, 0);
+  $('reviewText').textContent = `${dealer ? dealer.name : 'Dealer'}, you are submitting ${allActivity} total activities for ${displayDate($('reportDate').value)} across ${activeModels} active ${activeModels === 1 ? 'model' : 'models'}. Please check the activity sections before sending.`;
 }
 
-function countActiveModels(rows) {
-  return rows.filter(row => METRICS.some(metric => Number(row[metric.key] || 0) > 0)).length;
-}
-function collectRowsSafe() {
-  const dealer = getDealer() || { code: '', name: '' };
-  return MODELS.map((model, modelIndex) => {
-    const row = { dealer_code: dealer.code, dealer_name: dealer.name, model_bucket: model };
+function validateBeforeSubmit(rows) {
+  const dealer = getDealer();
+  const reportDate = $('reportDate').value;
+  const submittedBy = clean($('submittedBy').value);
+
+  if (!dealer) throw new Error('Select a dealer.');
+  if (!submittedBy) throw new Error('Submitted by is required.');
+  if (!reportDate) throw new Error('Report date is required.');
+
+  if (dealerFromUrl && dealer.code !== dealerFromUrl) {
+    throw new Error('Selected dealer does not match the dealer link. Use the original dealer reporting link.');
+  }
+
+  if (isBadToken(dealerToken)) {
+    throw new Error('Dealer access link is missing or invalid. Use the original dealer reporting link provided by GWM.');
+  }
+
+  const today = todayISO();
+  if (reportDate > today) throw new Error('Future report dates are not allowed.');
+  if (!ALLOW_TODAY_FOR_TESTING && reportDate === today && !canReportTodayNow()) {
+    throw new Error('Current-day reporting opens from 5:00pm. Select yesterday for prior-day reporting.');
+  }
+
+  rows.forEach(row => {
     METRICS.forEach(metric => {
-      row[metric.key] = getMetricValue(modelIndex, metric.key);
+      const value = Number(row[metric.key]);
+      if (!Number.isInteger(value) || value < 0) throw new Error(`${metric.label} for ${row.model_bucket} must be a whole number of zero or above.`);
+      if (value > 9999) throw new Error(`${metric.label} for ${row.model_bucket} is above the hard limit.`);
     });
-    row.fleet_5_plus = 0;
-    return row;
   });
+
+  const softWarnings = [];
+  rows.forEach(row => {
+    METRICS.forEach(metric => {
+      const value = Number(row[metric.key]);
+      if (value > SOFT_MAX_METRIC) softWarnings.push(`${row.model_bucket} ${metric.label}: ${value}`);
+    });
+  });
+  if (softWarnings.length && !window.confirm(`Some entries are unusually high. Continue?\n\n${softWarnings.slice(0, 8).join('\n')}`)) {
+    throw new Error('Submission cancelled so high values can be checked.');
+  }
+}
+
+function buildPayload(clientSubmissionId, rows, confirmedAllZero) {
+  return {
+    return_mode: 'iframe',
+    client_submission_id: clientSubmissionId,
+    rows,
+    code: '',
+    dealer_token: dealerToken,
+    confirm_all_zero: confirmedAllZero,
+    client_submitted_at: new Date().toISOString(),
+    user_agent: navigator.userAgent
+  };
+}
+
+function cleanupPendingSubmission() {
+  if (pendingSubmission && pendingSubmission.timeoutId) window.clearTimeout(pendingSubmission.timeoutId);
+  if (pendingIframe) pendingIframe.remove();
+  if (pendingForm) pendingForm.remove();
+  pendingSubmission = null;
+  pendingIframe = null;
+  pendingForm = null;
+}
+
+function submitViaIframe(payload) {
+  return new Promise((resolve, reject) => {
+    cleanupPendingSubmission();
+
+    const iframeName = `gwmSubmitFrame_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const iframe = document.createElement('iframe');
+    iframe.name = iframeName;
+    iframe.style.display = 'none';
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = APPS_SCRIPT_URL;
+    form.target = iframeName;
+    form.style.display = 'none';
+
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'payload';
+    input.value = JSON.stringify(payload);
+    form.appendChild(input);
+
+    const timeoutId = window.setTimeout(() => {
+      pollSubmissionStatus(payload.client_submission_id, payload.rows[0].dealer_code, payload.rows[0].report_date, totalActivity(payload.rows))
+        .then(resolve)
+        .catch(() => reject(new Error('Submission timed out before confirmation. Please check if it appeared in reporting before resubmitting.')));
+    }, RESPONSE_TIMEOUT_MS);
+
+    pendingSubmission = { clientSubmissionId: payload.client_submission_id, resolve, reject, timeoutId };
+    pendingIframe = iframe;
+    pendingForm = form;
+
+    document.body.appendChild(iframe);
+    document.body.appendChild(form);
+    form.submit();
+  });
+}
+
+window.addEventListener('message', event => {
+  if (!pendingSubmission) return;
+  const data = event.data || {};
+  if (data.source !== 'gwm-daily-reporting') return;
+
+  const result = data.payload || {};
+  const resolver = pendingSubmission.resolve;
+  const rejecter = pendingSubmission.reject;
+  cleanupPendingSubmission();
+
+  if (result && result.success === true) {
+    resolver(result);
+  } else {
+    rejecter(new Error(result && result.error ? result.error : 'Submission rejected by backend.'));
+  }
+});
+
+function jsonp(url) {
+  return new Promise((resolve, reject) => {
+    const callbackName = `gwmCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const script = document.createElement('script');
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      reject(new Error('Request timed out.'));
+    }, 5000);
+
+    function cleanup() {
+      window.clearTimeout(timeout);
+      try { delete window[callbackName]; } catch (err) { window[callbackName] = undefined; }
+      script.remove();
+    }
+
+    window[callbackName] = payload => {
+      cleanup();
+      resolve(payload);
+    };
+    script.onerror = () => {
+      cleanup();
+      reject(new Error('Request failed.'));
+    };
+    script.src = `${url}${url.includes('?') ? '&' : '?'}callback=${encodeURIComponent(callbackName)}`;
+    document.body.appendChild(script);
+  });
+}
+
+function pollSubmissionStatus(clientSubmissionId, dealerCode, reportDate, expectedTotal) {
+  const started = Date.now();
+  return new Promise((resolve, reject) => {
+    const tick = () => {
+      const statusUrl = `${APPS_SCRIPT_URL}?status=${encodeURIComponent(clientSubmissionId)}`;
+      jsonp(statusUrl).then(status => {
+        if (status && status.status === 'completed') {
+          resolve({
+            success: true,
+            submission_id: status.submission_id,
+            dealer_code: status.dealer_code,
+            dealer_name: status.dealer_name,
+            report_date: status.report_date,
+            rows_written: Number(status.rows_written || 0),
+            audit_rows_written: Number(status.audit_rows_written || 0),
+            revision: Number(status.revision || 0),
+            is_late: status.is_late,
+            total_activity: Number(status.total_activity || expectedTotal || 0),
+            source: 'status_poll'
+          });
+          return;
+        }
+        if (status && status.status === 'failed') {
+          reject(new Error(status.error || status.message || 'Submission failed.'));
+          return;
+        }
+        if (Date.now() - started > STATUS_POLL_TIMEOUT_MS) {
+          reject(new Error('Status was not confirmed in time.'));
+          return;
+        }
+        window.setTimeout(tick, STATUS_POLL_INTERVAL_MS);
+      }).catch(() => {
+        if (Date.now() - started > STATUS_POLL_TIMEOUT_MS) {
+          reject(new Error('Status was not confirmed in time.'));
+        } else {
+          window.setTimeout(tick, STATUS_POLL_INTERVAL_MS);
+        }
+      });
+    };
+    tick();
+  });
+}
+
+function showReceipt(result) {
+  const dealerName = result.dealer_name || (getDealer() ? getDealer().name : 'Dealer');
+  const reportDate = displayDate(result.report_date || $('reportDate').value);
+  const total = Number(result.total_activity || 0);
+  const revision = Number(result.revision || 1);
+  const lateText = (String(result.is_late).toUpperCase() === 'TRUE' || result.is_late === true) ? '<p>This report was submitted after the 10:00am dealer deadline.</p>' : '';
+  const correctionText = revision > 1 ? `<p>This was saved as correction revision ${revision}. The latest version is now active and earlier versions remain in audit history.</p>` : '';
+
+  showMessage(`
+    <strong>Report received</strong>
+    <p><b>${dealerName}</b> daily activity for <b>${reportDate}</b> has been sent to GWM reporting.</p>
+    <p>Total activity submitted: <b>${total}</b>. Rows written: <b>${result.rows_written || MODELS.length}</b>.</p>
+    ${lateText}
+    ${correctionText}
+  `, 'success');
 }
 
 function clearGrid() {
-  document.querySelectorAll('.grid-input').forEach(input => input.value = '');
+  MODELS.forEach((model, modelIndex) => {
+    METRICS.forEach(metric => setMetricValue(modelIndex, metric.key, 0));
+  });
   updateTotals();
-  showMessage('Entry cleared. Nothing has been submitted.', 'info');
+  clearMessage();
 }
 
-function validateForm() {
-  if (!getDealer()) return 'Select a dealer.';
-  if (!clean($('submittedBy').value)) return 'Enter submitted by.';
-  if (!$('reportDate').value) return 'Select a report date.';
-
-  const selectedDate = $('reportDate').value;
-  if (selectedDate > todayISO()) return 'Future report dates are not allowed.';
-
-  if (!ALLOW_TODAY_FOR_TESTING && selectedDate === todayISO() && !canReportTodayNow()) {
-    return 'Current-day reporting opens from 5:00pm. Select yesterday for prior-day reporting.';
-  }
-
-  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('PASTE_DEPLOYED')) return 'Paste the deployed Apps Script Web App URL into APPS_SCRIPT_URL.';
-  try { collectRows(); } catch (err) { return err.message; }
-  return '';
-}
-
-function buildNonZeroLines(rows) {
-  const lines = [];
-  rows.forEach(row => {
-    const parts = METRICS
-      .filter(metric => Number(row[metric.key] || 0) > 0)
-      .map(metric => `${metric.label}: ${row[metric.key]}`);
-    if (parts.length) lines.push(`${row.model_bucket} - ${parts.join(', ')}`);
-  });
-  if (!lines.length) return 'No model activity entered.';
-  const shown = lines.slice(0, 14).join('\n');
-  const extra = lines.length > 14 ? `\n...plus ${lines.length - 14} more model rows with activity.` : '';
-  return shown + extra;
-}
-
-function buildConfirmationText(rows, totals) {
-  const dealer = getDealer();
-  const warnings = [];
-  METRICS.forEach(metric => {
-    if (totals[metric.key] > SOFT_MAX_METRIC) warnings.push(`${metric.label}: ${totals[metric.key]}`);
-  });
-
-  const activeModels = countActiveModels(rows);
-  const metricLines = METRICS.map(metric => `${metric.label}: ${totals[metric.key]}`).join('\n');
-  const nonZeroLines = buildNonZeroLines(rows);
-  let text = `GWM - Go With More\n\nReady to submit your daily report?\n\nThank you for keeping your reporting current. Accurate daily reporting helps GWM maintain stronger sales visibility across the Southern Region.\n\nDealer: ${dealer.code} | ${dealer.name}\nReport date: ${displayDate($('reportDate').value)}\nDealer deadline: 10:00am\n\n${metricLines}\nActive models: ${activeModels}\nTotal daily activity: ${totals.total_activity}\n\nNon-zero activity check:\n${nonZeroLines}\n\nThis will become the active submission for this dealer/date. If a correction is needed, resubmit the full corrected day.`;
-  if (warnings.length) text += `\n\nHigh total warning:\n${warnings.join('\n')}`;
-  return text;
-}
-async function submitReport(event) {
+async function handleSubmit(event) {
   event.preventDefault();
-  const error = validateForm();
-  if (error) {
-    showMessage(error, 'error');
-    return;
-  }
-
-  const rows = collectRows();
-  const totals = calculateTotals(rows);
-  let confirmedAllZero = false;
-
-  if (!window.confirm(buildConfirmationText(rows, totals))) return;
-
-  if (totals.total_activity === 0) {
-    confirmedAllZero = window.confirm('You are submitting an all-zero day across every model and metric. Only continue if this is a genuine zero-activity day.');
-    if (!confirmedAllZero) return;
-  }
+  clearMessage();
 
   const submitBtn = $('submitBtn');
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Submitting...';
-  showMessage('Sending daily report. Keep this page open until the receipt appears.', 'info');
-
   try {
-    const clientSubmissionId = buildClientSubmissionId();
-    activeStatusMessageShown = false;
-    const payload = {
-      return_mode: 'iframe',
-      client_submission_id: clientSubmissionId,
-      rows,
-      code: '',
-      dealer_token: dealerToken,
-      confirm_all_zero: confirmedAllZero,
-      client_submitted_at: new Date().toISOString(),
-      user_agent: navigator.userAgent
-    };
+    const rows = getRows();
+    validateBeforeSubmit(rows);
+    const total = totalActivity(rows);
+    let confirmedAllZero = false;
 
-    const result = await postAndVerifySubmission(payload, clientSubmissionId);
-    if (!result || result.success !== true) {
-      throw new Error((result && result.error) || 'Submission was rejected by GWM reporting.');
+    if (total === 0) {
+      confirmedAllZero = window.confirm('Everything is zero. Only continue if this was genuinely a zero-activity day.');
+      if (!confirmedAllZero) throw new Error('Submission cancelled so zero activity can be checked.');
     }
 
+    const dealer = getDealer();
+    const clientSubmissionId = makeClientSubmissionId(dealer.code, $('reportDate').value);
+    const payload = buildPayload(clientSubmissionId, rows, confirmedAllZero);
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+    showMessage('Sending report. Keep this page open until the Report received message appears.', 'pending');
+
+    const result = await submitViaIframe(payload);
     localStorage.setItem('gwm_submitted_by', clean($('submittedBy').value));
-    localStorage.setItem('gwm_dealer_code', getDealer().code);
+    localStorage.setItem('gwm_dealer_code', dealer.code);
     showReceipt(result);
   } catch (err) {
-    const msg = String(err && err.message ? err.message : err);
-    showMessage(`Submission rejected. Please check the entry and try again. Details: ${msg}`, 'error');
+    showMessage(`Submission rejected. Please check the entry and try again. Details: ${clean(err && err.message ? err.message : err)}`, 'error');
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submit Daily Report';
   }
 }
-
 
 function setupDealerInfoModal() {
   const modal = $('dealerInfoModal');
@@ -590,332 +770,51 @@ function setupDealerInfoModal() {
   openBtn.addEventListener('click', open);
   closeBtn.addEventListener('click', close);
   modal.addEventListener('click', event => { if (event.target === modal) close(); });
-  document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && !modal.hidden) close();
-  });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape' && !modal.hidden) close(); });
 }
 
-function checkEndpointHealth() {
-  const status = $('systemStatus');
-  if (!status) return;
-  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('PASTE_DEPLOYED')) {
-    status.textContent = 'Setup needed';
-    status.className = 'status-bad';
-    return;
+function checkAccessLink() {
+  if (!dealerFromUrl) {
+    showMessage('Dealer link is missing a dealer code. Use the original dealer reporting link provided by GWM.', 'error');
+    return false;
   }
-  getEndpointHealth()
-    .then(result => {
-      if (result && result.success) {
-        status.textContent = 'Online';
-        status.className = 'status-ok';
-      } else {
-        status.textContent = 'Check required';
-        status.className = 'status-warn';
-      }
-    })
-    .catch(() => {
-      status.textContent = 'Check required';
-      status.className = 'status-warn';
-    });
-}
-
-function getEndpointHealth() {
-  return new Promise((resolve, reject) => {
-    const callbackName = `gwmHealthCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const script = document.createElement('script');
-    const timeout = window.setTimeout(() => {
-      cleanup();
-      reject(new Error('Health request timed out.'));
-    }, 5000);
-
-    function cleanup() {
-      window.clearTimeout(timeout);
-      try { delete window[callbackName]; } catch (err) { window[callbackName] = undefined; }
-      script.remove();
-    }
-
-    window[callbackName] = payload => {
-      cleanup();
-      resolve(payload);
-    };
-
-    script.onerror = () => {
-      cleanup();
-      reject(new Error('Health request failed.'));
-    };
-
-    script.src = `${APPS_SCRIPT_URL}?health=1&callback=${encodeURIComponent(callbackName)}&_=${Date.now()}`;
-    document.body.appendChild(script);
-  });
-}
-
-function buildClientSubmissionId() {
-  const dealer = getDealer();
-  const dealerCode = dealer ? dealer.code : 'unknown';
-  const date = $('reportDate').value || todayISO();
-  const random = Math.random().toString(36).slice(2, 8).toUpperCase();
-  return `${dealerCode}-${date.replace(/-/g, '')}-${Date.now()}-${random}`;
-}
-
-function postAndVerifySubmission(payload, clientSubmissionId) {
-  return new Promise((resolve, reject) => {
-    let complete = false;
-    let iframeCleanup = null;
-    let pollTimer = null;
-    const started = Date.now();
-
-    const finish = (fn, value) => {
-      if (complete) return;
-      complete = true;
-      if (pollTimer) window.clearTimeout(pollTimer);
-      if (iframeCleanup) iframeCleanup();
-      fn(value);
-    };
-
-    iframeCleanup = postViaIframeNonBlocking(payload, result => {
-      if (!result) return;
-      if (result.success === true) finish(resolve, result);
-      else finish(reject, new Error(result.error || 'Submission was rejected by GWM reporting.'));
-    });
-
-    const poll = async () => {
-      if (complete) return;
-      try {
-        const status = await getSubmissionStatus(clientSubmissionId);
-        if (status && status.found && status.status === 'completed') {
-          finish(resolve, normaliseStatusAsReceipt(status));
-          return;
-        }
-        if (status && status.found && status.status === 'failed') {
-          finish(reject, new Error(status.error || status.message || 'Submission was rejected by GWM reporting.'));
-          return;
-        }
-        if (status && status.found && status.status === 'processing' && !activeStatusMessageShown) {
-          activeStatusMessageShown = true;
-          showMessage('Report received by GWM. Finalising the receipt now...', 'info');
-        }
-      } catch (err) {
-        // Temporary status lookup errors should not create duplicate submissions.
-      }
-
-      if (Date.now() - started >= STATUS_POLL_TIMEOUT_MS) {
-        try {
-          const verified = await verifyCurrentSubmission(payload);
-          if (verified && verified.found && verified.status === 'completed') {
-            finish(resolve, normaliseStatusAsReceipt(verified));
-            return;
-          }
-        } catch (verifyErr) {
-          // If the verification request itself stalls, show a safe dealer-facing receipt.
-        }
-
-        // Dealer-safe fallback:
-        // The POST has been sent. Most validation failures return as explicit rejection above.
-        // Avoid showing a red timeout that causes duplicate submissions and dealer calls.
-        finish(resolve, buildFallbackReceipt(payload));
-        return;
-      }
-
-      pollTimer = window.setTimeout(poll, STATUS_POLL_INTERVAL_MS);
-    };
-
-    pollTimer = window.setTimeout(poll, 600);
-  });
-}
-
-function postViaIframeNonBlocking(payload, onResult) {
-  const frameName = `gwmSubmitFrame_${Date.now()}`;
-  const iframe = document.createElement('iframe');
-  iframe.name = frameName;
-  iframe.style.display = 'none';
-
-  const form = document.createElement('form');
-  form.method = 'POST';
-  form.action = APPS_SCRIPT_URL;
-  form.target = frameName;
-  form.enctype = 'application/x-www-form-urlencoded';
-  form.style.display = 'none';
-
-  const input = document.createElement('input');
-  input.type = 'hidden';
-  input.name = 'payload';
-  input.value = JSON.stringify(payload);
-  form.appendChild(input);
-
-  let cleaned = false;
-  const cleanup = () => {
-    if (cleaned) return;
-    cleaned = true;
-    window.removeEventListener('message', onMessage);
-    setTimeout(() => {
-      iframe.remove();
-      form.remove();
-    }, 1000);
-  };
-
-  function onMessage(event) {
-    const data = event.data || {};
-    if (!data || data.source !== 'gwm-daily-reporting') return;
-    onResult(data.payload);
+  if (!isRealDealerCode(dealerFromUrl)) {
+    showFatalAccessError('Access link invalid. The dealer code in this link is not recognised. Use the original dealer reporting link provided by GWM.');
+    return false;
   }
-
-  window.addEventListener('message', onMessage);
-  document.body.appendChild(iframe);
-  document.body.appendChild(form);
-  form.submit();
-  return cleanup;
+  if (isBadToken(dealerToken)) {
+    showFatalAccessError('Access link invalid. This reporting link is missing a real dealer token. Use the original dealer reporting link provided by GWM.');
+    return false;
+  }
+  return true;
 }
 
-function getSubmissionStatus(clientSubmissionId) {
-  return new Promise((resolve, reject) => {
-    const callbackName = `gwmStatusCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const script = document.createElement('script');
-    const timeout = window.setTimeout(() => {
-      cleanup();
-      reject(new Error('Status request timed out.'));
-    }, 5000);
-
-    function cleanup() {
-      window.clearTimeout(timeout);
-      try { delete window[callbackName]; } catch (err) { window[callbackName] = undefined; }
-      script.remove();
-    }
-
-    window[callbackName] = payload => {
-      cleanup();
-      resolve(payload);
-    };
-
-    script.onerror = () => {
-      cleanup();
-      reject(new Error('Status request failed.'));
-    };
-
-    script.src = `${APPS_SCRIPT_URL}?status=${encodeURIComponent(clientSubmissionId)}&callback=${encodeURIComponent(callbackName)}&_=${Date.now()}`;
-    document.body.appendChild(script);
+function setupEvents() {
+  $('reportForm').addEventListener('submit', handleSubmit);
+  $('clearGrid').addEventListener('click', clearGrid);
+  $('dealer').addEventListener('change', updateTotals);
+  $('submittedBy').addEventListener('input', () => { if (!activeStatusMessageShown) updateTotals(); });
+  $('reportDate').addEventListener('change', () => {
+    const max = reportDateMaxISO();
+    if ($('reportDate').value > max) $('reportDate').value = max;
+    updateDateLabels();
+    updateTotals();
   });
 }
 
+function init() {
+  populateDealers();
+  setupDate();
+  buildGrid();
+  setupClock();
+  setupDealerInfoModal();
+  setupEvents();
 
+  const storedName = localStorage.getItem('gwm_submitted_by');
+  if (storedName) $('submittedBy').value = storedName;
 
-function buildFallbackReceipt(payload) {
-  const dealer = getDealer();
-  const rows = payload && Array.isArray(payload.rows) ? payload.rows : collectRowsSafe();
-  const totals = calculateTotals(rows);
-  const reportDate = $('reportDate').value;
-
-  return {
-    success: true,
-    version: '2.4.6',
-    pending_receipt: true,
-    submission_id: '',
-    dealer_code: dealer ? dealer.code : '',
-    dealer_name: dealer ? dealer.name : '',
-    report_date: reportDate,
-    rows_written: MODELS.length,
-    audit_rows_written: MODELS.length,
-    revision: '',
-    is_late: isReportLateForDate(reportDate),
-    total_activity: totals.total_activity
-  };
-}
-
-function verifyCurrentSubmission(payload) {
-  const dealer = getDealer();
-  const rows = payload && Array.isArray(payload.rows) ? payload.rows : collectRowsSafe();
-  const totals = calculateTotals(rows);
-  const reportDate = $('reportDate').value;
-
-  return new Promise((resolve, reject) => {
-    const callbackName = `gwmVerifyCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const script = document.createElement('script');
-    const timeout = window.setTimeout(() => {
-      cleanup();
-      reject(new Error('Verification request timed out.'));
-    }, 7000);
-
-    function cleanup() {
-      window.clearTimeout(timeout);
-      try { delete window[callbackName]; } catch (err) { window[callbackName] = undefined; }
-      script.remove();
-    }
-
-    window[callbackName] = payload => {
-      cleanup();
-      resolve(payload);
-    };
-
-    script.onerror = () => {
-      cleanup();
-      reject(new Error('Verification request failed.'));
-    };
-
-    const query = [
-      'verify=1',
-      `dealer=${encodeURIComponent(dealer ? dealer.code : '')}`,
-      `date=${encodeURIComponent(reportDate)}`,
-      `total=${encodeURIComponent(totals.total_activity)}`,
-      `token=${encodeURIComponent(dealerToken)}`,
-      `callback=${encodeURIComponent(callbackName)}`,
-      `_=${Date.now()}`
-    ].join('&');
-
-    script.src = `${APPS_SCRIPT_URL}?${query}`;
-    document.body.appendChild(script);
-  });
-}
-
-
-function normaliseStatusAsReceipt(status) {
-  return {
-    success: true,
-    version: '2.4.3',
-    submission_id: status.submission_id,
-    dealer_code: status.dealer_code,
-    dealer_name: status.dealer_name,
-    report_date: status.report_date,
-    rows_written: status.rows_written,
-    audit_rows_written: status.audit_rows_written,
-    revision: status.revision,
-    is_late: status.is_late === true || status.is_late === 'TRUE' || status.is_late === 'true',
-    total_activity: status.total_activity
-  };
-}
-
-function showReceipt(result) {
-  const dealerName = result.dealer_name || (getDealer() ? getDealer().name : 'Dealer');
-  const reportDate = displayDate(result.report_date || $('reportDate').value);
-  const isLate = result.is_late === true || result.is_late === 'TRUE' || result.is_late === 'true';
-
-  const mainLine = `${dealerName} daily activity for ${reportDate} has been sent to GWM reporting.`;
-  const statusLine = isLate
-    ? 'This report was submitted after the 10:00am dealer deadline.'
-    : 'Thank you for submitting on time.';
-
-  const receipt = `
-    <div class="receipt">
-      <strong>Report received</strong>
-      <p class="receipt-main">${escapeHtml(mainLine)}</p>
-      <p>${escapeHtml(statusLine)}</p>
-    </div>`;
-
-  showMessage(receipt, isLate ? 'info' : 'success', true);
-}
-
-function formatMetric(value, singular, plural) {
-  const number = Number(value || 0);
-  return `${number} ${number === 1 ? singular : plural}`;
-}
-function escapeHtml(value) {
-  return String(value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
-}
-
-function showMessage(content, type, allowHtml) {
-  const box = $('message');
-  if (allowHtml) box.innerHTML = content;
-  else box.textContent = content;
-  box.className = `message ${type || 'info'}`;
-  box.hidden = false;
+  checkAccessLink();
+  updateTotals();
 }
 
 init();
