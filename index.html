@@ -64,6 +64,7 @@
       <div><span>Enquiries</span><strong id="total-enquiry">0</strong></div>
       <div><span>Test drives</span><strong id="total-test_drives">0</strong></div>
       <div><span>Sold</span><strong id="total-new_sold">0</strong></div>
+      <div><span>Fleet +5</span><strong id="total-fleet_5_plus">0</strong></div>
       <div><span>Demo sold</span><strong id="total-demo_sold">0</strong></div>
     </div>
 
@@ -83,6 +84,7 @@
             <th>Enquiries</th>
             <th>Test drives</th>
             <th>Sold</th>
+            <th>Fleet +5</th>
             <th>Demo sold</th>
           </tr>
         </thead>
@@ -127,6 +129,7 @@
           <li><b>Enquiries:</b> genuine Non-GWM Direct customer contact points, including walk-in, dealer-direct Meta and phone call activity.</li>
           <li><b>Test drives:</b> completed test drives.</li>
           <li><b>Sold:</b> new vehicle customer orders or contracts written.</li>
+          <li><b>Fleet +5:</b> only enter this section when you have completed a single fleet deal to one customer with 5 or more vehicles. This keeps normal retail run rates unaffected.</li>
           <li><b>Demo sold:</b> demonstrator vehicles sold. Do not count the same unit again as Sold.</li>
           <li><b>Important:</b> if one customer enquires, test drives and signs on the same report date, record one in each completed stage.</li>
         </ul>
@@ -213,6 +216,7 @@ const METRICS = [
   { key: 'enquiry', label: 'Enquiries' },
   { key: 'test_drives', label: 'Test drives' },
   { key: 'new_sold', label: 'Sold' },
+  { key: 'fleet_5_plus', label: 'Fleet +5' },
   { key: 'demo_sold', label: 'Demo sold' }
 ];
 
@@ -399,16 +403,27 @@ function buildGrid() {
     body.appendChild(tr);
   });
 
-  METRICS.forEach(metric => {
-    const section = document.createElement('section');
-    section.className = 'mobile-metric-card';
-    const title = document.createElement('h3');
-    title.textContent = metric.label;
-    section.appendChild(title);
+  METRICS.forEach((metric, metricIndex) => {
+    const section = document.createElement('details');
+    section.className = 'metric-section';
+    if (metricIndex === 0) section.open = true;
+
+    const summary = document.createElement('summary');
+    const label = document.createElement('span');
+    label.textContent = metric.label;
+    const total = document.createElement('strong');
+    total.id = `mobile-total-${metric.key}`;
+    total.textContent = '0';
+    summary.appendChild(label);
+    summary.appendChild(total);
+    section.appendChild(summary);
+
+    const list = document.createElement('div');
+    list.className = 'metric-model-list';
 
     MODELS.forEach((model, modelIndex) => {
       const row = document.createElement('label');
-      row.className = 'mobile-model-row';
+      row.className = 'metric-model-row';
       const span = document.createElement('span');
       span.textContent = model;
       const desktopInput = $(inputId(modelIndex, metric.key));
@@ -428,8 +443,10 @@ function buildGrid() {
       desktopInput.addEventListener('input', () => { input.value = desktopInput.value || '0'; });
       row.appendChild(span);
       row.appendChild(input);
-      section.appendChild(row);
+      list.appendChild(row);
     });
+
+    section.appendChild(list);
     mobile.appendChild(section);
   });
 
@@ -466,8 +483,7 @@ function getRows() {
       is_complete_submission: true,
       input_method: 'single_index_v2_4_8_activity_first',
       submission_duration_seconds: durationSeconds,
-      model_bucket: model,
-      fleet_5_plus: 0
+      model_bucket: model
     };
     METRICS.forEach(metric => { row[metric.key] = getMetricValue(index, metric.key); });
     return row;
@@ -491,6 +507,8 @@ function updateTotals() {
   METRICS.forEach(metric => {
     const total = $(`total-${metric.key}`);
     if (total) total.textContent = String(totals[metric.key]);
+    const mobileTotal = $(`mobile-total-${metric.key}`);
+    if (mobileTotal) mobileTotal.textContent = String(totals[metric.key]);
   });
 
   const dealer = getDealer();
