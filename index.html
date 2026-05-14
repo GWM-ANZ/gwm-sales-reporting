@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#000000">
-  <title>GWM Daily Sales Input v2.5.0 | Southern Region</title>
-  <!-- GWM_INDEX_VERSION: 2.5.0-pilot-hardened-fast-receipt -->
+  <title>GWM Daily Sales Input v2.5.1 | Southern Region</title>
+  <!-- GWM_INDEX_VERSION: 2.5.1-forensic-fast-submit -->
   <link rel="stylesheet" href="styles.css">
   <style id="mobile-accordion-fallback">
     /* Fallback styles for the activity-first mobile accordion. Kept in index so the drop-in file works even if styles.css is older. */
@@ -224,11 +224,11 @@ const REGION = 'Southern Region';
 const CUTOFF_HOUR = 10;
 const SAME_DAY_UNLOCK_HOUR = 17;
 const ALLOW_TODAY_FOR_TESTING = false;
-const RESPONSE_TIMEOUT_MS = 45000;
-const STATUS_POLL_INTERVAL_MS = 750;
-const STATUS_POLL_TIMEOUT_MS = 45000;
-const STATUS_POLL_INITIAL_DELAY_MS = 900;
-const VERIFY_POLL_INITIAL_DELAY_MS = 1800;
+const RESPONSE_TIMEOUT_MS = 90000;
+const STATUS_POLL_INTERVAL_MS = 500;
+const STATUS_POLL_TIMEOUT_MS = 90000;
+const STATUS_POLL_INITIAL_DELAY_MS = 250;
+const VERIFY_POLL_INITIAL_DELAY_MS = 12000;
 const SOFT_MAX_METRIC = 100;
 
 const DEALERS = [
@@ -544,7 +544,7 @@ function getRows() {
       // Legacy compatibility: Daily Direction is no longer dealer-facing, but older backend/sheet validation may still expect a valid value.
       direction: 'Flat',
       is_complete_submission: true,
-      input_method: 'single_index_v2_5_0_activity_first',
+      input_method: 'single_index_v2_5_1_activity_first',
       submission_duration_seconds: durationSeconds,
       model_bucket: model,
       fleet_5_plus: 0
@@ -627,7 +627,7 @@ function validateBeforeSubmit(rows) {
 
 function buildPayload(clientSubmissionId, rows, confirmedAllZero) {
   return {
-    return_mode: 'iframe_postmessage_v2_5_0',
+    return_mode: 'iframe_postmessage_v2_5_1',
     client_submission_id: clientSubmissionId,
     rows,
     code: '',
@@ -678,6 +678,7 @@ function submitViaIframe(payload) {
     const expectedTotal = totalActivity(payload.rows);
     const timeoutIds = [];
     let settled = false;
+    let sawBackend = false;
 
     const finishSuccess = result => {
       if (settled) return;
@@ -694,7 +695,9 @@ function submitViaIframe(payload) {
     };
 
     const hardTimeoutId = window.setTimeout(() => {
-      const err = new Error('Submission was sent, but the browser could not confirm the receipt in time. Check submissions_status or submissions_current before resubmitting.');
+      const err = new Error(sawBackend
+        ? 'Submission was accepted by the server but did not complete inside the confirmation window. Contact GWM Sales Ops before resubmitting.'
+        : 'Submission could not be confirmed by the server. Check your connection and try once only.');
       err.isUnconfirmed = true;
       finishFailure(err);
     }, RESPONSE_TIMEOUT_MS);
@@ -713,23 +716,16 @@ function submitViaIframe(payload) {
     document.body.appendChild(form);
     form.submit();
 
+    // v2.5.1 reliability fix: Apps Script iframe postMessage can be delayed or swallowed by the
+    // Google redirect chain. Treat submissions_status as the authoritative receipt path.
     timeoutIds.push(window.setTimeout(() => {
-      pollSubmissionStatus(payload.client_submission_id, dealerCode, reportDate, expectedTotal, STATUS_POLL_TIMEOUT_MS)
+      pollSubmissionStatus(payload.client_submission_id, dealerCode, reportDate, expectedTotal, STATUS_POLL_TIMEOUT_MS, () => { sawBackend = true; })
         .then(finishSuccess)
         .catch(err => {
-          // Only hard-fail if the backend explicitly marked this client submission as failed.
-          // If status polling itself fails, verification below still gets a chance to prove the write landed.
           if (err && err.backendRejected) finishFailure(err);
+          else finishFailure(err);
         });
     }, STATUS_POLL_INITIAL_DELAY_MS));
-
-    timeoutIds.push(window.setTimeout(() => {
-      verifySubmissionWritten(dealerCode, reportDate, expectedTotal, STATUS_POLL_TIMEOUT_MS)
-        .then(finishSuccess)
-        .catch(() => {
-          // Verification is a fallback only. The hard timeout above controls the final unconfirmed state.
-        });
-    }, VERIFY_POLL_INITIAL_DELAY_MS));
   });
 }
 
@@ -778,13 +774,16 @@ function jsonp(url) {
   });
 }
 
-function pollSubmissionStatus(clientSubmissionId, dealerCode, reportDate, expectedTotal, timeoutMs) {
+function pollSubmissionStatus(clientSubmissionId, dealerCode, reportDate, expectedTotal, timeoutMs, onSeen) {
   const started = Date.now();
   const maxWait = timeoutMs || STATUS_POLL_TIMEOUT_MS;
   return new Promise((resolve, reject) => {
     const tick = () => {
       const statusUrl = `${APPS_SCRIPT_URL}?status=${encodeURIComponent(clientSubmissionId)}&_=${Date.now()}`;
       jsonp(statusUrl).then(status => {
+        if (status && status.found) {
+          if (typeof onSeen === 'function') onSeen(status);
+        }
         if (status && status.status === 'completed') {
           resolve({
             success: true,
@@ -797,7 +796,7 @@ function pollSubmissionStatus(clientSubmissionId, dealerCode, reportDate, expect
             revision: Number(status.revision || 0),
             is_late: status.is_late,
             total_activity: Number(status.total_activity || expectedTotal || 0),
-            source: 'status_poll'
+            source: 'status_poll_completed'
           });
           return;
         }
@@ -808,13 +807,13 @@ function pollSubmissionStatus(clientSubmissionId, dealerCode, reportDate, expect
           return;
         }
         if (Date.now() - started > maxWait) {
-          reject(new Error('Status was not confirmed in time.'));
+          reject(new Error('Submission confirmation timed out before completion status was returned.'));
           return;
         }
         window.setTimeout(tick, STATUS_POLL_INTERVAL_MS);
       }).catch(() => {
         if (Date.now() - started > maxWait) {
-          reject(new Error('Status was not confirmed in time.'));
+          reject(new Error('Submission confirmation timed out before the server could be reached.'));
         } else {
           window.setTimeout(tick, STATUS_POLL_INTERVAL_MS);
         }
@@ -911,7 +910,7 @@ async function handleSubmit(event) {
 
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting...';
-    showMessage('Sending report. Receipt check is running. Keep this page open until the Report received message appears.', 'pending');
+    showMessage('Submitting report. Keep this page open for the Report received message.', 'pending');
 
     const result = await submitViaIframe(payload);
     localStorage.setItem('gwm_submitted_by', clean($('submittedBy').value));
@@ -920,7 +919,7 @@ async function handleSubmit(event) {
   } catch (err) {
     const detail = clean(err && err.message ? err.message : err);
     if (err && err.isUnconfirmed) {
-      showMessage(`<strong>Submission sent, receipt not confirmed</strong><p>${detail}</p><p>Do not keep pressing submit. Check submissions_status or submissions_current first. If it has landed, this is only a browser receipt issue.</p>`, 'pending');
+      showMessage(`<strong>Submission confirmation delayed</strong><p>${detail}</p><p>Do not press submit again. Contact GWM Sales Ops so the status can be checked safely.</p>`, 'error');
     } else {
       showMessage(`Submission rejected. Please check the entry and try again. Details: ${detail}`, 'error');
     }
