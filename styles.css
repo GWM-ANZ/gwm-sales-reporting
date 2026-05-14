@@ -16,36 +16,6 @@
 html { font-size: 15px; -webkit-text-size-adjust: 100%; }
 body { margin: 0; font-family: var(--font); background: var(--soft); color: var(--ink); }
 
-/* ============================================================
-   v2.5.1 emergency modal load fix
-   Purpose: prevent the Dealer Information modal from showing
-   on initial page load if the browser or older CSS overrides
-   the HTML hidden attribute.
-   ============================================================ */
-[hidden],
-#dealerInfoModal[hidden],
-.modal-backdrop[hidden] {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-body:not(.modal-open) #dealerInfoModal {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-body.modal-open #dealerInfoModal:not([hidden]) {
-  display: flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
-}
-
-
 .brand-header { background: #000; color: #fff; position: sticky; top: 0; z-index: 20; }
 .brand-top { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding: 6px 24px; border-bottom: 1px solid rgba(255,255,255,.08); color: rgba(255,255,255,.55); font-size: 12px; }
 .brand-main { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 24px; border-bottom: 1px solid rgba(255,255,255,.12); }
@@ -198,8 +168,3 @@ td { border-bottom: 1px solid #EFEFEF; padding: 8px; vertical-align: middle; }
 .receipt p { margin: 4px 0; }
 .receipt .receipt-main { font-size: 14px; line-height: 1.45; margin: 0 0 10px; }
 .message.success .receipt strong { display:block; margin-bottom: 8px; }
-
-/* Final override: keep the modal shut until the page deliberately enters modal-open state. */
-[hidden], #dealerInfoModal[hidden], .modal-backdrop[hidden] { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
-body:not(.modal-open) #dealerInfoModal { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
-body.modal-open #dealerInfoModal:not([hidden]) { display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; }
