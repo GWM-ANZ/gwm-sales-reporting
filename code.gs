@@ -1,5 +1,5 @@
 // ============================================================
-// GWM Daily Sales Reporting, v2.6.0 LEAN pilot backend
+// GWM Daily Sales Reporting, v2.6.2 PREMIUM LEAN pilot backend
 // Purpose: fast, direct dealer submission receipt for GitHub Pages
 // + Google Apps Script + Google Sheets pilot.
 //
@@ -12,7 +12,7 @@
 // ============================================================
 
 const SHEET_ID = '1KyuOPWpc7tTIxJxYakZoGg7FMnw9DlrEqCHL80l_7SI';
-const APP_VERSION = '2.6.0';
+const APP_VERSION = '2.6.2';
 const REGION = 'Southern Region';
 const TIMEZONE = 'Australia/Melbourne';
 const CUTOFF_HOUR = 10;
@@ -28,6 +28,7 @@ const SHEETS = {
   models: 'model_buckets',
   config: 'config',
   errors: 'error_log',
+  status: 'submissions_status',
   forecastCurrent: 'forecast_current',
   forecastAudit: 'forecast_audit'
 };
@@ -41,6 +42,7 @@ const CURRENT_COLUMNS = [
 
 const AUDIT_COLUMNS = CURRENT_COLUMNS.concat(['audit_action', 'client_submitted_at', 'user_agent']);
 const ERROR_COLUMNS = ['logged_at', 'error_message', 'dealer_code', 'report_date', 'payload_preview'];
+const STATUS_COLUMNS = ['event_at', 'client_submission_id', 'status', 'message', 'dealer_code', 'dealer_name', 'report_date', 'submission_id', 'rows_written', 'audit_rows_written', 'revision', 'is_late', 'total_activity', 'error_message', 'backend_ms', 'app_version'];
 const DEALER_COLUMNS = ['dealer_code', 'dealer_name', 'region', 'active', 'dealer_token', 'contact_email'];
 const MODEL_COLUMNS = ['sort_order', 'model_bucket', 'active'];
 const CONFIG_COLUMNS = ['key', 'value', 'notes'];
@@ -102,6 +104,7 @@ const DEFAULT_CONFIG = [
 ];
 
 function doPost(e) {
+  const backendStartedMs = Date.now();
   let lock;
   let body = {};
   try {
@@ -113,10 +116,11 @@ function doPost(e) {
       throw new Error('Reporting system is busy. Wait 20 seconds and submit once.');
     }
 
-    const result = processSubmissionLean(body);
+    const result = processSubmissionLean(body, backendStartedMs);
     return shouldReturnHtml(e, body) ? htmlPostMessage(result) : jsonResponse(result);
   } catch (err) {
     try { logError(err, body); } catch (logErr) {}
+    try { appendFailureStatusFromBody(body, err, Date.now() - backendStartedMs); } catch (statusErr) {}
     const result = { success: false, version: APP_VERSION, error: err.message };
     return shouldReturnHtml(e, body) ? htmlPostMessage(result) : jsonResponse(result);
   } finally {
@@ -132,13 +136,13 @@ function doGet(e) {
   if (params.health) return jsonResponse(healthPayload());
   return jsonResponse({
     success: true,
-    message: 'GWM Daily Reporting v2.6.0 lean endpoint is live',
+    message: 'GWM Daily Reporting v2.6.2 premium lean endpoint is live',
     sheets: SHEETS,
     version: APP_VERSION
   });
 }
 
-function processSubmissionLean(body) {
+function processSubmissionLean(body, backendStartedMs) {
   assertOperationalSheetsReady();
   validateAccess(body);
 
@@ -170,7 +174,7 @@ function processSubmissionLean(body) {
   const revision = revisionInfo.maxRevision + 1;
   const submissionId = buildSubmissionId(dealer.dealer_code, reportDate, revision);
   const auditAction = revision > 1 ? 'replace_current' : 'new_current';
-  const inputMethod = clean(first.input_method) || 'single_index_v2_6_0_activity_first';
+  const inputMethod = clean(first.input_method) || 'single_index_v2_6_2_activity_first';
   const duration = safeInt(first.submission_duration_seconds);
   const clientSubmittedAt = clean(body.client_submitted_at);
   const userAgent = clean(body.user_agent);
@@ -207,7 +211,7 @@ function processSubmissionLean(body) {
       demo_sold: metrics.demo_sold,
       total_activity: totalActivity,
       revision: revision,
-      source: 'index_html_v2_6_0_activity_first',
+      source: 'index_html_v2_6_2_activity_first',
       audit_action: auditAction,
       client_submitted_at: clientSubmittedAt,
       user_agent: userAgent
@@ -219,9 +223,41 @@ function processSubmissionLean(body) {
     throw new Error('All-zero submission rejected. Confirm genuine zero activity before submitting.');
   }
 
+  // Admin monitoring only: a lightweight accepted event is written before the data transaction.
+  // The dealer page does not poll this tab, so it cannot slow or confuse the dealer receipt path.
+  appendStatusEvent({
+    client_submission_id: clean(body.client_submission_id),
+    status: 'accepted',
+    message: 'Submission accepted for processing.',
+    dealer_code: dealer.dealer_code,
+    dealer_name: dealer.dealer_name,
+    report_date: reportDate,
+    submission_id: submissionId,
+    revision: revision,
+    is_late: isLate,
+    total_activity: totalActivity,
+    backend_ms: Date.now() - backendStartedMs
+  });
+
   // Fast write path: only two batch writes plus targeted current-row replacement.
   appendAuditRows(cleanedRows);
   replaceCurrentRows(cleanedRows, dealer.dealer_code, reportDate, revisionInfo.rowsToDelete);
+
+  appendStatusEvent({
+    client_submission_id: clean(body.client_submission_id),
+    status: 'completed',
+    message: 'Submission completed.',
+    dealer_code: dealer.dealer_code,
+    dealer_name: dealer.dealer_name,
+    report_date: reportDate,
+    submission_id: submissionId,
+    rows_written: cleanedRows.length,
+    audit_rows_written: cleanedRows.length,
+    revision: revision,
+    is_late: isLate,
+    total_activity: totalActivity,
+    backend_ms: Date.now() - backendStartedMs
+  });
 
   return {
     success: true,
@@ -265,7 +301,7 @@ function validateReportDate(reportDate) {
   const yesterday = addDaysIso(today, -1);
 
   if (reportDate > today) throw new Error('Future report dates are not allowed.');
-  if (reportDate === today && (!allowSameDay || now.getHours() < unlockHour)) {
+  if (reportDate === today && (!allowSameDay || localHour(now) < unlockHour)) {
     throw new Error('Current-day reporting opens from 5:00pm. Select yesterday for prior-day reporting.');
   }
   if (!allowEarlier && reportDate !== yesterday && reportDate !== today) {
@@ -320,6 +356,36 @@ function getRevisionInfoFromCurrent(dealerCode, reportDate) {
   return info;
 }
 
+
+function appendStatusEvent(event) {
+  const sheet = getExistingSheet(SHEETS.status);
+  const row = STATUS_COLUMNS.map(col => {
+    if (col === 'event_at') return isoTimestamp(new Date());
+    if (col === 'app_version') return APP_VERSION;
+    if (col === 'is_late') return event.is_late === undefined || event.is_late === '' ? '' : (event.is_late ? 'TRUE' : 'FALSE');
+    return event[col] === undefined || event[col] === null ? '' : event[col];
+  });
+  sheet.getRange(sheet.getLastRow() + 1, 1, 1, STATUS_COLUMNS.length).setValues([row]);
+}
+
+function appendFailureStatusFromBody(body, err, backendMs) {
+  const first = body && Array.isArray(body.rows) && body.rows.length ? body.rows[0] : {};
+  // Only writes a failed event if the status tab exists. This is admin-only monitoring and must never mask the real error.
+  const sheet = getSpreadsheet().getSheetByName(SHEETS.status);
+  if (!sheet) return;
+  appendStatusEvent({
+    client_submission_id: clean(body && body.client_submission_id),
+    status: 'failed',
+    message: 'Submission rejected or failed before completion.',
+    dealer_code: clean(first.dealer_code).toUpperCase(),
+    dealer_name: '',
+    report_date: normaliseDate(first.report_date),
+    submission_id: '',
+    error_message: err && err.message ? err.message : String(err),
+    backend_ms: backendMs
+  });
+}
+
 function appendAuditRows(rows) {
   const sheet = getExistingSheet(SHEETS.audit);
   const output = rows.map(row => AUDIT_COLUMNS.map(col => valueFromRow(row, col)));
@@ -366,7 +432,7 @@ function getDealerRecord(dealerCode) {
 
 function getDealersMap() {
   const cache = CacheService.getScriptCache();
-  const cached = cache.get('dealers_map_v260');
+  const cached = cache.get('dealers_map_v262');
   if (cached) return JSON.parse(cached);
 
   const sheet = getExistingSheet(SHEETS.dealers);
@@ -385,13 +451,13 @@ function getDealersMap() {
       contact_email: clean(record.contact_email)
     };
   });
-  cache.put('dealers_map_v260', JSON.stringify(map), CACHE_SECONDS);
+  cache.put('dealers_map_v262', JSON.stringify(map), CACHE_SECONDS);
   return map;
 }
 
 function getActiveModels() {
   const cache = CacheService.getScriptCache();
-  const cached = cache.get('active_models_v260');
+  const cached = cache.get('active_models_v262');
   if (cached) return JSON.parse(cached);
 
   const sheet = getExistingSheet(SHEETS.models);
@@ -407,13 +473,13 @@ function getActiveModels() {
     .map(row => clean(row[modelCol]));
 
   if (!models.length) throw new Error('No active model buckets configured.');
-  cache.put('active_models_v260', JSON.stringify(models), CACHE_SECONDS);
+  cache.put('active_models_v262', JSON.stringify(models), CACHE_SECONDS);
   return models;
 }
 
 function getConfigMap() {
   const cache = CacheService.getScriptCache();
-  const cached = cache.get('config_map_v260');
+  const cached = cache.get('config_map_v262');
   if (cached) return JSON.parse(cached);
 
   const sheet = getExistingSheet(SHEETS.config);
@@ -423,7 +489,7 @@ function getConfigMap() {
     const key = clean(values[i][0]);
     if (key) map[key] = clean(values[i][1]);
   }
-  cache.put('config_map_v260', JSON.stringify(map), CACHE_SECONDS);
+  cache.put('config_map_v262', JSON.stringify(map), CACHE_SECONDS);
   return map;
 }
 
@@ -441,6 +507,7 @@ function csvResponse(params) {
     models: { name: SHEETS.models, columns: MODEL_COLUMNS },
     config: { name: SHEETS.config, columns: CONFIG_COLUMNS },
     errors: { name: SHEETS.errors, columns: ERROR_COLUMNS },
+    status: { name: SHEETS.status, columns: STATUS_COLUMNS },
     forecast_current: { name: SHEETS.forecastCurrent, columns: FORECAST_COLUMNS },
     forecast_audit: { name: SHEETS.forecastAudit, columns: FORECAST_COLUMNS }
   };
@@ -493,7 +560,7 @@ function logError(err, body) {
 
 function assertOperationalSheetsReady() {
   const spreadsheet = getSpreadsheet();
-  const required = [SHEETS.current, SHEETS.audit, SHEETS.dealers, SHEETS.models, SHEETS.config, SHEETS.errors];
+  const required = [SHEETS.current, SHEETS.audit, SHEETS.dealers, SHEETS.models, SHEETS.config, SHEETS.errors, SHEETS.status];
   required.forEach(name => {
     if (!spreadsheet.getSheetByName(name)) {
       throw new Error('Required sheet missing: ' + name + '. Run initLeanWorkbookOnce before rollout.');
@@ -520,6 +587,7 @@ function healthPayload() {
     timestamp: isoTimestamp(new Date()),
     current_rows: safeSheetRows(SHEETS.current),
     audit_rows: safeSheetRows(SHEETS.audit),
+    status_rows: safeSheetRows(SHEETS.status),
     dealers: Object.keys(getDealersMap()).length,
     models: getActiveModels().length
   };
@@ -534,6 +602,7 @@ function initLeanWorkbookOnce() {
   getOrCreateSheet(SHEETS.current, CURRENT_COLUMNS);
   getOrCreateSheet(SHEETS.audit, AUDIT_COLUMNS);
   getOrCreateSheet(SHEETS.errors, ERROR_COLUMNS);
+  getOrCreateSheet(SHEETS.status, STATUS_COLUMNS);
   seedSheetIfEmpty(SHEETS.dealers, DEALER_COLUMNS, DEFAULT_DEALERS);
   seedSheetIfEmpty(SHEETS.models, MODEL_COLUMNS, DEFAULT_MODELS.map((model, index) => [index + 1, model, 'TRUE']));
   seedSheetIfEmpty(SHEETS.config, CONFIG_COLUMNS, DEFAULT_CONFIG);
@@ -572,12 +641,12 @@ function ensureHeaders(sheet, columns) {
 
 function clearRuntimeCache() {
   const cache = CacheService.getScriptCache();
-  ['dealers_map_v260', 'active_models_v260', 'config_map_v260'].forEach(key => cache.remove(key));
+  ['dealers_map_v261', 'active_models_v261', 'config_map_v261', 'dealers_map_v262', 'active_models_v262', 'config_map_v262'].forEach(key => cache.remove(key));
 }
 
 function shrinkOperationalSheets() {
   // Optional manual tidy only. Never called during submit.
-  [SHEETS.current, SHEETS.audit, SHEETS.errors].forEach(name => {
+  [SHEETS.current, SHEETS.audit, SHEETS.errors, SHEETS.status].forEach(name => {
     const sheet = getSpreadsheet().getSheetByName(name);
     if (!sheet) return;
     const lastRow = Math.max(1, sheet.getLastRow());
@@ -597,10 +666,19 @@ function buildSubmissionId(dealerCode, reportDate, revision) {
 }
 
 function calculateLateFlag(now, reportDate) {
+  // Late rule: yesterday's report is on time until 10:00am local time the next day.
+  // Same-day close-out after 5:00pm is not marked late.
   const today = localDateIso(now);
-  if (reportDate < today) return true;
-  if (reportDate > today) return false;
-  return now.getHours() >= CUTOFF_HOUR;
+  const yesterday = addDaysIso(today, -1);
+  const hour = localHour(now);
+  if (reportDate === today) return false;
+  if (reportDate === yesterday) return hour >= CUTOFF_HOUR;
+  if (reportDate < yesterday) return true;
+  return false;
+}
+
+function localHour(date) {
+  return Number(Utilities.formatDate(date, TIMEZONE, 'H'));
 }
 
 function localDateIso(date) {
@@ -638,4 +716,39 @@ function normaliseDate(value) {
   const parsed = new Date(text);
   if (!isNaN(parsed.getTime())) return Utilities.formatDate(parsed, TIMEZONE, 'yyyy-MM-dd');
   return '';
+}
+
+
+/**
+ * ADMIN ONLY
+ * Clears pilot submission data while preserving headers, dealer tokens, config and model buckets.
+ * Keeps the workbook structure intact for the pilot.
+ */
+function wipePilotDataKeepHeaders() {
+  const ss = getSpreadsheet();
+  const tabsToClear = [
+    SHEETS.current,
+    SHEETS.audit,
+    SHEETS.status,
+    SHEETS.errors,
+    SHEETS.forecastCurrent,
+    SHEETS.forecastAudit
+  ];
+  tabsToClear.forEach(name => {
+    const sheet = ss.getSheetByName(name);
+    if (!sheet) return;
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    if (lastRow > 1 && lastCol > 0) {
+      sheet.getRange(2, 1, lastRow - 1, lastCol).clearContent();
+    }
+  });
+  clearRuntimeCache();
+  Logger.log('Pilot data wiped. Headers preserved. Dealer tokens, config and model buckets untouched.');
+}
+
+function validatePremiumLeanPilotConfiguration() {
+  const report = healthPayload();
+  Logger.log(JSON.stringify(report, null, 2));
+  return report;
 }

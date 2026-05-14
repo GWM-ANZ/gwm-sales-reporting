@@ -4,70 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#000000">
-  <title>GWM Daily Sales Input v2.6.0 | Southern Region</title>
-  <!-- GWM_INDEX_VERSION: 2.6.0-lean-fast-submit -->
+  <title>GWM Daily Sales Input v2.6.2 | Southern Region</title>
+  <!-- GWM_INDEX_VERSION: 2.6.2-premium-lean-admin-monitoring -->
   <link rel="stylesheet" href="styles.css">
-  <style id="mobile-accordion-fallback">
-    /* Fallback styles for the activity-first mobile accordion. Kept in index so the drop-in file works even if styles.css is older. */
-    @media (min-width: 761px) {
-      .mobile-activity { display: none; }
-    }
-    @media (max-width: 760px) {
-      .mobile-activity { display: block; margin-top: 16px; }
-      .metric-section {
-        background: #fff;
-        border: 1px solid rgba(0,0,0,.12);
-        border-radius: 14px;
-        margin: 0 0 12px;
-        overflow: hidden;
-        box-shadow: 0 6px 18px rgba(0,0,0,.06);
-      }
-      .metric-section > summary {
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        list-style: none;
-        padding: 14px 16px;
-        font-weight: 800;
-      }
-      .metric-section > summary::-webkit-details-marker { display: none; }
-      .metric-section > summary::after {
-        content: '+';
-        font-size: 20px;
-        line-height: 1;
-        opacity: .7;
-      }
-      .metric-section[open] > summary::after { content: '−'; }
-      .metric-section > summary strong {
-        margin-left: auto;
-        min-width: 32px;
-        text-align: center;
-        border-radius: 999px;
-        padding: 4px 9px;
-        background: #111;
-        color: #fff;
-        font-size: 13px;
-      }
-      .metric-model-list { padding: 0 12px 12px; }
-      .metric-model-row {
-        display: grid;
-        grid-template-columns: 1fr 84px;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 4px;
-        border-top: 1px solid rgba(0,0,0,.07);
-      }
-      .metric-model-row span { font-weight: 650; }
-      .metric-model-row input {
-        width: 84px;
-        min-height: 42px;
-        text-align: center;
-        font-size: 16px;
-      }
-    }
-  </style>
 </head>
 <body>
 <header class="brand-header">
@@ -212,7 +151,7 @@
       </section>
     </div>
 
-    <div class="modal-footer-note">Need proof? Take a screenshot of the receipt after submission.</div>
+    <div class="modal-footer-note">Need proof? Take a screenshot of the Report received receipt after submission.</div>
   </div>
 </div>
 
@@ -540,7 +479,7 @@ function getRows() {
       // Legacy compatibility: Daily Direction is no longer dealer-facing, but older backend/sheet validation may still expect a valid value.
       direction: 'Flat',
       is_complete_submission: true,
-      input_method: 'single_index_v2_6_0_activity_first',
+      input_method: 'single_index_v2_6_2_activity_first',
       submission_duration_seconds: durationSeconds,
       model_bucket: model,
       fleet_5_plus: 0
@@ -623,7 +562,7 @@ function validateBeforeSubmit(rows) {
 
 function buildPayload(clientSubmissionId, rows, confirmedAllZero) {
   return {
-    return_mode: 'iframe_postmessage_v2_6_0',
+    return_mode: 'iframe_postmessage_v2_6_2',
     client_submission_id: clientSubmissionId,
     rows,
     code: '',
@@ -768,7 +707,7 @@ async function handleSubmit(event) {
 
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting...';
-    showMessage('Submitting report. Saving now. You will receive a success or rejection message shortly.', 'pending');
+    showMessage('<strong>Submitting report</strong><p>Saving now. Please keep this page open until the receipt appears.</p>', 'pending');
 
     const result = await submitViaIframe(payload);
     localStorage.setItem('gwm_submitted_by', clean($('submittedBy').value));
@@ -777,13 +716,18 @@ async function handleSubmit(event) {
   } catch (err) {
     const detail = clean(err && err.message ? err.message : err);
     if (err && err.isUnconfirmed) {
-      showMessage(`<strong>Submission confirmation delayed</strong><p>${detail}</p><p>Do not press submit again. Contact GWM Sales Ops so the status can be checked safely.</p>`, 'error');
+      showMessage(`<strong>Submission still processing</strong><p>The server has not returned the final receipt yet. Do not press submit again. Leave this page open for a moment, or contact GWM Sales Ops if this remains on screen.</p><p class="message-small">${detail}</p>`, 'pending');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitted - awaiting receipt';
+      return;
     } else {
       showMessage(`Submission rejected. Please check the entry and try again. Details: ${detail}`, 'error');
     }
   } finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Submit Daily Report';
+    if (!submitBtn.disabled || submitBtn.textContent !== 'Submitted - awaiting receipt') {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit Daily Report';
+    }
   }
 }
 
