@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#000000">
-  <title>GWM Daily Sales Input v2.5.1 | Southern Region</title>
-  <!-- GWM_INDEX_VERSION: 2.5.1-forensic-fast-submit -->
+  <title>GWM Daily Sales Input v2.6.0 | Southern Region</title>
+  <!-- GWM_INDEX_VERSION: 2.6.0-lean-fast-submit -->
   <link rel="stylesheet" href="styles.css">
   <style id="mobile-accordion-fallback">
     /* Fallback styles for the activity-first mobile accordion. Kept in index so the drop-in file works even if styles.css is older. */
@@ -224,11 +224,7 @@ const REGION = 'Southern Region';
 const CUTOFF_HOUR = 10;
 const SAME_DAY_UNLOCK_HOUR = 17;
 const ALLOW_TODAY_FOR_TESTING = false;
-const RESPONSE_TIMEOUT_MS = 90000;
-const STATUS_POLL_INTERVAL_MS = 500;
-const STATUS_POLL_TIMEOUT_MS = 90000;
-const STATUS_POLL_INITIAL_DELAY_MS = 250;
-const VERIFY_POLL_INITIAL_DELAY_MS = 12000;
+const RESPONSE_TIMEOUT_MS = 45000;
 const SOFT_MAX_METRIC = 100;
 
 const DEALERS = [
@@ -544,7 +540,7 @@ function getRows() {
       // Legacy compatibility: Daily Direction is no longer dealer-facing, but older backend/sheet validation may still expect a valid value.
       direction: 'Flat',
       is_complete_submission: true,
-      input_method: 'single_index_v2_5_1_activity_first',
+      input_method: 'single_index_v2_6_0_activity_first',
       submission_duration_seconds: durationSeconds,
       model_bucket: model,
       fleet_5_plus: 0
@@ -627,7 +623,7 @@ function validateBeforeSubmit(rows) {
 
 function buildPayload(clientSubmissionId, rows, confirmedAllZero) {
   return {
-    return_mode: 'iframe_postmessage_v2_5_1',
+    return_mode: 'iframe_postmessage_v2_6_0',
     client_submission_id: clientSubmissionId,
     rows,
     code: '',
@@ -673,20 +669,13 @@ function submitViaIframe(payload) {
     input.value = JSON.stringify(payload);
     form.appendChild(input);
 
-    const dealerCode = payload.rows[0].dealer_code;
-    const reportDate = payload.rows[0].report_date;
-    const expectedTotal = totalActivity(payload.rows);
-    const timeoutIds = [];
     let settled = false;
-    let sawBackend = false;
-
     const finishSuccess = result => {
       if (settled) return;
       settled = true;
       cleanupPendingSubmission();
       resolve(result);
     };
-
     const finishFailure = err => {
       if (settled) return;
       settled = true;
@@ -694,20 +683,17 @@ function submitViaIframe(payload) {
       reject(err);
     };
 
-    const hardTimeoutId = window.setTimeout(() => {
-      const err = new Error(sawBackend
-        ? 'Submission was accepted by the server but did not complete inside the confirmation window. Contact GWM Sales Ops before resubmitting.'
-        : 'Submission could not be confirmed by the server. Check your connection and try once only.');
+    const timeoutId = window.setTimeout(() => {
+      const err = new Error('The server did not return a receipt in time. Contact GWM Sales Ops before trying again.');
       err.isUnconfirmed = true;
       finishFailure(err);
     }, RESPONSE_TIMEOUT_MS);
-    timeoutIds.push(hardTimeoutId);
 
     pendingSubmission = {
       clientSubmissionId: payload.client_submission_id,
       resolve: finishSuccess,
       reject: finishFailure,
-      timeoutIds
+      timeoutIds: [timeoutId]
     };
     pendingIframe = iframe;
     pendingForm = form;
@@ -715,17 +701,6 @@ function submitViaIframe(payload) {
     document.body.appendChild(iframe);
     document.body.appendChild(form);
     form.submit();
-
-    // v2.5.1 reliability fix: Apps Script iframe postMessage can be delayed or swallowed by the
-    // Google redirect chain. Treat submissions_status as the authoritative receipt path.
-    timeoutIds.push(window.setTimeout(() => {
-      pollSubmissionStatus(payload.client_submission_id, dealerCode, reportDate, expectedTotal, STATUS_POLL_TIMEOUT_MS, () => { sawBackend = true; })
-        .then(finishSuccess)
-        .catch(err => {
-          if (err && err.backendRejected) finishFailure(err);
-          else finishFailure(err);
-        });
-    }, STATUS_POLL_INITIAL_DELAY_MS));
   });
 }
 
@@ -745,123 +720,6 @@ window.addEventListener('message', event => {
     rejecter(new Error(result && result.error ? result.error : 'Submission rejected by backend.'));
   }
 });
-
-function jsonp(url) {
-  return new Promise((resolve, reject) => {
-    const callbackName = `gwmCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const script = document.createElement('script');
-    const timeout = window.setTimeout(() => {
-      cleanup();
-      reject(new Error('Request timed out.'));
-    }, 5000);
-
-    function cleanup() {
-      window.clearTimeout(timeout);
-      try { delete window[callbackName]; } catch (err) { window[callbackName] = undefined; }
-      script.remove();
-    }
-
-    window[callbackName] = payload => {
-      cleanup();
-      resolve(payload);
-    };
-    script.onerror = () => {
-      cleanup();
-      reject(new Error('Request failed.'));
-    };
-    script.src = `${url}${url.includes('?') ? '&' : '?'}callback=${encodeURIComponent(callbackName)}`;
-    document.body.appendChild(script);
-  });
-}
-
-function pollSubmissionStatus(clientSubmissionId, dealerCode, reportDate, expectedTotal, timeoutMs, onSeen) {
-  const started = Date.now();
-  const maxWait = timeoutMs || STATUS_POLL_TIMEOUT_MS;
-  return new Promise((resolve, reject) => {
-    const tick = () => {
-      const statusUrl = `${APPS_SCRIPT_URL}?status=${encodeURIComponent(clientSubmissionId)}&_=${Date.now()}`;
-      jsonp(statusUrl).then(status => {
-        if (status && status.found) {
-          if (typeof onSeen === 'function') onSeen(status);
-        }
-        if (status && status.status === 'completed') {
-          resolve({
-            success: true,
-            submission_id: status.submission_id,
-            dealer_code: status.dealer_code,
-            dealer_name: status.dealer_name,
-            report_date: status.report_date,
-            rows_written: Number(status.rows_written || 0),
-            audit_rows_written: Number(status.audit_rows_written || 0),
-            revision: Number(status.revision || 0),
-            is_late: status.is_late,
-            total_activity: Number(status.total_activity || expectedTotal || 0),
-            source: 'status_poll_completed'
-          });
-          return;
-        }
-        if (status && status.status === 'failed') {
-          const err = new Error(status.error || status.message || 'Submission failed.');
-          err.backendRejected = true;
-          reject(err);
-          return;
-        }
-        if (Date.now() - started > maxWait) {
-          reject(new Error('Submission confirmation timed out before completion status was returned.'));
-          return;
-        }
-        window.setTimeout(tick, STATUS_POLL_INTERVAL_MS);
-      }).catch(() => {
-        if (Date.now() - started > maxWait) {
-          reject(new Error('Submission confirmation timed out before the server could be reached.'));
-        } else {
-          window.setTimeout(tick, STATUS_POLL_INTERVAL_MS);
-        }
-      });
-    };
-    tick();
-  });
-}
-
-function verifySubmissionWritten(dealerCode, reportDate, expectedTotal, timeoutMs) {
-  const started = Date.now();
-  const maxWait = timeoutMs || STATUS_POLL_TIMEOUT_MS;
-  return new Promise((resolve, reject) => {
-    const tick = () => {
-      const verifyUrl = `${APPS_SCRIPT_URL}?verify=1&dealer=${encodeURIComponent(dealerCode)}&date=${encodeURIComponent(reportDate)}&total=${encodeURIComponent(expectedTotal)}&token=${encodeURIComponent(dealerToken)}&_=${Date.now()}`;
-      jsonp(verifyUrl).then(result => {
-        if (result && result.success === true && result.status === 'completed' && result.found === true && result.matched_total !== false) {
-          resolve({
-            success: true,
-            submission_id: result.submission_id,
-            dealer_code: result.dealer_code,
-            dealer_name: result.dealer_name,
-            report_date: result.report_date,
-            rows_written: Number(result.rows_written || MODELS.length),
-            audit_rows_written: Number(result.audit_rows_written || MODELS.length),
-            revision: Number(result.revision || 0),
-            is_late: result.is_late,
-            total_activity: Number(result.total_activity || expectedTotal || 0),
-            source: 'verify_current'
-          });
-          return;
-        }
-        if (Date.now() - started > maxWait) {
-          reject(new Error('Submission was not verified in current reporting.'));
-          return;
-        }
-        window.setTimeout(tick, STATUS_POLL_INTERVAL_MS);
-      }).catch(() => {
-        if (Date.now() - started > maxWait) {
-          reject(new Error('Submission was not verified in current reporting.'));
-        } else {
-          window.setTimeout(tick, STATUS_POLL_INTERVAL_MS);
-        }
-      });
-    };
-    tick();
-  });
-}
 
 function showReceipt(result) {
   const dealerName = result.dealer_name || (getDealer() ? getDealer().name : 'Dealer');
@@ -910,7 +768,7 @@ async function handleSubmit(event) {
 
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting...';
-    showMessage('Submitting report. Keep this page open for the Report received message.', 'pending');
+    showMessage('Submitting report. Saving now. You will receive a success or rejection message shortly.', 'pending');
 
     const result = await submitViaIframe(payload);
     localStorage.setItem('gwm_submitted_by', clean($('submittedBy').value));
