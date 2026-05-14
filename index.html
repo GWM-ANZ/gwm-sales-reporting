@@ -167,6 +167,7 @@ const CUTOFF_HOUR = 10;
 const SAME_DAY_UNLOCK_HOUR = 17;
 const ALLOW_TODAY_FOR_TESTING = false;
 const RESPONSE_TIMEOUT_MS = 15000;
+const EARLY_VERIFY_DELAY_MS = 3000;
 const STATUS_POLL_INTERVAL_MS = 1000;
 const STATUS_POLL_TIMEOUT_MS = 8000;
 const SOFT_MAX_METRIC = 100;
@@ -575,6 +576,7 @@ function buildPayload(clientSubmissionId, rows, confirmedAllZero) {
 
 function cleanupPendingSubmission() {
   if (pendingSubmission && pendingSubmission.timeoutId) window.clearTimeout(pendingSubmission.timeoutId);
+  if (pendingSubmission && pendingSubmission.earlyVerifyTimeoutId) window.clearTimeout(pendingSubmission.earlyVerifyTimeoutId);
   if (pendingIframe) pendingIframe.remove();
   if (pendingForm) pendingForm.remove();
   pendingSubmission = null;
@@ -604,6 +606,16 @@ function normaliseVerifiedReceipt(status, expectedTotal) {
   };
 }
 
+function verifyCurrentSubmission(dealerCode, reportDate, expectedTotal) {
+  const verifyUrl = `${APPS_SCRIPT_URL}?verify=1&dealer=${encodeURIComponent(dealerCode)}&date=${encodeURIComponent(reportDate)}&total=${encodeURIComponent(expectedTotal)}&token=${encodeURIComponent(dealerToken)}`;
+  return jsonp(verifyUrl).then(status => {
+    if (status && status.success === true && status.found === true && status.status === 'completed') {
+      return normaliseVerifiedReceipt(status, expectedTotal);
+    }
+    throw new Error('Status was not confirmed in time.');
+  });
+}
+
 function submitViaIframe(payload) {
   return new Promise((resolve, reject) => {
     cleanupPendingSubmission();
@@ -625,13 +637,38 @@ function submitViaIframe(payload) {
     input.value = JSON.stringify(payload);
     form.appendChild(input);
 
+    const dealerCode = payload.rows[0].dealer_code;
+    const reportDate = payload.rows[0].report_date;
+    const expectedTotal = totalActivity(payload.rows);
+    const clientSubmissionId = payload.client_submission_id;
+
+    const resolveIfStillPending = result => {
+      if (!pendingSubmission || pendingSubmission.clientSubmissionId !== clientSubmissionId) return;
+      const resolver = pendingSubmission.resolve;
+      cleanupPendingSubmission();
+      resolver(result);
+    };
+
+    const rejectIfStillPending = error => {
+      if (!pendingSubmission || pendingSubmission.clientSubmissionId !== clientSubmissionId) return;
+      const rejecter = pendingSubmission.reject;
+      cleanupPendingSubmission();
+      rejecter(error);
+    };
+
+    const earlyVerifyTimeoutId = window.setTimeout(() => {
+      verifyCurrentSubmission(dealerCode, reportDate, expectedTotal)
+        .then(resolveIfStillPending)
+        .catch(() => {});
+    }, EARLY_VERIFY_DELAY_MS);
+
     const timeoutId = window.setTimeout(() => {
-      pollSubmissionStatus(payload.client_submission_id, payload.rows[0].dealer_code, payload.rows[0].report_date, totalActivity(payload.rows))
-        .then(resolve)
-        .catch(() => reject(new Error('Submission timed out before confirmation. Please check if it appeared in reporting before resubmitting.')));
+      pollSubmissionStatus(clientSubmissionId, dealerCode, reportDate, expectedTotal)
+        .then(resolveIfStillPending)
+        .catch(() => rejectIfStillPending(new Error('Submission timed out before confirmation. Please check if it appeared in reporting before resubmitting.')));
     }, RESPONSE_TIMEOUT_MS);
 
-    pendingSubmission = { clientSubmissionId: payload.client_submission_id, resolve, reject, timeoutId };
+    pendingSubmission = { clientSubmissionId, resolve, reject, timeoutId, earlyVerifyTimeoutId };
     pendingIframe = iframe;
     pendingForm = form;
 
@@ -689,16 +726,6 @@ function jsonp(url) {
 function pollSubmissionStatus(clientSubmissionId, dealerCode, reportDate, expectedTotal) {
   const started = Date.now();
 
-  function verifyCurrent() {
-    const verifyUrl = `${APPS_SCRIPT_URL}?verify=1&dealer=${encodeURIComponent(dealerCode)}&date=${encodeURIComponent(reportDate)}&total=${encodeURIComponent(expectedTotal)}&token=${encodeURIComponent(dealerToken)}`;
-    return jsonp(verifyUrl).then(status => {
-      if (status && status.success === true && status.found === true && status.status === 'completed') {
-        return normaliseVerifiedReceipt(status, expectedTotal);
-      }
-      throw new Error('Status was not confirmed in time.');
-    });
-  }
-
   return new Promise((resolve, reject) => {
     const tick = () => {
       const statusUrl = `${APPS_SCRIPT_URL}?status=${encodeURIComponent(clientSubmissionId)}`;
@@ -712,13 +739,13 @@ function pollSubmissionStatus(clientSubmissionId, dealerCode, reportDate, expect
           return;
         }
         if (Date.now() - started > STATUS_POLL_TIMEOUT_MS) {
-          verifyCurrent().then(resolve).catch(reject);
+          verifyCurrentSubmission(dealerCode, reportDate, expectedTotal).then(resolve).catch(reject);
           return;
         }
         window.setTimeout(tick, STATUS_POLL_INTERVAL_MS);
       }).catch(() => {
         if (Date.now() - started > STATUS_POLL_TIMEOUT_MS) {
-          verifyCurrent().then(resolve).catch(reject);
+          verifyCurrentSubmission(dealerCode, reportDate, expectedTotal).then(resolve).catch(reject);
         } else {
           window.setTimeout(tick, STATUS_POLL_INTERVAL_MS);
         }
