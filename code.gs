@@ -244,7 +244,7 @@ function doPost(e) {
       } catch (statusErr) {}
     }
 
-    const result = { success: false, version: APP_VERSION, error: err.message };
+    const result = rejectedResponse(err, 'UNKNOWN_ERROR');
     return shouldReturnHtml(e, body) ? htmlPostMessage(result) : jsonResponse(result);
   } finally {
     try { lock.releaseLock(); } catch (releaseErr) {}
@@ -354,24 +354,28 @@ function processSubmission(body) {
     throw new Error('All-zero submission rejected. Confirm genuine zero activity before submitting.');
   }
 
-  appendAuditRows(cleanedRows);
   replaceCurrentRows(cleanedRows, dealer.dealer_code, reportDate);
 
-  SpreadsheetApp.flush();
+  let auditRowsWritten = cleanedRows.length;
+  try {
+    appendAuditRows(cleanedRows);
+  } catch (auditErr) {
+    auditRowsWritten = 0;
+    try { logError(auditErr, body); } catch (logErr) {}
+  }
 
-  return {
-    success: true,
+  return acceptedResponse({
     version: APP_VERSION,
     submission_id: submissionId,
     dealer_code: dealer.dealer_code,
     dealer_name: dealer.dealer_name,
     report_date: reportDate,
     rows_written: cleanedRows.length,
-    audit_rows_written: cleanedRows.length,
+    audit_rows_written: auditRowsWritten,
     revision: revision,
     is_late: isLate,
     total_activity: totalActivity
-  };
+  });
 }
 
 function validateAccess(body) {
@@ -957,6 +961,49 @@ function csvResponse(params) {
   const lines = values.map(row => row.map(csvEscape).join(','));
 
   return ContentService.createTextOutput(lines.join('\n')).setMimeType(ContentService.MimeType.CSV);
+}
+
+
+function acceptedResponse(fields) {
+  return Object.assign({
+    success: true,
+    status: 'accepted',
+    message: 'Submission received. Thanks, team.'
+  }, fields || {});
+}
+
+function rejectedResponse(err, fallbackCode) {
+  const message = err && err.message ? String(err.message) : String(err || 'Submission rejected.');
+  return {
+    success: false,
+    status: 'rejected',
+    version: APP_VERSION,
+    message: dealerSafeErrorMessage(message),
+    error: message,
+    error_code: classifyErrorCode(message, fallbackCode)
+  };
+}
+
+function classifyErrorCode(message, fallbackCode) {
+  const text = clean(message).toLowerCase();
+
+  if (text.indexOf('token') !== -1 || text.indexOf('unauthorized') !== -1) return 'TOKEN_MISMATCH';
+  if (text.indexOf('already') !== -1 || text.indexOf('duplicate') !== -1) return 'DUPLICATE_BLOCKED';
+  if (text.indexOf('required') !== -1 || text.indexOf('invalid') !== -1 || text.indexOf('must') !== -1 || text.indexOf('zero') !== -1 || text.indexOf('future') !== -1) return 'VALIDATION_ERROR';
+  if (text.indexOf('sheet') !== -1 || text.indexOf('range') !== -1 || text.indexOf('spreadsheet') !== -1 || text.indexOf('write') !== -1) return 'SHEET_WRITE_FAILED';
+
+  return fallbackCode || 'UNKNOWN_ERROR';
+}
+
+function dealerSafeErrorMessage(message) {
+  const code = classifyErrorCode(message, 'UNKNOWN_ERROR');
+
+  if (code === 'TOKEN_MISMATCH') return 'This dealer link does not match the selected dealer.';
+  if (code === 'DUPLICATE_BLOCKED') return 'This day has already been submitted. Contact HQ if it needs to be reopened.';
+  if (code === 'VALIDATION_ERROR') return message;
+  if (code === 'SHEET_WRITE_FAILED') return 'We could not save the report. Please contact HQ before resubmitting.';
+
+  return 'We could not confirm the submission. Please contact HQ before resubmitting.';
 }
 
 function parseBody(e) {

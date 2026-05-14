@@ -582,6 +582,28 @@ function cleanupPendingSubmission() {
   pendingForm = null;
 }
 
+function isAcceptedResponse(result) {
+  return Boolean(result && result.success === true && result.status === 'accepted');
+}
+
+function normaliseVerifiedReceipt(status, expectedTotal) {
+  return {
+    success: true,
+    status: 'accepted',
+    message: status.message || 'Submission received. Thanks, team.',
+    submission_id: status.submission_id,
+    dealer_code: status.dealer_code,
+    dealer_name: status.dealer_name,
+    report_date: status.report_date,
+    rows_written: Number(status.rows_written || 0),
+    audit_rows_written: Number(status.audit_rows_written || 0),
+    revision: Number(status.revision || 0),
+    is_late: status.is_late,
+    total_activity: Number(status.total_activity || expectedTotal || 0),
+    source: status.source || 'verified_current'
+  };
+}
+
 function submitViaIframe(payload) {
   return new Promise((resolve, reject) => {
     cleanupPendingSubmission();
@@ -629,10 +651,10 @@ window.addEventListener('message', event => {
   const rejecter = pendingSubmission.reject;
   cleanupPendingSubmission();
 
-  if (result && result.success === true) {
+  if (isAcceptedResponse(result)) {
     resolver(result);
   } else {
-    rejecter(new Error(result && result.error ? result.error : 'Submission rejected by backend.'));
+    rejecter(new Error(result && (result.message || result.error) ? (result.message || result.error) : 'Submission rejected by backend.'));
   }
 });
 
@@ -666,24 +688,23 @@ function jsonp(url) {
 
 function pollSubmissionStatus(clientSubmissionId, dealerCode, reportDate, expectedTotal) {
   const started = Date.now();
+
+  function verifyCurrent() {
+    const verifyUrl = `${APPS_SCRIPT_URL}?verify=1&dealer=${encodeURIComponent(dealerCode)}&date=${encodeURIComponent(reportDate)}&total=${encodeURIComponent(expectedTotal)}&token=${encodeURIComponent(dealerToken)}`;
+    return jsonp(verifyUrl).then(status => {
+      if (status && status.success === true && status.found === true && status.status === 'completed') {
+        return normaliseVerifiedReceipt(status, expectedTotal);
+      }
+      throw new Error('Status was not confirmed in time.');
+    });
+  }
+
   return new Promise((resolve, reject) => {
     const tick = () => {
       const statusUrl = `${APPS_SCRIPT_URL}?status=${encodeURIComponent(clientSubmissionId)}`;
       jsonp(statusUrl).then(status => {
         if (status && status.status === 'completed') {
-          resolve({
-            success: true,
-            submission_id: status.submission_id,
-            dealer_code: status.dealer_code,
-            dealer_name: status.dealer_name,
-            report_date: status.report_date,
-            rows_written: Number(status.rows_written || 0),
-            audit_rows_written: Number(status.audit_rows_written || 0),
-            revision: Number(status.revision || 0),
-            is_late: status.is_late,
-            total_activity: Number(status.total_activity || expectedTotal || 0),
-            source: 'status_poll'
-          });
+          resolve(normaliseVerifiedReceipt(Object.assign({}, status, { source: 'status_poll' }), expectedTotal));
           return;
         }
         if (status && status.status === 'failed') {
@@ -691,13 +712,13 @@ function pollSubmissionStatus(clientSubmissionId, dealerCode, reportDate, expect
           return;
         }
         if (Date.now() - started > STATUS_POLL_TIMEOUT_MS) {
-          reject(new Error('Status was not confirmed in time.'));
+          verifyCurrent().then(resolve).catch(reject);
           return;
         }
         window.setTimeout(tick, STATUS_POLL_INTERVAL_MS);
       }).catch(() => {
         if (Date.now() - started > STATUS_POLL_TIMEOUT_MS) {
-          reject(new Error('Status was not confirmed in time.'));
+          verifyCurrent().then(resolve).catch(reject);
         } else {
           window.setTimeout(tick, STATUS_POLL_INTERVAL_MS);
         }
@@ -761,7 +782,7 @@ async function handleSubmit(event) {
     localStorage.setItem('gwm_dealer_code', dealer.code);
     showReceipt(result);
   } catch (err) {
-    showMessage(`Submission rejected. Please check the entry and try again. Details: ${clean(err && err.message ? err.message : err)}`, 'error');
+    showMessage(`Submission not confirmed. Please do not resubmit until HQ checks the sheet. Details: ${clean(err && err.message ? err.message : err)}`, 'error');
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submit Daily Report';
