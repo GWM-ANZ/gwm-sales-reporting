@@ -169,6 +169,8 @@ const ALLOW_TODAY_FOR_TESTING = false;
 const RESPONSE_TIMEOUT_MS = 6000;
 const STATUS_POLL_INTERVAL_MS = 1000;
 const STATUS_POLL_TIMEOUT_MS = 8000;
+const VERIFY_POLL_INTERVAL_MS = 1500;
+const VERIFY_POLL_TIMEOUT_MS = 30000;
 const SOFT_MAX_METRIC = 100;
 
 const DEALERS = [
@@ -678,9 +680,10 @@ function verifyCurrentSubmission(payload) {
   const reportDate = first.report_date || '';
   const expectedTotal = totalActivity(rows);
   const since = payload.client_submitted_at || '';
+  const started = Date.now();
   const verifyUrl = `${APPS_SCRIPT_URL}?verify=1&dealer=${encodeURIComponent(dealerCode)}&date=${encodeURIComponent(reportDate)}&total=${encodeURIComponent(expectedTotal)}&token=${encodeURIComponent(dealerToken)}&since=${encodeURIComponent(since)}`;
 
-  return jsonp(verifyUrl).then(result => {
+  const attempt = () => jsonp(verifyUrl).then(result => {
     if (result && result.success === true && result.found === true && result.status === 'completed' && result.matched_total !== false && result.matched_since !== false) {
       return {
         success: true,
@@ -699,9 +702,22 @@ function verifyCurrentSubmission(payload) {
       };
     }
 
+    if (Date.now() - started < VERIFY_POLL_TIMEOUT_MS) {
+      return new Promise(resolve => window.setTimeout(resolve, VERIFY_POLL_INTERVAL_MS)).then(attempt);
+    }
+
     throw new Error(result && result.error ? result.error : 'Submission was not verified in current reporting table.');
+  }).catch(err => {
+    if (Date.now() - started < VERIFY_POLL_TIMEOUT_MS) {
+      return new Promise(resolve => window.setTimeout(resolve, VERIFY_POLL_INTERVAL_MS)).then(attempt);
+    }
+
+    throw err;
   });
+
+  return attempt();
 }
+
 
 function pollSubmissionStatus(clientSubmissionId, dealerCode, reportDate, expectedTotal) {
   const started = Date.now();
@@ -800,7 +816,7 @@ async function handleSubmit(event) {
     localStorage.setItem('gwm_dealer_code', dealer.code);
     showReceipt(result);
   } catch (err) {
-    showMessage(`Submission rejected. Please check the entry and try again. Details: ${clean(err && err.message ? err.message : err)}`, 'error');
+    showMessage(`Submission could not be confirmed. Do not resubmit yet. Please contact HQ. Details: ${clean(err && err.message ? err.message : err)}`, 'error');
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submit Daily Report';
