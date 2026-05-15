@@ -166,8 +166,7 @@ const REGION = 'Southern Region';
 const CUTOFF_HOUR = 10;
 const SAME_DAY_UNLOCK_HOUR = 17;
 const ALLOW_TODAY_FOR_TESTING = false;
-const RESPONSE_TIMEOUT_MS = 15000;
-const EARLY_VERIFY_DELAY_MS = 3000;
+const RESPONSE_TIMEOUT_MS = 6000;
 const STATUS_POLL_INTERVAL_MS = 1000;
 const STATUS_POLL_TIMEOUT_MS = 8000;
 const SOFT_MAX_METRIC = 100;
@@ -576,44 +575,11 @@ function buildPayload(clientSubmissionId, rows, confirmedAllZero) {
 
 function cleanupPendingSubmission() {
   if (pendingSubmission && pendingSubmission.timeoutId) window.clearTimeout(pendingSubmission.timeoutId);
-  if (pendingSubmission && pendingSubmission.earlyVerifyTimeoutId) window.clearTimeout(pendingSubmission.earlyVerifyTimeoutId);
   if (pendingIframe) pendingIframe.remove();
   if (pendingForm) pendingForm.remove();
   pendingSubmission = null;
   pendingIframe = null;
   pendingForm = null;
-}
-
-function isAcceptedResponse(result) {
-  return Boolean(result && result.success === true && result.status === 'accepted');
-}
-
-function normaliseVerifiedReceipt(status, expectedTotal) {
-  return {
-    success: true,
-    status: 'accepted',
-    message: status.message || 'Submission received. Thanks, team.',
-    submission_id: status.submission_id,
-    dealer_code: status.dealer_code,
-    dealer_name: status.dealer_name,
-    report_date: status.report_date,
-    rows_written: Number(status.rows_written || 0),
-    audit_rows_written: Number(status.audit_rows_written || 0),
-    revision: Number(status.revision || 0),
-    is_late: status.is_late,
-    total_activity: Number(status.total_activity || expectedTotal || 0),
-    source: status.source || 'verified_current'
-  };
-}
-
-function verifyCurrentSubmission(dealerCode, reportDate, expectedTotal) {
-  const verifyUrl = `${APPS_SCRIPT_URL}?verify=1&dealer=${encodeURIComponent(dealerCode)}&date=${encodeURIComponent(reportDate)}&total=${encodeURIComponent(expectedTotal)}&token=${encodeURIComponent(dealerToken)}`;
-  return jsonp(verifyUrl).then(status => {
-    if (status && status.success === true && status.found === true && status.status === 'completed') {
-      return normaliseVerifiedReceipt(status, expectedTotal);
-    }
-    throw new Error('Status was not confirmed in time.');
-  });
 }
 
 function submitViaIframe(payload) {
@@ -637,38 +603,13 @@ function submitViaIframe(payload) {
     input.value = JSON.stringify(payload);
     form.appendChild(input);
 
-    const dealerCode = payload.rows[0].dealer_code;
-    const reportDate = payload.rows[0].report_date;
-    const expectedTotal = totalActivity(payload.rows);
-    const clientSubmissionId = payload.client_submission_id;
-
-    const resolveIfStillPending = result => {
-      if (!pendingSubmission || pendingSubmission.clientSubmissionId !== clientSubmissionId) return;
-      const resolver = pendingSubmission.resolve;
-      cleanupPendingSubmission();
-      resolver(result);
-    };
-
-    const rejectIfStillPending = error => {
-      if (!pendingSubmission || pendingSubmission.clientSubmissionId !== clientSubmissionId) return;
-      const rejecter = pendingSubmission.reject;
-      cleanupPendingSubmission();
-      rejecter(error);
-    };
-
-    const earlyVerifyTimeoutId = window.setTimeout(() => {
-      verifyCurrentSubmission(dealerCode, reportDate, expectedTotal)
-        .then(resolveIfStillPending)
-        .catch(() => {});
-    }, EARLY_VERIFY_DELAY_MS);
-
     const timeoutId = window.setTimeout(() => {
-      pollSubmissionStatus(clientSubmissionId, dealerCode, reportDate, expectedTotal)
-        .then(resolveIfStillPending)
-        .catch(() => rejectIfStillPending(new Error('Submission timed out before confirmation. Please check if it appeared in reporting before resubmitting.')));
+      verifyCurrentSubmission(payload)
+        .then(result => { cleanupPendingSubmission(); resolve(result); })
+        .catch(() => { cleanupPendingSubmission(); reject(new Error('Submission timed out before confirmation. Please check if it appeared in reporting before resubmitting.')); });
     }, RESPONSE_TIMEOUT_MS);
 
-    pendingSubmission = { clientSubmissionId, resolve, reject, timeoutId, earlyVerifyTimeoutId };
+    pendingSubmission = { clientSubmissionId: payload.client_submission_id, payload, resolve, reject, timeoutId };
     pendingIframe = iframe;
     pendingForm = form;
 
@@ -686,12 +627,19 @@ window.addEventListener('message', event => {
   const result = data.payload || {};
   const resolver = pendingSubmission.resolve;
   const rejecter = pendingSubmission.reject;
+  const payload = pendingSubmission.payload;
   cleanupPendingSubmission();
 
-  if (isAcceptedResponse(result)) {
+  if (result && result.success === true) {
     resolver(result);
+  } else if (payload) {
+    // If the iframe response is missing/rejected after the Sheet write, verify the live current table
+    // before showing any rejection. This prevents a good submission being shown as failed.
+    verifyCurrentSubmission(payload)
+      .then(resolver)
+      .catch(() => rejecter(new Error(result && result.error ? result.error : 'Submission rejected by backend.')));
   } else {
-    rejecter(new Error(result && (result.message || result.error) ? (result.message || result.error) : 'Submission rejected by backend.'));
+    rejecter(new Error(result && result.error ? result.error : 'Submission rejected by backend.'));
   }
 });
 
@@ -723,15 +671,58 @@ function jsonp(url) {
   });
 }
 
+function verifyCurrentSubmission(payload) {
+  const rows = payload && Array.isArray(payload.rows) ? payload.rows : [];
+  const first = rows[0] || {};
+  const dealerCode = first.dealer_code || '';
+  const reportDate = first.report_date || '';
+  const expectedTotal = totalActivity(rows);
+  const since = payload.client_submitted_at || '';
+  const verifyUrl = `${APPS_SCRIPT_URL}?verify=1&dealer=${encodeURIComponent(dealerCode)}&date=${encodeURIComponent(reportDate)}&total=${encodeURIComponent(expectedTotal)}&token=${encodeURIComponent(dealerToken)}&since=${encodeURIComponent(since)}`;
+
+  return jsonp(verifyUrl).then(result => {
+    if (result && result.success === true && result.found === true && result.status === 'completed' && result.matched_total !== false && result.matched_since !== false) {
+      return {
+        success: true,
+        status: 'accepted',
+        submission_id: result.submission_id,
+        dealer_code: result.dealer_code,
+        dealer_name: result.dealer_name,
+        report_date: result.report_date,
+        rows_written: Number(result.rows_written || MODELS.length),
+        audit_rows_written: Number(result.audit_rows_written || 0),
+        revision: Number(result.revision || 0),
+        is_late: result.is_late,
+        total_activity: Number(result.total_activity || expectedTotal || 0),
+        source: 'current_verify',
+        message: 'Submission verified from current reporting table.'
+      };
+    }
+
+    throw new Error(result && result.error ? result.error : 'Submission was not verified in current reporting table.');
+  });
+}
+
 function pollSubmissionStatus(clientSubmissionId, dealerCode, reportDate, expectedTotal) {
   const started = Date.now();
-
   return new Promise((resolve, reject) => {
     const tick = () => {
       const statusUrl = `${APPS_SCRIPT_URL}?status=${encodeURIComponent(clientSubmissionId)}`;
       jsonp(statusUrl).then(status => {
         if (status && status.status === 'completed') {
-          resolve(normaliseVerifiedReceipt(Object.assign({}, status, { source: 'status_poll' }), expectedTotal));
+          resolve({
+            success: true,
+            submission_id: status.submission_id,
+            dealer_code: status.dealer_code,
+            dealer_name: status.dealer_name,
+            report_date: status.report_date,
+            rows_written: Number(status.rows_written || 0),
+            audit_rows_written: Number(status.audit_rows_written || 0),
+            revision: Number(status.revision || 0),
+            is_late: status.is_late,
+            total_activity: Number(status.total_activity || expectedTotal || 0),
+            source: 'status_poll'
+          });
           return;
         }
         if (status && status.status === 'failed') {
@@ -739,13 +730,13 @@ function pollSubmissionStatus(clientSubmissionId, dealerCode, reportDate, expect
           return;
         }
         if (Date.now() - started > STATUS_POLL_TIMEOUT_MS) {
-          verifyCurrentSubmission(dealerCode, reportDate, expectedTotal).then(resolve).catch(reject);
+          reject(new Error('Status was not confirmed in time.'));
           return;
         }
         window.setTimeout(tick, STATUS_POLL_INTERVAL_MS);
       }).catch(() => {
         if (Date.now() - started > STATUS_POLL_TIMEOUT_MS) {
-          verifyCurrentSubmission(dealerCode, reportDate, expectedTotal).then(resolve).catch(reject);
+          reject(new Error('Status was not confirmed in time.'));
         } else {
           window.setTimeout(tick, STATUS_POLL_INTERVAL_MS);
         }
@@ -809,7 +800,7 @@ async function handleSubmit(event) {
     localStorage.setItem('gwm_dealer_code', dealer.code);
     showReceipt(result);
   } catch (err) {
-    showMessage(`Submission not confirmed. Please do not resubmit until HQ checks the sheet. Details: ${clean(err && err.message ? err.message : err)}`, 'error');
+    showMessage(`Submission rejected. Please check the entry and try again. Details: ${clean(err && err.message ? err.message : err)}`, 'error');
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submit Daily Report';
